@@ -1,84 +1,108 @@
+import { useState } from "react";
+import Logo from "./components/Logo";
+import Swal from "sweetalert2";
 import "./App.css";
 
-function Logo() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 800 350"
-      className="logo-svg"
-    >
-      <defs>
-        <linearGradient id="gradient" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#0080b0" />
-          <stop offset="60%" stopColor="#26a99a" />
-          <stop offset="100%" stopColor="#7ad080" />
-        </linearGradient>
-      </defs>
-
-      <g transform="translate(50, 50)">
-        <path
-          d="M 40,20 
-             L 110,20 
-             A 15,15 0 0 1 125,35 
-             L 125,130 
-             A 15,15 0 0 1 110,145 
-             L 40,145 
-             A 15,15 0 0 1 25,130 
-             L 25,35 
-             A 15,15 0 0 1 40,20 Z"
-          fill="none"
-          stroke="url(#gradient)"
-          strokeWidth="7"
-          strokeLinejoin="round"
-        />
-
-        <circle
-          cx="135"
-          cy="135"
-          r="28"
-          fill="none"
-          stroke="url(#gradient)"
-          strokeWidth="7"
-        />
-
-        <line
-          x1="155"
-          y1="155"
-          x2="175"
-          y2="175"
-          stroke="url(#gradient)"
-          strokeWidth="7"
-          strokeLinecap="round"
-        />
-
-        <text
-          x="210"
-          y="112"
-          fontFamily="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
-          fontSize="62"
-          fontWeight="700"
-          fill="#0092c5"
-          letterSpacing="-1"
-        >
-          PaperControl
-        </text>
-
-        <text
-          x="210"
-          y="162"
-          fontFamily="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
-          fontSize="34"
-          fontWeight="400"
-          fill="#6b7280"
-        >
-          inventario y ventas
-        </text>
-      </g>
-    </svg>
-  );
-}
-
 function App() {
+  // Estado principal del formulario de contacto
+  const [formData, setFormData] = useState({
+    nombre: "",
+    apellido: "",
+    email: "",
+    mensaje: "",
+  });
+  // Estado para almacenar los errores de validación por campo
+  const [error, setError] = useState({});
+  // Controla el estado del botón mientras se procesa el envío
+  const [loading, setLoading] = useState(false);
+
+  function handleChange(e) {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    // Limpia el error del campo cuando el usuario vuelve a escribir
+    setError((prev) => ({
+      ...prev,
+      [name]: "",
+    }));
+  }
+
+  function validate() {
+    const newError = {};
+
+    if (!formData.nombre.trim()) {
+      newError.nombre = "Ingresa tu nombre";
+    }
+
+    if (!formData.apellido.trim()) {
+      newError.apellido = "Ingresa tu apellido";
+    }
+
+    if (!formData.email.trim()) {
+      newError.email = "Ingresa tu correo";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newError.email = "Correo inválido";
+    }
+
+    if (!formData.mensaje.trim()) {
+      newError.mensaje = "Cuéntanos sobre tu negocio";
+    }
+
+    setError(newError);
+    // Retorna true solo cuando no existen errores
+    return Object.keys(newError).length === 0;
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    // Detiene el envío si algún campo no cumple las validaciones
+    if (!validate()) {
+      Swal.fire({
+        icon: "error",
+        title: "Ups...",
+        text: "Completa correctamente todos los campos.",
+        confirmButtonColor: "#05788a",
+        background: "#ffffff",
+        color: "#062f3d",
+      });
+
+      return;
+    }
+
+    setLoading(true);
+    // Simulación de envío mientras no exista conexión con backend
+    setTimeout(() => {
+      setLoading(false);
+
+      Swal.fire({
+        icon: "success",
+        title: "Solicitud enviada",
+        text: "Gracias por contactarnos. Te responderemos pronto.",
+        confirmButtonText: "Continuar",
+        confirmButtonColor: "#05788a",
+
+        background: "#ffffff",
+
+        showClass: {
+          popup: "animate__animated animate__fadeInDown",
+        },
+
+        hideClass: {
+          popup: "animate__animated animate__fadeOutUp",
+        },
+      });
+      // Limpia el formulario después del envío exitoso
+      setFormData({
+        nombre: "",
+        apellido: "",
+        email: "",
+        mensaje: "",
+      });
+    }, 1200);
+  }
   return (
     <main className="landing">
       <header className="navbar">
@@ -329,8 +353,8 @@ function App() {
             <span className="quote">”</span>
             <p>
               "Los reportes de ventas son increíblemente detallados. Me permite
-              predecir qué productos comprar antes de que se agoten,
-              optimizando mi flujo de caja."
+              predecir qué productos comprar antes de que se agoten, optimizando
+              mi flujo de caja."
             </p>
             <div className="person">
               <strong>AL</strong>
@@ -377,8 +401,8 @@ function App() {
         <div className="contact-info">
           <h2>¿Listo para transformar tu negocio?</h2>
           <p>
-            Agenda una llamada de diagnóstico gratuita con nuestros especialistas
-            en optimización de procesos.
+            Agenda una llamada de diagnóstico gratuita con nuestros
+            especialistas en optimización de procesos.
           </p>
 
           <ul>
@@ -388,19 +412,58 @@ function App() {
           </ul>
         </div>
 
-        <form className="contact-form">
+        <form className="contact-form" onSubmit={handleSubmit}>
           <div className="form-row">
-            <input type="text" placeholder="Tu nombre" />
-            <input type="text" placeholder="Tu apellido" />
+            <div className="form-group">
+              <input
+                type="text"
+                name="nombre"
+                placeholder="Tu nombre"
+                value={formData.nombre}
+                onChange={handleChange}
+              />
+              {error.nombre && <small className="error">{error.nombre}</small>}
+            </div>
+
+            <div className="form-group">
+              <input
+                type="text"
+                name="apellido"
+                placeholder="Tu apellido"
+                value={formData.apellido}
+                onChange={handleChange}
+              />
+              {error.apellido && (
+                <small className="error">{error.apellido}</small>
+              )}
+            </div>
           </div>
 
-          <input type="email" placeholder="email@empresa.com" />
+          <div className="form-group">
+            <input
+              type="email"
+              name="email"
+              placeholder="email@empresa.com"
+              value={formData.email}
+              onChange={handleChange}
+            />
+            {error.email && <small className="error">{error.email}</small>}
+          </div>
 
-          <textarea placeholder="Cuéntanos sobre tu negocio..."></textarea>
+          <div className="form-group">
+            <textarea
+              name="mensaje"
+              placeholder="Cuéntanos sobre tu negocio..."
+              value={formData.mensaje}
+              onChange={handleChange}
+            ></textarea>
+            {error.mensaje && <small className="error">{error.mensaje}</small>}
+          </div>
 
-          <button type="submit" className="btn btn-primary">
-            Enviar Solicitud
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? "Enviando..." : "Enviar Solicitud"}
           </button>
+
         </form>
       </section>
 
@@ -408,7 +471,7 @@ function App() {
         <div>
           <Logo />
           <p>
-            © 2024 PaperControl. Todos los derechos reservados. Tecnología para
+            © 2026 PaperControl. Todos los derechos reservados. Tecnología para
             el control total.
           </p>
         </div>

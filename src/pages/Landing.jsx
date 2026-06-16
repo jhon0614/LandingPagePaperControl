@@ -383,7 +383,7 @@ return (
 
           </div>
 
-          {/* Formulario — ya controlado por React */}
+          {/* Formulario */}
           <form className="contacto-form" onSubmit={handleSubmit}>
 
             <div className="row">
@@ -449,46 +449,52 @@ return (
     </section>
 
 
-    {/* Footer */}
-    <footer className="footer">
+   {/* Footer */}
+<footer className="footer">
+  <div className="footer-logo">
+    <Logo />
+    <p>
+      © 2026 PaperControl. Todos los derechos reservados. Colombia.
+    </p>
+  </div>
 
-      <div className="footer-logo">
-        <Logo />
-        <p>© 2026 PaperControl. Todos los derechos reservados. Colombia.</p>
-      </div>
+  <div className="footer-links">
+    <div>
+      <h4>Producto</h4>
+      <a href="#Precios">Precios</a>
+      <a href="#API">API</a>
+      <a href="#Demo">Demo</a>
+    </div>
 
-      <div className="footer-links">
+    <div>
+      <h4>Empresa</h4>
+      <a href="#Nosotros">Sobre nosotros</a>
+      <a href="#Blog">Blog</a>
+      <a href="#Carreras">Carreras</a>
+    </div>
 
-        <div className="footer-productos">
-          <h4>Producto</h4>
-          <a href="#Precios">Precios</a>
-          <a href="#API">API</a>
-          <a href="#Demo">Demo</a>
-        </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="#Privacidad">Privacidad</a>
+      <a href="#Terminos">Términos</a>
+      <a href="#Cookies">Cookies</a>
+    </div>
 
-        <div className="footer-empresa">
-          <h4>Empresa</h4>
-          <a href="#Nosotros">Sobre nosotros</a>
-          <a href="#Blog">Blog</a>
-          <a href="#Carreras">Carreras</a>
-        </div>
+    <div>
+      <h4>Redes</h4>
 
-        <div className="footer-legal">
-          <h4>Legal</h4>
-          <a href="#Privacidad">Privacidad</a>
-          <a href="#Terminos">Términos</a>
-          <a href="#Cookies">Cookies</a>
-        </div>
-
-        <div className="footer-social">
-          <h4>Redes</h4>
+      <div className="footer-social-icons">
+        <a href="#Redes" aria-label="Compartir">
           <i className="fa-solid fa-share-nodes"></i>
+        </a>
+
+        <a href="#Web" aria-label="Sitio web">
           <i className="fa-solid fa-earth-americas"></i>
-        </div>
-
+        </a>
       </div>
-
-    </footer>
+    </div>
+  </div>
+</footer>
 
   </main>
 );

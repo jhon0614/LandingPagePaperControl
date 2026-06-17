@@ -745,25 +745,29 @@ a {
 
 @media (max-width: 768px) {
   .navbar {
-    flex-direction: column;
-    height: auto;
-    padding: 24px 20px;
-    gap: 20px;
+    flex-direction: row;
+    height: 64px;
+    padding: 0 20px;
+    gap: 0;
+  }
+
+  .nav-menu{
+    display: none;
   }
 
   .hero {
     min-height: auto;
-    padding: 70px 24px;
-    gap: 40px;
+    padding: 50px 24px;
+    gap: 30px;
   }
 
-  .hero h1 {
-    font-size: 42px;
-    line-height: 1.15;
+  .hero h1, .hero-content h2 {
+    font-size: 32px;
+    line-height: 1.2;
   }
 
-  .hero p {
-    font-size: 18px;
+  .hero p, .hero-content p {
+    font-size: 16px;
     line-height: 1.7;
   }
 
@@ -778,7 +782,7 @@ a {
 
   .hero-image img,
   .vistaPrevia-Sistema img {
-    max-width: 360px;
+    max-width: 100%;
   }
 
   .estadisticas-content,
@@ -793,7 +797,7 @@ a {
   .funcionalidades h2,
   .testimonios h2,
   .faq h2 {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
 
   .row {
@@ -810,24 +814,26 @@ a {
   }
 
   .footer {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: column;
     padding: 40px 24px;
     text-align: center;
-    gap: 36px;
+    gap: 24px;
   }
 
   .footer-logo {
     margin: 0 auto;
-    align-items: center;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;;
   }
 
   .footer-links {
     margin: 0;
+    width: 100%;
     display: grid;
     grid-template-columns: 1fr;
-    gap: 28px;
+    gap: 24px;
     text-align: center;
   }
 

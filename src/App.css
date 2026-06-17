@@ -8,6 +8,14 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
 body {
   font-family: Inter, Arial, sans-serif;
   background: #ffffff;
@@ -29,6 +37,7 @@ a {
 .landing {
   width: 100%;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
 /* ─── NAVBAR ─── */
@@ -398,10 +407,10 @@ a {
 }
 
 .testimonios p{
-    max-width: 800px;
-    margin: 0 auto 60px;
-    color: #667;
-    line-height: 1.8;
+  max-width: 800px;
+  margin: 0 auto 60px;
+  color: #667;
+  line-height: 1.8;
 }
 
 .testimonios-content {

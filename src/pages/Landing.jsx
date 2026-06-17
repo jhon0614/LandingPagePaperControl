@@ -1,5 +1,6 @@
 import Logo from "../components/Logo";
 import Swal from "sweetalert2";
+import vistaPrevia from "../assets/VistaPreviaPaperControl.png";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
@@ -154,7 +155,7 @@ return (
       </div>
 
       <div className="hero-image">
-        <img src="/img/VistaPreviaPaperControl.png" alt="Vista previa del sistema" />
+        <img src={vistaPrevia} alt="Vista previa del sistema" />
       </div>
 
     </section>

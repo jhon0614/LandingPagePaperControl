@@ -4,10 +4,8 @@ import babel from "@rolldown/plugin-babel";
 
 export default defineConfig({
   base: "/LandingPagePaperControl/",
-
   plugins: [
     react(),
-
     babel({
       presets: [reactCompilerPreset()],
     }),

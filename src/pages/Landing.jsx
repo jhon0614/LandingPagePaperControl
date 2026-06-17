@@ -483,7 +483,7 @@ return (
     <div>
       <h4>Redes</h4>
 
-      <div className="footer-social-icons">
+      <div className="footer-social">
         <a href="#Redes" aria-label="Compartir">
           <i className="fa-solid fa-share-nodes"></i>
         </a>

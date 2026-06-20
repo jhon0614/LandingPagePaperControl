@@ -31,7 +31,7 @@ a {
 :root {
   --bondi-blue: #05788a;
   --dark-blue: #062f3d;
-  --celadon: #ace1af;
+  --light-blue: #005872;
 }
 
 .landing {
@@ -195,7 +195,7 @@ a {
   font-size: clamp(34px, 4vw, 54px);
   line-height: 1.1;
   margin-bottom: 24px;
-  color: #005872;
+  color: var(--ligth-blue);
 }
 
 .hero p {
@@ -528,12 +528,12 @@ a {
 
 .contacto-info h2 {
   font-size: 2rem;
-  color: #005872;
+  color: var(--ligth-blue);
   margin-bottom: 18px;
 }
 
 .contacto-info > p {
-  color: #64748b;
+  color: #64748b; 
   line-height: 1.7;
   margin-bottom: 26px;
 }

@@ -3,8 +3,6 @@ import Swal from "sweetalert2";
 import vistaPrevia from "../assets/VistaPreviaPaperControl.png";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import "@fortawesome/fontawesome-free/css/all.min.css";
-
 import "../App.css";
 
 function Landing() {
@@ -21,11 +19,11 @@ function Landing() {
   const [loading, setLoading] = useState(false);
 
   function handleChange(e) {
-    const { name, value } = e.target;
+    const { name, value } = e.target; // Obtiene el nombre y valor del input diligenciado
 
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: value, // obtiene el valor del input y lo asigna al estado
     }));
     // Limpia el error del campo cuando el usuario vuelve a escribir
     setError((prev) => ({
@@ -109,7 +107,7 @@ function Landing() {
   }
 
   function scrollTo(id) {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); //navega hacía los diferentes anclajes en la página web (inicio, beneficios, funcionalidades, contacto)
   }
 
   return (

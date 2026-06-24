@@ -1,0 +1,12 @@
+services:
+  paper-control-frontend:
+    build: .
+    container_name: paper-control-frontend
+    ports:
+      - "5173:5173"
+    networks:
+      - paper-control-network
+
+networks:
+  paper-control-network:
+    driver: bridge

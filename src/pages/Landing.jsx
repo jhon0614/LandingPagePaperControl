@@ -486,7 +486,7 @@ function Landing() {
 
         <div className="footer-links">
           <div>
-            <h4>Producto</h4>
+            <h4>Productos</h4>
             <a href="#Precios">Precios</a>
             <a href="#API">API</a>
             <a href="#Demo">Demo</a>

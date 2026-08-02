@@ -11,7 +11,7 @@ function obligatoria(nombre) {
 
 // Convierte valores como el puerto o los tiempos de sesión en números válidos.
 function enteroPositivo(nombre, valorDefecto) {
-  const valorOriginal = process.env[nombre] ?? String(valorDefecto);
+  const valorOriginal = process.env[nombre] ?? String(valorDefecto); //permite omitir process.env y usar valorDefecto
   const valor = Number(valorOriginal);
   if (!Number.isInteger(valor) || valor <= 0) {
     throw new Error(`${nombre} debe ser un entero mayor que cero.`);

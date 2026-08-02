@@ -15,7 +15,7 @@ export class ModeloIntentoAcceso {
         fueExitoso,
         motivoFallo ?? null,
         direccionIp ?? null,
-        agenteUsuario?.slice(0, 500) ?? null,
+        agenteUsuario?.slice(0, 500) ?? null, //tomaa los primeros 500 caracteres
       ],
     );
   }

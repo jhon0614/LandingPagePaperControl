@@ -14,18 +14,18 @@ import { manejarError, manejarNoEncontrado } from "./middleware/error-handler.js
 // Recibir las conexiones y la configuración como parámetros facilita las pruebas.
 export function crearAplicacion({ conexiones, configuracion }) {
   const aplicacion = express();
-  aplicacion.disable("x-powered-by");
+  aplicacion.disable("x-powered-by");//desactiva la cabecera x-powered-by
   aplicacion.set("trust proxy", 1);
 
   // Protecciones y reglas comunes para todas las solicitudes.
   aplicacion.use(helmet());
   aplicacion.use(
-    cors({
+    cors({ //permite comunicación con el frontend 
     origin: configuracion.origenFrontend,
       credentials: true,
     }),
   );
-  aplicacion.use(express.json({ limit: "100kb" }));
+  aplicacion.use(express.json({ limit: "100kb" })); //limita el tamaño de las peticiones
 
   // Se crean los modelos y se entregan al servicio responsable del login.
   const servicioAutenticacion = new ServicioAutenticacion({
@@ -37,7 +37,7 @@ export function crearAplicacion({ conexiones, configuracion }) {
   });
   const controladorAutenticacion = new ControladorAutenticacion(servicioAutenticacion, configuracion);
 
-  // Ruta sencilla para confirmar que la API se encuentra en ejecución.
+  // Ruta para confirmar que la API se encuentra en ejecución.
   aplicacion.get("/api/health", (_solicitud, respuesta) => {
     respuesta.status(200).json({ exito: true, datos: { estado: "activo" } });
   });

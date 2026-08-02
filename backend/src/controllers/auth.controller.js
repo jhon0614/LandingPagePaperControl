@@ -9,9 +9,9 @@ export class ControladorAutenticacion {
   iniciarSesion = async (solicitud, respuesta, siguiente) => {
     try {
       const resultado = await this.servicioAutenticacion.iniciarSesion({
-        ...solicitud.body,
-        direccionIp: solicitud.ip,
-        agenteUsuario: solicitud.get("user-agent"),
+        ...solicitud.body, // extrae los datos del cuerpo de la petición
+        direccionIp: solicitud.ip, // extrae la IP del cliente desde donde está accediendo
+        agenteUsuario: solicitud.get("user-agent"), // extrae el agente de usuario del navegador
       });
 
       // La cookie HttpOnly no puede ser leída directamente desde JavaScript.

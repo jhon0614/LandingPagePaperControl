@@ -15,7 +15,7 @@ if (!nombres || !apellidos || !correo || !contrasena) {
 }
 
 // Se exige una contraseña razonable antes de generar el hash.
-if (!/^\S+@\S+\.\S+$/.test(correo)) {
+if (!/^\S+@\S+\.\S+$/.test(correo)) { //formato de correo indica que hay texto, luego @, luego texto, luego . y luego texto (com, es...) y valida que si sea un correo valido
   throw new Error("ADMIN_EMAIL no tiene un formato válido.");
 }
 if (contrasena.length < 12) {

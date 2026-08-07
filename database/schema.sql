@@ -24,6 +24,7 @@ CREATE TABLE usuarios (
   apellidos VARCHAR(80) NOT NULL,
   correo VARCHAR(191) NOT NULL,
   hash_contrasena VARCHAR(255) NOT NULL,
+  debe_cambiar_contrasena BOOLEAN NOT NULL DEFAULT FALSE,
   esta_activo BOOLEAN NOT NULL DEFAULT TRUE,
   intentos_acceso_fallidos SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   bloqueado_hasta DATETIME NULL,

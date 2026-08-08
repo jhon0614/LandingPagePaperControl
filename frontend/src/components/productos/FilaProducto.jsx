@@ -1,43 +1,95 @@
-function FilaProducto({ producto, eliminarProducto, editarProducto }) {
+function FilaProducto({
+    producto,
+    eliminarProducto,
+    editarProducto
+    }) {
 
     const obtenerClaseStock = () => {
-        if (producto.stock <= 10) return "stock-bajo";
-        if (producto.stock <= 30) return "stock-medio";
+
+        const stock = Number(producto.stock);
+
+        if (stock <= 10) {
+        return "stock-bajo";
+        }
+
+        if (stock <= 30) {
+        return "stock-medio";
+        }
+
         return "stock-alto";
     };
+
+
+    const precio = Number(producto.precio || 0);
+
 
     return (
         <tr>
 
-        <td>{producto.codigo}</td>
-
-        <td>{producto.nombre}</td>
+        {/* CÓDIGO */}
 
         <td>
+            {producto.codigo}
+        </td>
+
+
+        {/* NOMBRE */}
+
+        <td>
+            {producto.nombre}
+        </td>
+
+
+        {/* CATEGORÍA */}
+
+        <td>
+
             <span className="badge-categoria">
             {producto.categoria}
             </span>
+
         </td>
 
+
+        {/* STOCK */}
+
         <td>
+
             <span className={obtenerClaseStock()}>
             {producto.stock}
             </span>
+
         </td>
+
+
+        {/* PRECIO */}
 
         <td>
             $
-            {producto.precio.toLocaleString("es-CO")}
+            {precio.toLocaleString("es-CO")}
         </td>
+
+
+        {/* ACCIONES */}
 
         <td className="acciones">
 
-            <button className="btn-editar" title="Editar producto" onClick={() => editarProducto(producto)}>
+            <button
+            type="button"
+            className="btn-editar"
+            title="Editar producto"
+            onClick={() => editarProducto(producto)}
+            >
             <i className="fa-solid fa-pen"></i>
             </button>
 
-            <button className="btn-eliminar" title="Eliminar producto"
-            onClick={() => eliminarProducto(producto.id)}>
+
+            <button
+            type="button"
+            className="btn-eliminar"
+            title="Eliminar producto"
+            onClick={() => eliminarProducto(producto.id)}
+            >
             <i className="fa-solid fa-trash"></i>
             </button>
 

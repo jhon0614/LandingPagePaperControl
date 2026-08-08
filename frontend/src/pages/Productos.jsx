@@ -4,14 +4,15 @@ import Layout from "../components/Layout";
 import TablaProductos from "../components/productos/TablaProductos";
 import ModalProducto from "../components/productos/ModalProducto";
 import EstadisticasProductos from "../components/productos/EstadisticasProductos";
+import BuscadorProductos from "../components/productos/BuscadorProductos";
 
 import "../styles/Productos.css";
 
     function Productos() {
 
     const [modalAbierto, setModalAbierto] = useState(false);
-
     const [productoEditar, setProductoEditar] = useState(null);
+    const [busqueda, setBusqueda] = useState("");
 
     const [productos, setProductos] = useState([
         {
@@ -33,11 +34,38 @@ import "../styles/Productos.css";
     ]);
 
 
+    // =========================
+    // BUSCAR PRODUCTOS
+    // =========================
+
+    const normalizarTexto = (texto) => {
+    return texto
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    };
+
+    const productosFiltrados = productos.filter((producto) => {
+
+    const texto = normalizarTexto(busqueda);
+
+    return (
+        normalizarTexto(producto.codigo).includes(texto) ||
+        normalizarTexto(producto.nombre).includes(texto) ||
+        normalizarTexto(producto.categoria).includes(texto)
+    );
+
+    });
+
+
+    // =========================
+    // CREAR / EDITAR PRODUCTO
+    // =========================
+
     const guardarProducto = (datosProducto) => {
 
         if (productoEditar) {
-
-        // EDITAR PRODUCTO
 
         setProductos(
             productos.map((producto) =>
@@ -51,7 +79,6 @@ import "../styles/Productos.css";
         );
 
         } else {
-
 
         setProductos([
             ...productos,
@@ -67,6 +94,10 @@ import "../styles/Productos.css";
         setModalAbierto(false);
     };
 
+
+    // =========================
+    // ELIMINAR PRODUCTO
+    // =========================
 
     const eliminarProducto = (id) => {
 
@@ -84,6 +115,9 @@ import "../styles/Productos.css";
     };
 
 
+    // =========================
+    // EDITAR PRODUCTO
+    // =========================
 
     const editarProducto = (producto) => {
 
@@ -146,14 +180,10 @@ import "../styles/Productos.css";
             BUSCADOR
         ========================= */}
 
-        <div className="productos-busqueda">
-
-            <input
-            type="text"
-            placeholder="Buscar producto..."
-            />
-
-        </div>
+        <BuscadorProductos
+            valor={busqueda}
+            cambiarValor={setBusqueda}
+        />
 
 
         {/* =========================
@@ -161,7 +191,7 @@ import "../styles/Productos.css";
         ========================= */}
 
         <TablaProductos
-            productos={productos}
+            productos={productosFiltrados}
             eliminarProducto={eliminarProducto}
             editarProducto={editarProducto}
         />

@@ -5,7 +5,8 @@ USE paper_control;
 INSERT INTO roles (nombre, descripcion)
 VALUES
   ('ADMINISTRADOR', 'Gestiona usuarios, inventario, configuración y reportes.'),
-  ('VENDEDOR', 'Registra ventas, clientes, caja y consulta productos.')
+  ('VENDEDOR', 'Registra ventas, clientes, caja y consulta productos.'),
+  ('DUENO', 'Consulta dashboard, inventario, ventas y reportes.')
 ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
 
 -- Métodos de pago disponibles al iniciar el sistema por primera vez.

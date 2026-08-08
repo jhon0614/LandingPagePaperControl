@@ -1,4 +1,4 @@
-.login-page {
+.auth-page {
   min-height: 100vh;
   padding: 24px;
 
@@ -9,7 +9,7 @@
   background: #f8fafc;
 }
 
-.login-card {
+.auth-card {
   width: 100%;
   max-width: 430px;
 
@@ -23,45 +23,58 @@
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
 }
 
-.login-logo {
+.auth-logo {
   width: 180px;
   margin: 0 auto 24px;
 }
 
-.login-header {
+.auth-header {
   text-align: center;
   margin-bottom: 32px;
 }
 
-.login-header h1 {
+.auth-header h1 {
   color: #062f3d;
   font-size: 30px;
   margin-bottom: 10px;
 }
 
-.login-header p {
+.auth-header p {
   color: #64748b;
   line-height: 1.5;
 }
 
-.login-form {
+/* Solo para Acceso Denegado */
+.auth-error-code {
+  font-size: 70px;
+  color: #dc2626;
+  margin-bottom: 10px;
+}
+
+.auth-error-title {
+  color: #062f3d;
+  font-size: 30px;
+  margin-bottom: 15px;
+}
+
+.auth-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.login-group {
+.auth-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.login-group label {
+.auth-group label {
   font-weight: 700;
   color: #062f3d;
 }
 
-.login-group input {
+.auth-group input {
   width: 100%;
 
   padding: 14px 16px;
@@ -72,7 +85,7 @@
   font: inherit;
 }
 
-.login-options {
+.auth-options {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -80,25 +93,26 @@
   font-size: 14px;
 }
 
-.login-options label {
+.auth-options label {
   display: flex;
   gap: 8px;
   color: #475569;
 }
 
-.login-options a,
-.login-footer a {
+.auth-options a,
+.auth-footer a {
   color: #05788a;
   font-weight: 700;
 }
 
-.login-error {
+.auth-error {
   color: red;
-  margin-bottom: 10px;
   text-align: center;
 }
 
-.login-button {
+.auth-button {
+  width: 100%;
+
   padding: 14px 18px;
 
   border: none;
@@ -111,20 +125,26 @@
   font-size: 16px;
 
   cursor: pointer;
+
+  transition: .3s;
 }
 
-.login-footer {
+.auth-button:hover {
+  background: #046977;
+}
+
+.auth-footer {
   margin-top: 28px;
   text-align: center;
   color: #64748b;
 }
 
 @media (max-width: 520px) {
-  .login-card {
+  .auth-card {
     padding: 28px 22px;
   }
 
-  .login-options {
+  .auth-options {
     flex-direction: column;
   }
 }

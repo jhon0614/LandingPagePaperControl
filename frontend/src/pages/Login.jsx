@@ -1,5 +1,5 @@
 import Logo from "../components/Logo";
-import "../styles/Login.css";
+import "../styles/AuthLayout.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../services/auth.service";
@@ -23,9 +23,27 @@ function Login() {
   try {
     const datos = await login(correo, contrasena);
 
+      localStorage.setItem(
+      "usuario",
+      JSON.stringify(datos.datos.usuario)
+    );
+    localStorage.setItem(
+      "token",
+      datos.datos.tokenAcceso
+    );
+
     console.log(datos.datos.usuario);
 
-    alert("Inicio de sesión correcto");
+    const rol = datos.datos.usuario.rol;
+
+    if (rol === "ADMINISTRADOR") {
+      navigate("/admin");
+    } else if (rol === "VENDEDOR") {
+      navigate("/vendedor");
+    } else if (rol === "DUENO") {
+      navigate("/dueno");
+    }
+
 
     // Más adelante redirigiremos al dashboard
     // navigate("/dashboard");
@@ -36,19 +54,19 @@ function Login() {
 };
 
   return (
-    <main className="login-page">
-      <section className="login-card">
-        <div className="login-logo">
+    <main className="auth-page">
+      <section className="auth-card">
+        <div className="auth-logo">
           <Logo />
         </div>
 
-        <div className="login-header">
+        <div className="auth-header">
           <h1>Iniciar sesión</h1>
           <p>Ingresa tus credenciales para acceder a PaperControl</p>
         </div>
 
-        <form className="login-form" onSubmit={iniciarSesion}>
-          <div className="login-group">
+        <form className="auth-form" onSubmit={iniciarSesion}>
+          <div className="auth-group">
             <label htmlFor="email">Correo electrónico</label>
             <input
               id="email"
@@ -59,7 +77,7 @@ function Login() {
             />
           </div>
 
-          <div className="login-group">
+          <div className="auth-group">
             <label htmlFor="password">Contraseña</label>
             <input
               id="password"
@@ -70,7 +88,7 @@ function Login() {
             />
           </div>
 
-          <div className="login-options">
+          <div className="auth-options">
             <label>
               <input type="checkbox" />
               Recordarme
@@ -80,17 +98,17 @@ function Login() {
           </div>
 
           {error && (
-            <p className="login-error">
+            <p className="auth-error">
               {error}
             </p>
           )}
 
-          <button type="submit" className="login-button">
+          <button type="submit" className="auth-button">
             Iniciar sesión
           </button>
         </form>
 
-        <p className="login-footer">
+        <p className="auth-footer">
           ¿No tienes una cuenta? <a href="#contacto">Contáctanos</a>
         </p>
       </section>

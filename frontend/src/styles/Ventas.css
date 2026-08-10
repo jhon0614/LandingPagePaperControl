@@ -1,0 +1,1305 @@
+/* =========================================================
+   VENTAS
+========================================================= */
+
+.ventas-header {
+    margin-bottom: 24px;
+}
+
+.ventas-header h1 {
+    color: #062f3d;
+    margin-bottom: 6px;
+}
+
+.ventas-header p {
+    margin: 0;
+}
+
+
+/* =========================================================
+   LAYOUT PRINCIPAL
+========================================================= */
+
+.pos-container {
+    display: grid;
+
+    grid-template-columns:
+        1fr 380px;
+
+    gap: 24px;
+
+    align-items: start;
+}
+
+
+/* =========================================================
+   PRODUCTOS
+========================================================= */
+
+.pos-productos {
+    background: white;
+
+    border-radius: 16px;
+
+    padding: 22px;
+
+    box-shadow:
+        0 10px 25px rgba(0, 0, 0, .08);
+}
+
+
+/* =========================================================
+   BUSCADOR
+========================================================= */
+
+.pos-buscador {
+    background: #f8fafc;
+
+    border-radius: 12px;
+
+    padding: 0 16px;
+
+    height: 50px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+}
+
+.pos-buscador i {
+    color: #64748b;
+}
+
+.pos-buscador input {
+    border: none;
+
+    outline: none;
+
+    background: transparent;
+
+    flex: 1;
+
+    height: 100%;
+
+    font-size: 14px;
+
+    color: #334155;
+}
+
+
+/* =========================================================
+   GRID DE PRODUCTOS
+========================================================= */
+
+.pos-productos-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fill,
+            minmax(220px, 1fr)
+        );
+
+    gap: 14px;
+}
+
+.pos-producto-card {
+    border: 1px solid #edf2f7;
+
+    border-radius: 14px;
+
+    padding: 16px;
+
+    cursor: pointer;
+
+    transition: .2s;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+.pos-producto-card:hover {
+    border-color: #05788a;
+
+    box-shadow:
+        0 6px 16px rgba(
+            5,
+            120,
+            138,
+            .15
+        );
+
+    transform: translateY(-2px);
+}
+
+.pos-producto-icono {
+    width: 40px;
+
+    height: 40px;
+
+    border-radius: 10px;
+
+    background: #e0f2fe;
+
+    color: #05788a;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.pos-producto-info strong {
+    display: block;
+
+    color: #1e293b;
+
+    font-size: 14px;
+}
+
+.pos-producto-info span {
+    color: #64748b;
+
+    font-size: 12px;
+}
+
+.pos-producto-precio {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: baseline;
+}
+
+.pos-producto-precio span {
+    color: #05788a;
+
+    font-weight: 700;
+}
+
+.pos-producto-precio small {
+    color: #94a3b8;
+
+    font-size: 11px;
+}
+
+.pos-vacio {
+    grid-column: 1 / -1;
+
+    text-align: center;
+
+    padding: 40px;
+
+    color: #64748b;
+}
+
+.pos-vacio i {
+    font-size: 28px;
+
+    margin-bottom: 8px;
+
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   CARRITO
+========================================================= */
+
+.pos-carrito {
+    background: white;
+
+    border-radius: 16px;
+
+    padding: 22px;
+
+    box-shadow:
+        0 10px 25px rgba(0, 0, 0, .08);
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 16px;
+
+    position: sticky;
+
+    top: 20px;
+}
+
+.pos-carrito-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+}
+
+.pos-carrito-header h2 {
+    margin: 0;
+
+    font-size: 17px;
+
+    color: #062f3d;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+.pos-carrito-contador {
+    background: #e0f2fe;
+
+    color: #05788a;
+
+    width: 28px;
+
+    height: 28px;
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-weight: 700;
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   CLIENTE
+========================================================= */
+
+.pos-carrito-cliente {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+.pos-carrito-cliente label {
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: #334155;
+}
+
+
+/* =========================================================
+   DROPDOWN PERSONALIZADO
+========================================================= */
+
+.pos-dropdown {
+    position: relative;
+
+    width: 100%;
+}
+
+.pos-dropdown-trigger {
+    width: 100%;
+
+    min-height: 38px;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 9px;
+
+    padding: 9px 12px;
+
+    font-size: 14px;
+
+    color: #1e293b;
+
+    background: #ffffff;
+
+    outline: none;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    text-align: left;
+
+    transition:
+        border-color .2s,
+        box-shadow .2s,
+        background .2s;
+}
+
+.pos-dropdown-trigger:hover {
+    border-color: #94a3b8;
+
+    background: #ffffff;
+}
+
+.pos-dropdown-trigger.abierto {
+    border-color: #05788a;
+
+    box-shadow:
+        0 0 0 3px rgba(
+            5,
+            120,
+            138,
+            .08
+        );
+
+    background: #ffffff;
+}
+
+.pos-dropdown-trigger i {
+    color: #475569;
+
+    font-size: 12px;
+
+    flex-shrink: 0;
+}
+
+.pos-dropdown-text {
+    color: #1e293b;
+}
+
+.pos-dropdown-placeholder {
+    color: #334155;
+}
+
+
+/* =========================================================
+   MENÚ DROPDOWN
+========================================================= */
+
+.pos-dropdown-menu {
+    position: absolute;
+
+    top: calc(100% + 5px);
+
+    left: 0;
+
+    right: 0;
+
+    background: #ffffff;
+
+    border: 1px solid #dbe3eb;
+
+    border-radius: 10px;
+
+    padding: 5px;
+
+    box-shadow:
+        0 12px 30px rgba(
+            15,
+            23,
+            42,
+            .14
+        );
+
+    z-index: 500;
+
+    overflow: hidden;
+
+    animation:
+        posDropdownEntrada
+        .12s
+        ease-out;
+}
+
+@keyframes posDropdownEntrada {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0);
+    }
+
+}
+
+
+/* =========================================================
+   OPCIONES DROPDOWN
+========================================================= */
+
+.pos-dropdown-option {
+    width: 100%;
+
+    border: none;
+
+    background: #ffffff;
+
+    color: #1e293b;
+
+    padding: 10px 12px;
+
+    border-radius: 7px;
+
+    font-size: 14px;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    text-align: left;
+
+    transition:
+        background .15s,
+        color .15s;
+}
+
+.pos-dropdown-option:hover {
+    background: #f0fdfa;
+
+    color: #05788a;
+}
+
+.pos-dropdown-option.seleccionado {
+    background: #e6f7fa;
+
+    color: #05788a;
+
+    font-weight: 600;
+}
+
+.pos-dropdown-option.seleccionado:hover {
+    background: #d9f3f7;
+
+    color: #046f80;
+}
+
+.pos-dropdown-option i {
+    font-size: 12px;
+
+    color: #05788a;
+}
+
+.pos-dropdown-empty {
+    padding: 12px;
+
+    color: #94a3b8;
+
+    font-size: 13px;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   ITEMS DEL CARRITO
+========================================================= */
+
+.pos-carrito-items {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    max-height: 280px;
+
+    overflow-y: auto;
+}
+
+.pos-carrito-item {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 10px 12px;
+
+    border-radius: 10px;
+
+    background: #f8fafc;
+}
+
+.pos-carrito-item-info {
+    min-width: 0;
+
+    flex: 1;
+}
+
+.pos-carrito-item strong {
+    display: block;
+
+    font-size: 13px;
+
+    color: #1e293b;
+}
+
+.pos-carrito-item span {
+    font-size: 12px;
+
+    color: #64748b;
+}
+
+.pos-carrito-item b {
+    display: block;
+
+    font-size: 12px;
+
+    color: #05788a;
+
+    margin-top: 2px;
+}
+
+
+/* =========================================================
+   CONTROLES CANTIDAD
+========================================================= */
+
+.pos-carrito-item-controles {
+    display: flex;
+
+    align-items: center;
+
+    gap: 0;
+
+    margin-left: 10px;
+
+    flex-shrink: 0;
+}
+
+.pos-cantidad-btn {
+    width: 32px;
+
+    height: 30px;
+
+    border: 1px solid #dbe3eb;
+
+    background: white;
+
+    color: #334155;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    transition:
+        background .15s,
+        border-color .15s,
+        color .15s;
+}
+
+.pos-cantidad-btn:first-child {
+    border-radius: 8px 0 0 8px;
+}
+
+.pos-cantidad-btn:nth-of-type(2) {
+    border-radius: 0 8px 8px 0;
+}
+
+.pos-cantidad-btn:hover {
+    background: #f0fdfa;
+
+    border-color: #05788a;
+
+    color: #05788a;
+}
+
+.pos-cantidad-btn i {
+    font-size: 11px;
+}
+
+.pos-cantidad {
+    width: 34px;
+
+    height: 30px;
+
+    border-top: 1px solid #dbe3eb;
+
+    border-bottom: 1px solid #dbe3eb;
+
+    background: white;
+
+    color: #1e293b;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   ELIMINAR
+========================================================= */
+
+.pos-quitar-item {
+    width: 30px;
+
+    height: 30px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #fee2e2;
+
+    color: #dc2626;
+
+    cursor: pointer;
+
+    margin-left: 8px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    transition: .2s;
+}
+
+.pos-quitar-item:hover {
+    background: #dc2626;
+
+    color: white;
+}
+
+
+/* =========================================================
+   CARRITO VACÍO
+========================================================= */
+
+.pos-carrito-vacio {
+    text-align: center;
+
+    padding: 30px 10px;
+
+    color: #64748b;
+}
+
+.pos-carrito-vacio i {
+    font-size: 24px;
+
+    margin-bottom: 8px;
+
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   MÉTODO DE PAGO
+========================================================= */
+
+.pos-carrito-pago {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+.pos-carrito-pago-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+}
+
+.pos-carrito-pago label {
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: #334155;
+}
+
+
+/* =========================================================
+   CONFIGURACIÓN
+========================================================= */
+
+.btn-config-pagos {
+    width: 28px;
+
+    height: 28px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #f1f5f9;
+
+    color: #64748b;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    transition: .2s;
+}
+
+.btn-config-pagos:hover {
+    background: #e2e8f0;
+
+    color: #334155;
+}
+
+
+/* =========================================================
+   SELECTORES TIPO TARJETA / BANCO
+========================================================= */
+
+.pos-bancos-selector {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    margin-top: 4px;
+}
+
+.pos-bancos-selector label {
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: #334155;
+}
+
+.pos-bancos-lista {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+}
+
+
+/* =========================================================
+   CHIP GENERAL
+========================================================= */
+
+.pos-banco-chip {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 8px 12px;
+
+    border-radius: 30px;
+
+    border: 1.5px solid #dbe3eb;
+
+    background: white;
+
+    cursor: pointer;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: #334155;
+
+    transition:
+        background .2s,
+        color .2s,
+        border-color .2s,
+        transform .2s;
+
+    white-space: nowrap;
+}
+
+.pos-banco-chip:hover {
+    border-color: #94a3b8;
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* =========================================================
+   CHIP SELECCIONADO GENERAL
+========================================================= */
+
+.pos-banco-chip.seleccionado {
+    background: #05788a;
+
+    color: white;
+
+    border-color: #05788a;
+}
+
+.pos-banco-chip.seleccionado:hover {
+    background: #046f80;
+
+    border-color: #046f80;
+}
+
+.pos-banco-chip.seleccionado i {
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   PUNTO
+========================================================= */
+
+.pos-banco-chip-punto {
+    width: 9px;
+
+    height: 9px;
+
+    border-radius: 50%;
+
+    flex-shrink: 0;
+
+    background: #94a3b8;
+}
+
+.pos-banco-chip.seleccionado
+.pos-banco-chip-punto {
+    background: white;
+}
+
+
+/* =========================================================
+   COLORES BANCOS
+========================================================= */
+
+.banco-nequi
+.pos-banco-chip-punto {
+    background: #e6007e;
+}
+
+.banco-davivienda
+.pos-banco-chip-punto {
+    background: #ed1c27;
+}
+
+.banco-bancolombia
+.pos-banco-chip-punto {
+    background: #ffd700;
+}
+
+.banco-daviplata
+.pos-banco-chip-punto {
+    background: #f28c28;
+}
+
+
+/* =========================================================
+   FONDOS BANCOS SELECCIONADOS
+========================================================= */
+
+.pos-banco-chip.banco-nequi.seleccionado {
+    background: #e6007e;
+
+    border-color: #e6007e;
+}
+
+.pos-banco-chip.banco-davivienda.seleccionado {
+    background: #ed1c27;
+
+    border-color: #ed1c27;
+}
+
+.pos-banco-chip.banco-bancolombia.seleccionado {
+    background: #ca8a04;
+
+    border-color: #ca8a04;
+}
+
+.pos-banco-chip.banco-daviplata.seleccionado {
+    background: #f28c28;
+
+    border-color: #f28c28;
+}
+
+
+/* =========================================================
+   PUNTO BANCO SELECCIONADO
+========================================================= */
+
+.pos-banco-chip.banco-nequi.seleccionado
+.pos-banco-chip-punto,
+
+.pos-banco-chip.banco-davivienda.seleccionado
+.pos-banco-chip-punto,
+
+.pos-banco-chip.banco-bancolombia.seleccionado
+.pos-banco-chip-punto,
+
+.pos-banco-chip.banco-daviplata.seleccionado
+.pos-banco-chip-punto {
+    background: white;
+}
+
+
+/* =========================================================
+   MENSAJE SIN OPCIONES
+========================================================= */
+
+.pos-bancos-vacio {
+    margin: 0;
+
+    font-size: 13px;
+
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   TOTAL
+========================================================= */
+
+.pos-carrito-total {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding-top: 12px;
+
+    border-top: 1px solid #edf2f7;
+}
+
+.pos-carrito-total span {
+    color: #64748b;
+
+    font-weight: 600;
+}
+
+.pos-carrito-total strong {
+    color: #062f3d;
+
+    font-size: 22px;
+}
+
+
+/* =========================================================
+   REGISTRAR VENTA
+========================================================= */
+
+.btn-registrar-venta {
+    border: none;
+
+    background: #05788a;
+
+    color: white;
+
+    padding: 13px;
+
+    border-radius: 10px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    transition: .2s;
+}
+
+.btn-registrar-venta:hover:not(:disabled) {
+    background: #046273;
+}
+
+.btn-registrar-venta:disabled {
+    background: #cbd5e1;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.pos-modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    background:
+        rgba(
+            15,
+            23,
+            42,
+            .55
+        );
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+
+    z-index: 1000;
+}
+
+.pos-modal {
+    width: 100%;
+
+    max-width: 480px;
+
+    background: white;
+
+    border-radius: 18px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 25px 60px rgba(
+            0,
+            0,
+            0,
+            .25
+        );
+}
+
+.pos-modal-header {
+    padding: 22px 24px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+
+    border-bottom:
+        1px solid #edf2f7;
+}
+
+.pos-modal-header h2 {
+    margin: 0 0 5px;
+
+    color: #062f3d;
+}
+
+.pos-modal-header p {
+    margin: 0;
+
+    color: #64748b;
+
+    font-size: 14px;
+}
+
+.pos-modal-cerrar {
+    width: 36px;
+
+    height: 36px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #f1f5f9;
+
+    color: #64748b;
+
+    cursor: pointer;
+
+    font-size: 17px;
+}
+
+.pos-modal-cerrar:hover {
+    background: #e2e8f0;
+}
+
+
+/* =========================================================
+   CONFIGURACIÓN PAGOS
+========================================================= */
+
+.config-pagos-body {
+    padding: 26px 24px 10px;
+}
+
+.config-pagos-body h3 {
+    margin: 0 0 12px;
+
+    font-size: 14px;
+
+    color: #062f3d;
+}
+
+.config-pagos-body h3:not(:first-child) {
+    margin-top: 22px;
+}
+
+.config-pagos-lista {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.config-pagos-item {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 10px 14px;
+
+    border-radius: 9px;
+
+    background: #f8fafc;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+    color: #1e293b;
+}
+
+.config-pagos-item input[type="checkbox"] {
+    width: 18px;
+
+    height: 18px;
+
+    accent-color: #05788a;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   MODAL FOOTER
+========================================================= */
+
+.pos-modal-footer {
+    padding: 16px 24px;
+
+    background: #f8fafc;
+
+    display: flex;
+
+    justify-content: flex-end;
+}
+
+.btn-cerrar-pos-modal {
+    border: none;
+
+    background: #05788a;
+
+    color: white;
+
+    padding: 10px 20px;
+
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    font-weight: 600;
+}
+
+.btn-cerrar-pos-modal:hover {
+    background: #046273;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1024px) {
+
+    .pos-container {
+        grid-template-columns: 1fr;
+    }
+
+    .pos-carrito {
+        position: static;
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .pos-productos {
+        padding: 16px;
+    }
+
+    .pos-carrito {
+        padding: 16px;
+    }
+
+    .pos-productos-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pos-bancos-lista {
+        gap: 8px;
+    }
+
+    .pos-banco-chip {
+        padding: 8px 12px;
+
+        font-size: 12px;
+    }
+
+    .pos-carrito-item {
+        align-items: flex-start;
+
+        gap: 8px;
+    }
+
+    .pos-carrito-item-controles {
+        margin-left: 4px;
+    }
+
+}

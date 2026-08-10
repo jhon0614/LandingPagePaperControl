@@ -1,0 +1,1084 @@
+/* =========================================================
+   USUARIOS
+   ========================================================= */
+
+.usuarios-page {
+    width: 100%;
+}
+
+
+/* =========================================================
+   ENCABEZADO
+   ========================================================= */
+
+.usuarios-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.usuarios-header h1 {
+    margin: 0 0 6px;
+    color: #062f3d;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.usuarios-header p {
+    margin: 0;
+    color: #5f7694;
+    font-size: 16px;
+}
+
+.usuarios-btn-nuevo {
+    border: none;
+    background: #057f92;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 9px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.usuarios-btn-nuevo:hover {
+    background: #046c7c;
+    transform: translateY(-1px);
+}
+
+.usuarios-btn-nuevo:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.usuarios-error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    background: #fee2e2;
+    color: #b91c1c;
+
+    padding: 14px 18px;
+    border-radius: 10px;
+
+    margin-bottom: 25px;
+
+    font-weight: 600;
+}
+
+.usuarios-error i {
+    font-size: 17px;
+}
+
+
+/* =========================================================
+   CARGANDO
+   ========================================================= */
+
+.usuarios-cargando {
+    min-height: 250px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    background: white;
+    border-radius: 16px;
+
+    color: #64748b;
+
+    box-shadow:
+        0 10px 25px rgba(0, 0, 0, 0.07);
+}
+
+
+/* =========================================================
+   ESTADÍSTICAS
+   ========================================================= */
+
+.usuarios-estadisticas {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+
+    margin-bottom: 34px;
+}
+
+.usuario-stat-card {
+    min-height: 94px;
+
+    background: white;
+    border-radius: 16px;
+
+    padding: 18px 22px;
+
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.07);
+}
+
+.usuario-stat-icon {
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    border-radius: 11px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 21px;
+}
+
+.usuarios-icon-azul {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.usuarios-icon-verde {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.usuarios-icon-rojo {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.usuarios-icon-amarillo {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.usuario-stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.usuario-stat-info strong {
+    color: #062f3d;
+    font-size: 25px;
+    line-height: 1;
+    font-weight: 700;
+}
+
+.usuario-stat-info span {
+    color: #526b89;
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   SECCIONES
+   ========================================================= */
+
+.usuarios-seccion {
+    margin-bottom: 32px;
+}
+
+.usuarios-seccion-inactivos {
+    margin-top: 10px;
+}
+
+.usuarios-seccion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+
+    margin-bottom: 15px;
+    padding: 0 2px;
+}
+
+.usuarios-seccion-header h2 {
+    margin: 0 0 5px;
+
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.usuarios-seccion-header p {
+    margin: 0;
+
+    color: #5f7694;
+    font-size: 14px;
+}
+
+.usuarios-titulo-activos {
+    color: #15803d;
+}
+
+.usuarios-titulo-inactivos {
+    color: #dc2626;
+}
+
+.usuarios-punto {
+    display: inline-block;
+
+    width: 10px;
+    height: 10px;
+
+    margin-right: 9px;
+
+    border-radius: 50%;
+}
+
+.usuarios-punto.activo {
+    background: #16a34a;
+}
+
+.usuarios-punto.inactivo {
+    background: #dc2626;
+}
+
+
+/* =========================================================
+   CONTADORES
+   ========================================================= */
+
+.usuarios-contador {
+    min-width: 38px;
+    height: 38px;
+
+    padding: 0 12px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    flex-shrink: 0;
+}
+
+.usuarios-contador.activo {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.usuarios-contador.inactivo {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+
+/* =========================================================
+   TABLA
+   ========================================================= */
+
+.tabla-usuarios-container {
+    width: 100%;
+
+    background: white;
+
+    border-radius: 16px;
+
+    overflow-x: auto;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.07);
+}
+
+.tabla-usuarios {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    min-width: 750px;
+}
+
+.tabla-usuarios thead {
+    background: #062f3d;
+    color: white;
+}
+
+.tabla-usuarios th {
+    padding: 17px 18px;
+
+    text-align: left;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+.tabla-usuarios td {
+    padding: 16px 18px;
+
+    border-bottom: 1px solid #edf2f7;
+
+    color: #123b59;
+
+    font-size: 14px;
+}
+
+.tabla-usuarios tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.tabla-usuarios tbody tr {
+    transition: background 0.2s ease;
+}
+
+.tabla-usuarios tbody tr:hover {
+    background: #f8fafc;
+}
+
+
+/* =========================================================
+   NOMBRE DEL USUARIO
+   ========================================================= */
+
+.usuario-nombre {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    min-width: 220px;
+}
+
+.usuario-nombre strong {
+    color: #062f3d;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.usuario-avatar {
+    width: 40px;
+    height: 40px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #dbeafe;
+    color: #2563eb;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.usuario-avatar.inactivo {
+    background: #e2e8f0;
+    color: #64748b;
+}
+
+
+/* =========================================================
+   ROL
+   ========================================================= */
+
+.badge-rol {
+    display: inline-flex;
+    align-items: center;
+
+    background: #dbeafe;
+    color: #2563eb;
+
+    padding: 6px 12px;
+
+    border-radius: 30px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+
+.estado-usuario {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 6px 13px;
+
+    border-radius: 30px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+.estado-usuario.activo {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.estado-usuario.inactivo {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+
+/* =========================================================
+   ACCIONES
+   ========================================================= */
+
+.acciones-usuario {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.acciones-usuario button {
+    width: 38px;
+    height: 38px;
+
+    border: none;
+    border-radius: 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 14px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.acciones-usuario button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.acciones-usuario button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+
+/* EDITAR */
+
+.accion-editar {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.accion-editar:hover:not(:disabled) {
+    background: #2563eb;
+    color: white;
+}
+
+
+/* DESACTIVAR */
+
+.accion-desactivar {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.accion-desactivar:hover:not(:disabled) {
+    background: #d97706;
+    color: white;
+}
+
+
+/* REACTIVAR */
+
+.accion-reactivar {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.accion-reactivar:hover:not(:disabled) {
+    background: #15803d;
+    color: white;
+}
+
+
+/* ELIMINAR */
+
+.accion-eliminar {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.accion-eliminar:hover:not(:disabled) {
+    background: #dc2626;
+    color: white;
+}
+
+
+/* =========================================================
+   TABLA VACÍA
+   ========================================================= */
+
+.usuarios-vacio {
+    text-align: center;
+
+    padding: 42px 20px !important;
+
+    color: #64748b !important;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.modal-usuario-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.45);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    z-index: 1000;
+}
+
+.modal-usuario {
+    width: 100%;
+    max-width: 520px;
+
+    background: white;
+
+    border-radius: 16px;
+
+    padding: 30px;
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.modal-usuario-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 25px;
+}
+
+.modal-usuario-header h2 {
+    margin: 0 0 6px;
+
+    color: #062f3d;
+
+    font-size: 23px;
+}
+
+.modal-usuario-header p {
+    margin: 0;
+
+    color: #64748b;
+
+    font-size: 14px;
+}
+
+.modal-usuario-cerrar {
+    width: 38px;
+    height: 38px;
+
+    flex-shrink: 0;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #f1f5f9;
+    color: #64748b;
+
+    cursor: pointer;
+
+    font-size: 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: 0.25s;
+}
+
+.modal-usuario-cerrar:hover:not(:disabled) {
+    background: #e2e8f0;
+    color: #062f3d;
+}
+
+.modal-usuario-cerrar:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   FORMULARIO MODAL
+   ========================================================= */
+
+.modal-usuario-form {
+    display: flex;
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+.modal-usuario-grupo {
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.modal-usuario-grupo label {
+    color: #062f3d;
+
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.modal-usuario-grupo input,
+.modal-usuario-grupo select {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 12px 13px;
+
+    border: 1px solid #d6dee6;
+
+    border-radius: 8px;
+
+    background: white;
+
+    color: #123b59;
+
+    font-size: 14px;
+
+    outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.modal-usuario-grupo input:focus,
+.modal-usuario-grupo select:focus {
+    border-color: #05788a;
+
+    box-shadow:
+        0 0 0 3px rgba(5, 120, 138, 0.1);
+}
+
+.modal-usuario-grupo input:disabled,
+.modal-usuario-grupo select:disabled {
+    background: #f8fafc;
+
+    cursor: not-allowed;
+}
+
+.modal-usuario-ayuda {
+    color: #64748b;
+
+    font-size: 12px;
+
+    margin-top: -2px;
+}
+
+
+/* =========================================================
+   BOTONES MODAL
+   ========================================================= */
+
+.modal-usuario-acciones {
+    display: flex;
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    margin-top: 10px;
+}
+
+.btn-cancelar-usuario,
+.btn-guardar-usuario {
+    border: none;
+
+    padding: 12px 18px;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    font-weight: 600;
+
+    transition: 0.25s;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+}
+
+.btn-cancelar-usuario {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.btn-cancelar-usuario:hover:not(:disabled) {
+    background: #cbd5e1;
+}
+
+.btn-guardar-usuario {
+    background: #05788a;
+    color: white;
+}
+
+.btn-guardar-usuario:hover:not(:disabled) {
+    background: #046575;
+}
+
+.btn-cancelar-usuario:disabled,
+.btn-guardar-usuario:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+    .usuarios-estadisticas {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+
+@media (max-width: 768px) {
+
+    .usuarios-header {
+        flex-direction: column;
+        align-items: flex-start;
+
+        margin-bottom: 25px;
+    }
+
+    .usuarios-header h1 {
+        font-size: 28px;
+    }
+
+    .usuarios-btn-nuevo {
+        width: 100%;
+    }
+
+    .usuarios-estadisticas {
+        grid-template-columns: 1fr;
+    }
+
+    .usuarios-seccion-header {
+        align-items: flex-start;
+    }
+
+    .usuarios-seccion-header h2 {
+        font-size: 19px;
+    }
+
+    .tabla-usuarios-container {
+        border-radius: 12px;
+    }
+
+    .modal-usuario {
+        padding: 22px;
+    }
+
+    .modal-usuario-acciones {
+        flex-direction: column-reverse;
+    }
+
+    .btn-cancelar-usuario,
+    .btn-guardar-usuario {
+        width: 100%;
+    }
+}
+
+
+@media (max-width: 480px) {
+
+    .usuario-stat-card {
+        padding: 16px;
+    }
+
+    .usuario-stat-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .usuario-stat-info strong {
+        font-size: 22px;
+    }
+
+    .usuarios-seccion-header {
+        gap: 12px;
+    }
+
+    .usuarios-contador {
+        min-width: 34px;
+        height: 34px;
+    }
+}
+
+.usuario-tu-cuenta {
+    margin-left: 6px;
+
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.acciones-usuario button:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+.acciones-usuario button:disabled:hover {
+    background: inherit;
+}
+
+/* =========================================================
+   ALIAS: nombres reales usados en Usuarios.jsx
+   ========================================================= */
+
+/* BOTÓN NUEVO USUARIO */
+
+.btn-nuevo {
+    border: none;
+    background: #057f92;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 9px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-nuevo:hover {
+    background: #046c7c;
+    transform: translateY(-1px);
+}
+
+.btn-nuevo:active {
+    transform: translateY(0);
+}
+
+
+/* TARJETAS DE ESTADÍSTICAS */
+
+.usuarios-info {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+
+    margin-bottom: 34px;
+}
+
+.card-estadistica {
+    min-height: 94px;
+
+    background: white;
+    border-radius: 16px;
+
+    padding: 18px 22px;
+
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    column-gap: 16px;
+    align-items: center;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.07);
+}
+
+.card-estadistica i {
+    grid-row: 1 / span 2;
+    grid-column: 1;
+
+    width: 48px;
+    height: 48px;
+
+    border-radius: 11px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 21px;
+
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.card-estadistica h3 {
+    grid-column: 2;
+    grid-row: 1;
+
+    margin: 0;
+    align-self: end;
+
+    color: #062f3d;
+    font-size: 25px;
+    font-weight: 700;
+}
+
+.card-estadistica p {
+    grid-column: 2;
+    grid-row: 2;
+
+    margin: 0;
+    align-self: start;
+
+    color: #526b89;
+    font-size: 14px;
+}
+
+/* Colores por tarjeta, en el orden en que aparecen */
+
+.usuarios-info .card-estadistica:nth-child(1) i {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.usuarios-info .card-estadistica:nth-child(2) i {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.usuarios-info .card-estadistica:nth-child(3) i {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.usuarios-info .card-estadistica:nth-child(4) i {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+
+/* ESTADO (activo / inactivo) */
+
+.estado-activo,
+.estado-inactivo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 6px 13px;
+
+    border-radius: 30px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+.estado-activo {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.estado-inactivo {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+
+/* BOTONES DE ACCIONES (usan el tamaño ya definido en .acciones-usuario button) */
+
+.btn-editar {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.btn-editar:hover:not(:disabled) {
+    background: #2563eb;
+    color: white;
+}
+
+.btn-desactivar {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.btn-desactivar:hover:not(:disabled) {
+    background: #d97706;
+    color: white;
+}
+
+.btn-reactivar {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.btn-reactivar:hover:not(:disabled) {
+    background: #15803d;
+    color: white;
+}
+
+.btn-eliminar {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-eliminar:hover:not(:disabled) {
+    background: #dc2626;
+    color: white;
+}

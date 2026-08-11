@@ -10,7 +10,7 @@ export function crearRutasRoles({
   router.get(
     "/",
     autenticar,
-    permitirRoles("ADMINISTRADOR"),
+    permitirRoles("ADMINISTRADOR", "DUENO"),
     controladorRol.listar,
   );
 

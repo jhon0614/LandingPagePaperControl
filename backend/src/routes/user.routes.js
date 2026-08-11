@@ -38,14 +38,14 @@ export function crearRutasUsuarios({ autenticar, controladorUsuario }) {
   router.get(
     "/",
     autenticar,
-    permitirRoles("ADMINISTRADOR"),
+    permitirRoles("ADMINISTRADOR", "DUENO"),
     controladorUsuario.listar,
   );
 
   router.post(
     "/",
     autenticar,
-    permitirRoles("ADMINISTRADOR"),
+    permitirRoles("ADMINISTRADOR", "DUENO"),
     validar(esquemaCrearUsuario),
     controladorUsuario.crear,
   );
@@ -53,7 +53,7 @@ export function crearRutasUsuarios({ autenticar, controladorUsuario }) {
   router.patch(
     "/:id/estado",
     autenticar,
-    permitirRoles("ADMINISTRADOR"),
+    permitirRoles("ADMINISTRADOR", "DUENO"),
     validar(esquemaCambiarEstadoUsuario),
     controladorUsuario.cambiarEstado,
   );
@@ -61,7 +61,7 @@ export function crearRutasUsuarios({ autenticar, controladorUsuario }) {
   router.patch(
     "/:id",
     autenticar,
-    permitirRoles("ADMINISTRADOR"),
+    permitirRoles("ADMINISTRADOR", "DUENO"),
     validar(esquemaActualizarUsuario),
     controladorUsuario.actualizar,
   );
@@ -69,14 +69,14 @@ export function crearRutasUsuarios({ autenticar, controladorUsuario }) {
   router.get(
     "/:id",
     autenticar,
-    permitirRoles("ADMINISTRADOR"),
+    permitirRoles("ADMINISTRADOR", "DUENO"),
     controladorUsuario.buscarPorId,
   );
 
   router.delete(
     "/:id",
     autenticar,
-    permitirRoles("ADMINISTRADOR"),
+    permitirRoles("ADMINISTRADOR", "DUENO"),
     controladorUsuario.eliminar,
   );
 

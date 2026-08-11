@@ -1,5 +1,28 @@
-// Recibe la petición HTTP del login y transforma el resultado del servicio en
-// una respuesta que puede consumir el frontend.
+// Lee una cookie concreta sin exponer el token en el cuerpo de la petición.
+function obtenerCookie(solicitud, nombre) {
+  const encabezadoCookies = solicitud.get("cookie");
+  if (!encabezadoCookies) return undefined;
+
+  for (const parte of encabezadoCookies.split(";")) {
+    const posicionIgual = parte.indexOf("=");
+    if (posicionIgual < 0) continue;
+
+    const nombreCookie = parte.slice(0, posicionIgual).trim();
+    if (nombreCookie !== nombre) continue;
+
+    const valorCookie = parte.slice(posicionIgual + 1).trim();
+    try {
+      return decodeURIComponent(valorCookie);
+    } catch {
+      return valorCookie;
+    }
+  }
+
+  return undefined;
+}
+
+// Recibe las peticiones de autenticación y transforma los resultados del
+// servicio en respuestas que puede consumir el frontend.
 export class ControladorAutenticacion {
   constructor(servicioAutenticacion, configuracion) {
     this.servicioAutenticacion = servicioAutenticacion;
@@ -15,13 +38,7 @@ export class ControladorAutenticacion {
       });
 
       // La cookie HttpOnly no puede ser leída directamente desde JavaScript.
-      respuesta.cookie("tokenRenovacion", resultado.tokenRenovacion, {
-        httpOnly: true,
-        secure: this.configuracion.entorno === "production",
-        sameSite: "strict",
-        expires: resultado.expiracionTokenRenovacion,
-        path: "/api/auth",
-      });
+      this.#guardarCookieRenovacion(respuesta, resultado);
 
       // El frontend sí recibe el token de acceso y los datos básicos del usuario.
       respuesta.status(200).json({
@@ -36,4 +53,59 @@ export class ControladorAutenticacion {
       siguiente(error);
     }
   };
+
+  renovarSesion = async (solicitud, respuesta, siguiente) => {
+    try {
+      const resultado = await this.servicioAutenticacion.renovarSesion(
+        obtenerCookie(solicitud, "tokenRenovacion"),
+      );
+
+      this.#guardarCookieRenovacion(respuesta, resultado);
+      respuesta.status(200).json({
+        exito: true,
+        datos: {
+          tokenAcceso: resultado.tokenAcceso,
+          usuario: resultado.usuario,
+        },
+      });
+    } catch (error) {
+      // Una cookie inválida también se elimina para no repetir el mismo error.
+      this.#eliminarCookieRenovacion(respuesta);
+      siguiente(error);
+    }
+  };
+
+  cerrarSesion = async (solicitud, respuesta, siguiente) => {
+    try {
+      await this.servicioAutenticacion.cerrarSesion(
+        obtenerCookie(solicitud, "tokenRenovacion"),
+      );
+      this.#eliminarCookieRenovacion(respuesta);
+      respuesta.status(204).send();
+    } catch (error) {
+      siguiente(error);
+    }
+  };
+
+  #opcionesCookie() {
+    return {
+      httpOnly: true,
+      secure: this.configuracion.entorno === "production",
+      sameSite: "strict",
+      path: "/api/auth",
+    };
+  }
+
+  #guardarCookieRenovacion(respuesta, resultado) {
+    const opciones = this.#opcionesCookie();
+    if (resultado.esPersistente) {
+      opciones.expires = resultado.expiracionTokenRenovacion;
+    }
+
+    respuesta.cookie("tokenRenovacion", resultado.tokenRenovacion, opciones);
+  }
+
+  #eliminarCookieRenovacion(respuesta) {
+    respuesta.clearCookie("tokenRenovacion", this.#opcionesCookie());
+  }
 }

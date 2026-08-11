@@ -4,7 +4,7 @@
 
 - Historia: HU-36 - Administración de usuarios y roles.
 - Endpoints documentados: implementados.
-- Acceso: exclusivo para usuarios con rol `ADMINISTRADOR`.
+- Acceso: usuarios con rol `ADMINISTRADOR` o `DUENO`.
 - URL local del backend: `http://localhost:3000`.
 
 ## Requisitos para frontend
@@ -22,9 +22,10 @@ una cookie HttpOnly.
 
 Los roles utilizados por el sistema son:
 
-- `ADMINISTRADOR`: administra usuarios y roles disponibles.
+- `ADMINISTRADOR`: administra usuarios y consulta los roles disponibles.
 - `VENDEDOR`: no puede acceder a estos endpoints.
-- `DUENO`: consulta dashboard, inventario, ventas y reportes, pero no administra usuarios.
+- `DUENO`: administra usuarios, consulta los roles disponibles y accede a los
+  demás módulos definidos para su rol.
 
 ## Formato común
 
@@ -238,7 +239,7 @@ Reglas y errores particulares:
 |---:|---|---|
 | 400 | `ERROR_VALIDACION` | El cuerpo está vacío o contiene datos inválidos. |
 | 400 | `ID_USUARIO_INVALIDO` | El ID no es válido. |
-| 403 | `CAMBIO_ROL_PROPIO_PROHIBIDO` | El administrador intentó cambiar su propio rol. |
+| 403 | `CAMBIO_ROL_PROPIO_PROHIBIDO` | El usuario responsable intentó cambiar su propio rol. |
 | 404 | `USUARIO_NO_ENCONTRADO` | El usuario no existe. |
 | 404 | `ROL_NO_ENCONTRADO` | El rol solicitado no existe. |
 | 409 | `CORREO_EXISTENTE` | El correo pertenece a otro usuario. |
@@ -283,7 +284,7 @@ Respuesta `200 OK`:
 Reglas:
 
 - `estaActivo` debe ser un booleano real, no el texto `"true"` o `"false"`.
-- Un administrador no puede desactivarse a sí mismo.
+- El usuario responsable no puede desactivarse a sí mismo.
 - Siempre debe permanecer al menos un administrador activo.
 - Al desactivar se revocan las sesiones renovables del usuario.
 - Reactivar no recupera las sesiones revocadas.
@@ -294,7 +295,7 @@ Errores particulares:
 |---:|---|---|
 | 400 | `ERROR_VALIDACION` | `estaActivo` no es booleano. |
 | 400 | `ID_USUARIO_INVALIDO` | El ID no es válido. |
-| 403 | `AUTO_DESACTIVACION_PROHIBIDA` | El administrador intentó desactivarse. |
+| 403 | `AUTO_DESACTIVACION_PROHIBIDA` | El usuario responsable intentó desactivarse. |
 | 404 | `USUARIO_NO_ENCONTRADO` | El usuario no existe. |
 | 409 | `ULTIMO_ADMINISTRADOR` | Se intentó desactivar al último administrador activo. |
 
@@ -319,8 +320,8 @@ listado cuando reciba ese estado.
 
 Reglas:
 
-- Solo un `ADMINISTRADOR` puede eliminar usuarios.
-- Un administrador no puede eliminarse a sí mismo.
+- Solo `ADMINISTRADOR` y `DUENO` pueden eliminar usuarios.
+- El usuario responsable no puede eliminarse a sí mismo.
 - No se puede eliminar al último administrador activo.
 - Un usuario eliminado no aparece en los listados ni puede autenticarse.
 - Su correo queda reservado para permitir una recuperación controlada futura.
@@ -331,7 +332,7 @@ Errores particulares:
 | Estado | Código | Motivo |
 |---:|---|---|
 | 400 | `ID_USUARIO_INVALIDO` | El ID no es válido. |
-| 403 | `AUTO_ELIMINACION_PROHIBIDA` | El administrador intentó eliminarse. |
+| 403 | `AUTO_ELIMINACION_PROHIBIDA` | El usuario responsable intentó eliminarse. |
 | 404 | `USUARIO_NO_ENCONTRADO` | El usuario no existe o ya fue eliminado. |
 | 409 | `ULTIMO_ADMINISTRADOR` | Se intentó eliminar al último administrador activo. |
 
@@ -363,7 +364,7 @@ La API registra automáticamente:
 - `DESACTIVAR_USUARIO`
 - `ELIMINAR_USUARIO`
 
-La auditoría guarda el administrador responsable, el usuario afectado, la IP,
+La auditoría guarda el usuario responsable, el usuario afectado, la IP,
 la fecha y detalles no sensibles. No existe todavía un endpoint para consultar
 este historial desde frontend.
 

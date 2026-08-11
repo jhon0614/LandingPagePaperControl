@@ -66,6 +66,7 @@ CREATE TABLE sesiones_usuario (
   direccion_ip VARCHAR(45) NULL,
   agente_usuario VARCHAR(500) NULL,
   expira_en DATETIME NOT NULL,
+  es_persistente BOOLEAN NOT NULL DEFAULT FALSE,
   revocado_en DATETIME NULL,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT unico_sesiones_usuario_token UNIQUE (hash_token_renovacion),

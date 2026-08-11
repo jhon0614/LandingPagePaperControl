@@ -26,6 +26,19 @@ El esquema crea la base `paper_control` con `utf8mb4`. El seed únicamente
 registra los roles, métodos de pago y parámetros iniciales; no contiene
 credenciales.
 
+## Actualizar una base que ya existe
+
+No se debe volver a ejecutar `schema.sql` sobre una base con información. Las
+actualizaciones dentro de `migrations` se ejecutan una sola vez y conservan los
+registros existentes.
+
+Para habilitar renovación de sesión y la opción "Recordarme" en una instalación
+anterior, ejecutar:
+
+```bash
+mysql -u root -p < database/migrations/2026-08-10-sesion-persistente.sql
+```
+
 ## Relaciones principales
 
 - Un usuario pertenece a un rol.

@@ -49,7 +49,18 @@ test("rechaza a un vendedor en una ruta administrativa", () => {
   assert.equal(errorRecibido.codigo, "ACCESO_DENEGADO");
 });
 
-test("rechaza a un dueño en una ruta administrativa", () => {
+test("permite el acceso a un dueño cuando la ruta incluye su rol", () => {
+  const resultado = ejecutarMiddleware(
+    { id: 3, rol: "DUENO" },
+    "ADMINISTRADOR",
+    "DUENO",
+  );
+
+  assert.equal(resultado.permitioContinuar, true);
+  assert.equal(resultado.errorRecibido, undefined);
+});
+
+test("rechaza a un dueño cuando la ruta es exclusiva para administradores", () => {
   const { errorRecibido } = ejecutarMiddleware(
     { id: 3, rol: "DUENO" },
     "ADMINISTRADOR",

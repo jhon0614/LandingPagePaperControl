@@ -37,7 +37,8 @@ Content-Type: application/json
 
 {
   "correo": "admin@papercontrol.local",
-  "contrasena": "contraseña-segura"
+  "contrasena": "contraseña-segura",
+  "recordarme": false
 }
 ```
 
@@ -64,6 +65,9 @@ almacena en MySQL únicamente mediante su hash SHA-256.
 Posibles respuestas: `400` para datos inválidos, `401` para credenciales
 incorrectas, `403` para cuenta inactiva y `423` para cuenta temporalmente
 bloqueada.
+
+La renovación, el cierre manual y el cierre automático para frontend están
+documentados en [`docs/autenticacion-api.md`](docs/autenticacion-api.md).
 
 ## Estructura MVC
 

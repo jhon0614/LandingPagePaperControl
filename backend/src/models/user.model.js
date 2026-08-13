@@ -9,7 +9,8 @@ export class ModeloUsuario {
     // Busca el usuario y su rol usando el correo recibido en el login.
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.correo, u.nombres, u.apellidos, u.hash_contrasena,
-              u.esta_activo, u.intentos_acceso_fallidos, u.bloqueado_hasta,
+              u.debe_cambiar_contrasena, u.esta_activo,
+              u.intentos_acceso_fallidos, u.bloqueado_hasta,
               r.nombre AS rol
          FROM usuarios u
          JOIN roles r ON r.id = u.rol_id
@@ -57,7 +58,9 @@ export class ModeloUsuario {
   async buscarPorId(id) {
     // Busca el usuario por ID y su rol, solo si no está eliminado.
     const [filas] = await this.conexiones.execute(
-      `SELECT u.id, u.nombres, u.apellidos, u.correo, u.debe_cambiar_contrasena, u.esta_activo, u.creado_en,
+      `SELECT u.id, u.nombres, u.apellidos, u.correo,
+              u.debe_cambiar_contrasena, u.esta_activo,
+              u.intentos_acceso_fallidos, u.bloqueado_hasta, u.creado_en,
               r.id AS rol_id, r.nombre AS rol
          FROM usuarios u
          JOIN roles r ON r.id = u.rol_id
@@ -71,7 +74,8 @@ export class ModeloUsuario {
   async listar() {
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.nombres, u.apellidos, u.correo,
-            u.esta_activo, u.debe_cambiar_contrasena, u.creado_en,
+            u.esta_activo, u.debe_cambiar_contrasena,
+            u.intentos_acceso_fallidos, u.bloqueado_hasta, u.creado_en,
             r.id AS rol_id, r.nombre AS rol
        FROM usuarios u
        JOIN roles r ON r.id = u.rol_id
@@ -188,6 +192,54 @@ export class ModeloUsuario {
     return resultado.affectedRows > 0;
   }
 
+  async actualizarContrasenaYRevocarSesiones(usuarioId, hashContrasena) {
+    // Ambas operaciones se confirman juntas para no conservar sesiones
+    // renovables con una contraseña que ya fue reemplazada.
+    const conexion = await this.conexiones.getConnection();
+
+    try {
+      // La transacción evita cambiar la contraseña sin cerrar las sesiones previas.
+      await conexion.beginTransaction();
+      const [resultado] = await conexion.execute(
+        `UPDATE usuarios
+            SET hash_contrasena = ?,
+                debe_cambiar_contrasena = FALSE,
+                contrasena_cambiada_en = UTC_TIMESTAMP(),
+                intentos_acceso_fallidos = 0,
+                bloqueado_hasta = NULL
+          WHERE id = ?
+            AND esta_activo = TRUE
+            AND eliminado_en IS NULL`,
+        [hashContrasena, usuarioId],
+      );
+
+      if (resultado.affectedRows === 0) {
+        // El usuario puede haber sido eliminado o desactivado durante la operación.
+        await conexion.rollback();
+        return false;
+      }
+
+      await conexion.execute(
+        `UPDATE sesiones_usuario
+            SET revocado_en = UTC_TIMESTAMP()
+          WHERE usuario_id = ?
+            AND revocado_en IS NULL`,
+        [usuarioId],
+      );
+
+      // Confirma las dos modificaciones únicamente cuando ambas tuvieron éxito.
+      await conexion.commit();
+      return true;
+    } catch (error) {
+      // Recupera el estado inicial si cualquiera de las consultas falla.
+      await conexion.rollback();
+      throw error;
+    } finally {
+      // Libera la conexión para que pueda atender otras solicitudes.
+      conexion.release();
+    }
+  }
+
   async desbloquear(usuarioId) {
     // Permite que el usuario vuelva a intentar iniciar sesión.
     const [resultado] = await this.conexiones.execute(
@@ -203,6 +255,7 @@ export class ModeloUsuario {
   }
   
   async buscarContrasenaPorId(usuarioId) {
+    // Devuelve el hash solo al servicio encargado de comprobar la contraseña actual.
     const [filas] = await this.conexiones.execute(
       `SELECT id, hash_contrasena
        FROM usuarios
@@ -217,6 +270,7 @@ export class ModeloUsuario {
   }
 
   async buscarActivoPorCorreo(correo) {
+    // La recuperación pública se limita a cuentas disponibles y no eliminadas.
     const [filas] = await this.conexiones.execute(
       `SELECT id, nombres, apellidos, correo
        FROM usuarios

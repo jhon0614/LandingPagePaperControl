@@ -21,6 +21,10 @@ import { crearRutasRoles } from "./routes/role.routes.js";
 import { ServicioUsuario } from "./services/user.service.js";
 import { ControladorUsuario } from "./controllers/user.controller.js";
 import { ModeloAuditoria } from "./models/audit.model.js";
+import { ModeloRestablecimientoContrasena } from "./models/password-reset.model.js";
+import { ServicioContrasena } from "./services/password.service.js";
+import { ServicioCorreo } from "./services/email.service.js";
+import { ControladorContrasena } from "./controllers/password.controller.js";
 
 // Construye la aplicación Express y conecta las piezas del patrón MVC.
 // Recibir las conexiones y la configuración como parámetros facilita las pruebas.
@@ -44,6 +48,9 @@ export function crearAplicacion({ conexiones, configuracion }) {
   const modeloUsuario = new ModeloUsuario(conexiones);
   const modeloSesion = new ModeloSesion(conexiones);
   const modeloAuditoria = new ModeloAuditoria(conexiones);
+  // Este modelo utiliza la tabla de tokens temporales ya incluida en el esquema.
+  const modeloRestablecimiento =
+    new ModeloRestablecimientoContrasena(conexiones);
 
   const modeloRol = new ModeloRol(conexiones);
   const servicioRol = new ServicioRol(modeloRol);
@@ -68,6 +75,20 @@ export function crearAplicacion({ conexiones, configuracion }) {
     servicioAutenticacion,
     configuracion,
   );
+  const servicioCorreo = new ServicioCorreo(
+    configuracion.correo,
+    configuracion.restablecimientoContrasena,
+  );
+  // El servicio coordina usuarios, tokens, correo y auditoría sin depender de Express.
+  const servicioContrasena = new ServicioContrasena({
+    modeloUsuario,
+    modeloRestablecimiento,
+    servicioCorreo,
+    modeloAuditoria,
+    configuracion: configuracion.restablecimientoContrasena,
+  });
+  const controladorContrasena =
+    new ControladorContrasena(servicioContrasena);
 
   const autenticar = crearMiddlewareAutenticacion({
     modeloUsuario,
@@ -80,11 +101,19 @@ export function crearAplicacion({ conexiones, configuracion }) {
   });
   aplicacion.use(
     "/api/auth",
-    crearRutasAutenticacion(controladorAutenticacion),
+    crearRutasAutenticacion({
+      controladorAutenticacion,
+      controladorContrasena,
+      autenticar,
+    }),
   );
   aplicacion.use(
     "/api/usuarios",
-    crearRutasUsuarios({ autenticar, controladorUsuario }),
+    crearRutasUsuarios({
+      autenticar,
+      controladorUsuario,
+      controladorContrasena,
+    }),
   );
 
   aplicacion.use(

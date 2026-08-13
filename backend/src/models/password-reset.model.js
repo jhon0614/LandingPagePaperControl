@@ -54,7 +54,73 @@ export class ModeloRestablecimientoContrasena {
     return resultado.affectedRows > 0;
   }
 
+  async consumirYActualizarContrasena({ hashToken, hashContrasena }) {
+    // Bloquea el token mientras se consume para que dos solicitudes no puedan
+    // utilizarlo al mismo tiempo. El cambio y la revocación son una sola operación.
+    const conexion = await this.conexiones.getConnection();
+
+    try {
+      // FOR UPDATE reserva el registro hasta confirmar o deshacer la operación.
+      await conexion.beginTransaction();
+      const [filas] = await conexion.execute(
+        `SELECT t.id, t.usuario_id
+           FROM tokens_recuperacion_contrasena t
+           JOIN usuarios u ON u.id = t.usuario_id
+          WHERE t.hash_token = ?
+            AND t.usado_en IS NULL
+            AND t.expira_en > UTC_TIMESTAMP()
+            AND u.eliminado_en IS NULL
+          LIMIT 1
+          FOR UPDATE`,
+        [hashToken],
+      );
+
+      const solicitud = filas[0];
+      if (!solicitud) {
+        // No se modifica nada cuando el token no existe, venció o ya fue usado.
+        await conexion.rollback();
+        return null;
+      }
+
+      await conexion.execute(
+        `UPDATE tokens_recuperacion_contrasena
+            SET usado_en = UTC_TIMESTAMP()
+          WHERE id = ?`,
+        [solicitud.id],
+      );
+      await conexion.execute(
+        `UPDATE usuarios
+            SET hash_contrasena = ?,
+                debe_cambiar_contrasena = FALSE,
+                contrasena_cambiada_en = UTC_TIMESTAMP(),
+                intentos_acceso_fallidos = 0,
+                bloqueado_hasta = NULL
+          WHERE id = ?`,
+        [hashContrasena, solicitud.usuario_id],
+      );
+      await conexion.execute(
+        `UPDATE sesiones_usuario
+            SET revocado_en = UTC_TIMESTAMP()
+          WHERE usuario_id = ?
+            AND revocado_en IS NULL`,
+        [solicitud.usuario_id],
+      );
+
+      // Solo aquí quedan confirmados el consumo, el cambio y la revocación.
+      await conexion.commit();
+      return solicitud.usuario_id;
+    } catch (error) {
+      // Ante cualquier fallo, MySQL conserva el estado anterior completo.
+      await conexion.rollback();
+      throw error;
+    } finally {
+      // Devuelve la conexión al grupo Singleton aunque la operación falle.
+      conexion.release();
+    }
+  }
+
   async invalidarPorUsuario(usuarioId) {
+    // Puede utilizarse cuando sea necesario cancelar todos los enlaces pendientes.
     await this.conexiones.execute(
       `UPDATE tokens_recuperacion_contrasena
           SET usado_en = UTC_TIMESTAMP()

@@ -32,7 +32,13 @@ const esquemaCambiarEstadoUsuario = z.object({
   estaActivo: z.boolean(),
 });
 
-export function crearRutasUsuarios({ autenticar, controladorUsuario }) {
+// Agrupa las rutas administrativas de usuarios. Todas comprueban primero la
+// sesión y luego permiten únicamente a ADMINISTRADOR o DUENO.
+export function crearRutasUsuarios({
+  autenticar,
+  controladorUsuario,
+  controladorContrasena,
+}) {
   const router = Router();
 
   router.get(
@@ -56,6 +62,21 @@ export function crearRutasUsuarios({ autenticar, controladorUsuario }) {
     permitirRoles("ADMINISTRADOR", "DUENO"),
     validar(esquemaCambiarEstadoUsuario),
     controladorUsuario.cambiarEstado,
+  );
+
+  router.patch(
+    "/:id/desbloqueo",
+    autenticar,
+    permitirRoles("ADMINISTRADOR", "DUENO"),
+    controladorContrasena.desbloquearUsuario,
+  );
+
+  // El responsable solo solicita el envío; la nueva contraseña la elige el usuario.
+  router.post(
+    "/:id/restablecimiento-contrasena",
+    autenticar,
+    permitirRoles("ADMINISTRADOR", "DUENO"),
+    controladorContrasena.solicitarRestablecimientoAdministrativo,
   );
 
   router.patch(

@@ -63,6 +63,8 @@ deben corregirse.
   "correo": "laura@papercontrol.local",
   "estaActivo": true,
   "debeCambiarContrasena": true,
+  "intentosAccesoFallidos": 0,
+  "bloqueadoHasta": null,
   "creadoEn": "2026-08-07T12:00:00.000Z",
   "rol": {
     "id": 2,
@@ -72,6 +74,9 @@ deben corregirse.
 ```
 
 La API nunca devuelve contraseñas, hashes, tokens ni credenciales internas.
+
+`bloqueadoHasta` contiene una fecha cuando el usuario está bloqueado. El frontend
+puede usar este valor para mostrar la acción de desbloqueo.
 
 ## Consultar roles disponibles
 
@@ -367,6 +372,53 @@ La API registra automáticamente:
 La auditoría guarda el usuario responsable, el usuario afectado, la IP,
 la fecha y detalles no sensibles. No existe todavía un endpoint para consultar
 este historial desde frontend.
+
+## Desbloquear un usuario
+
+Disponible para `ADMINISTRADOR` y `DUENO`:
+
+```http
+PATCH /api/usuarios/:id/desbloqueo
+Authorization: Bearer <tokenAcceso>
+```
+
+No lleva body. Limpia `intentosAccesoFallidos` y `bloqueadoHasta`, y registra
+`DESBLOQUEAR_USUARIO` en auditoría.
+
+Respuesta `200`:
+
+```json
+{
+  "exito": true,
+  "datos": {
+    "mensaje": "El usuario fue desbloqueado correctamente."
+  }
+}
+```
+
+## Enviar restablecimiento administrativo
+
+Disponible para `ADMINISTRADOR` y `DUENO`:
+
+```http
+POST /api/usuarios/:id/restablecimiento-contrasena
+Authorization: Bearer <tokenAcceso>
+```
+
+No lleva body. El backend genera un enlace y lo envía al correo registrado. El
+usuario responsable nunca recibe ni define la contraseña nueva. La acción queda
+registrada como `SOLICITAR_RESTABLECIMIENTO_USUARIO`.
+
+Respuesta `200`:
+
+```json
+{
+  "exito": true,
+  "datos": {
+    "mensaje": "Las instrucciones fueron enviadas al correo del usuario."
+  }
+}
+```
 
 ## Nota sobre reactivación
 

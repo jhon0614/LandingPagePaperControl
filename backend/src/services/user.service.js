@@ -2,6 +2,7 @@ import { ErrorAplicacion } from "../errors/app-error.js";
 import bcrypt from "bcryptjs";
 
 function presentarUsuario(fila) {
+  // Traduce los nombres de MySQL al contrato JSON utilizado por el frontend.
   return {
     id: fila.id,
     nombres: fila.nombres,
@@ -9,6 +10,9 @@ function presentarUsuario(fila) {
     correo: fila.correo,
     estaActivo: Boolean(fila.esta_activo),
     debeCambiarContrasena: Boolean(fila.debe_cambiar_contrasena),
+    // Estos campos permiten mostrar si la cuenta necesita ser desbloqueada.
+    intentosAccesoFallidos: Number(fila.intentos_acceso_fallidos ?? 0),
+    bloqueadoHasta: fila.bloqueado_hasta ?? null,
     creadoEn: fila.creado_en,
     rol: {
       id: fila.rol_id,

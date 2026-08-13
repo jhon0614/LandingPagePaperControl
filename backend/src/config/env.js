@@ -41,5 +41,19 @@ export function cargarConfiguracion() {
       minutosAcceso: enteroPositivo("JWT_ACCESS_MINUTES", 15),
       diasRenovacion: enteroPositivo("REFRESH_TOKEN_DAYS", 7),
     }),
+    restablecimientoContrasena: Object.freeze({
+      // El servicio trabaja en milisegundos; .env conserva un valor fácil de leer.
+      tiempoTokenMs: enteroPositivo("PASSWORD_RESET_MINUTES", 30) * 60 * 1000,
+      urlFrontend: obligatoria("FRONTEND_RESET_PASSWORD_URL"),
+    }),
+    correo: Object.freeze({
+      servidor: obligatoria("MAIL_HOST"),
+      puerto: enteroPositivo("MAIL_PORT", 587),
+      // Convierte el texto del archivo .env en un booleano real.
+      seguro: process.env.MAIL_SECURE === "true",
+      usuario: obligatoria("MAIL_USER"),
+      contrasena: obligatoria("MAIL_PASSWORD"),
+      remitente: obligatoria("MAIL_FROM"),
+    }),
   });
 }

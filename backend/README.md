@@ -68,6 +68,9 @@ bloqueada.
 
 La renovación, el cierre manual y el cierre automático para frontend están
 documentados en [`docs/autenticacion-api.md`](docs/autenticacion-api.md).
+Ese documento también contiene el cambio de contraseña y la recuperación por
+correo. Las acciones administrativas de desbloqueo y restablecimiento están en
+[`docs/usuarios-api.md`](docs/usuarios-api.md).
 
 ## Estructura MVC
 

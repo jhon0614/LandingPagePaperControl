@@ -44,7 +44,8 @@ Respuesta `200`:
       "nombres": "Administrador",
       "apellidos": "PaperControl",
       "correo": "admin@papercontrol.local",
-      "rol": "ADMINISTRADOR"
+      "rol": "ADMINISTRADOR",
+      "debeCambiarContrasena": false
     }
   }
 }
@@ -53,6 +54,11 @@ Respuesta `200`:
 El token de acceso debe mantenerse en la memoria de React. No debe guardarse en
 `localStorage`. La cookie de renovación la administra automáticamente el
 navegador.
+
+Si `debeCambiarContrasena` es `true`, el frontend debe enviar al usuario a la
+pantalla de cambio de contraseña. El backend responderá
+`403 CAMBIO_CONTRASENA_REQUERIDO` en las demás rutas protegidas hasta que haga
+el cambio.
 
 ## Renovar la sesión
 
@@ -142,3 +148,98 @@ await fetch(`${API_URL}/api/auth/logout`, {
   credentials: "include",
 });
 ```
+
+## Cambiar la contraseña autenticada
+
+```http
+PATCH /api/auth/contrasena
+Authorization: Bearer <tokenAcceso>
+Content-Type: application/json
+```
+
+```json
+{
+  "contrasenaActual": "Actual#123456",
+  "contrasenaNueva": "Nueva#1234567"
+}
+```
+
+La contraseña nueva debe tener entre 12 y 200 caracteres e incluir mayúscula,
+minúscula y número. No puede ser igual a la actual.
+
+Después de una respuesta `200`, todas las sesiones renovables quedan revocadas.
+El frontend debe limpiar su sesión en memoria y enviar al usuario al login.
+
+Errores particulares:
+
+| Estado | Código | Motivo |
+|---:|---|---|
+| 400 | `CONTRASENA_ACTUAL_INCORRECTA` | La contraseña actual no coincide. |
+| 400 | `CONTRASENA_SIN_CAMBIOS` | La contraseña nueva es igual a la actual. |
+| 400 | `ERROR_VALIDACION` | La contraseña nueva no cumple las reglas. |
+| 401 | `NO_AUTENTICADO` | Falta un token de acceso válido. |
+
+## Solicitar recuperación por correo
+
+```http
+POST /api/auth/olvide-contrasena
+Content-Type: application/json
+```
+
+```json
+{
+  "correo": "usuario@papercontrol.local"
+}
+```
+
+La respuesta siempre es `200` y utiliza el mismo mensaje exista o no el correo:
+
+```json
+{
+  "exito": true,
+  "datos": {
+    "mensaje": "Si el correo pertenece a una cuenta disponible, recibirás las instrucciones."
+  }
+}
+```
+
+Esto evita revelar qué correos están registrados. El endpoint admite cinco
+solicitudes por dirección IP cada 15 minutos; al superar el límite responde
+`429 DEMASIADAS_SOLICITUDES`.
+
+El enlace enviado contiene un token aleatorio. MySQL almacena únicamente su hash,
+solo funciona el token más reciente y su duración se configura mediante
+`PASSWORD_RESET_MINUTES`.
+
+## Restablecer mediante el enlace
+
+```http
+POST /api/auth/restablecer-contrasena
+Content-Type: application/json
+```
+
+```json
+{
+  "token": "token-recibido-en-el-enlace",
+  "contrasenaNueva": "Nueva#1234567"
+}
+```
+
+Una respuesta `200` confirma el cambio. El token queda consumido, se limpian el
+bloqueo y los intentos fallidos, y se revocan todas las sesiones existentes.
+Estas operaciones se realizan juntas dentro de una transacción MySQL.
+
+Un token inexistente, vencido o ya utilizado responde:
+
+```json
+{
+  "exito": false,
+  "error": {
+    "codigo": "TOKEN_RESTABLECIMIENTO_INVALIDO",
+    "mensaje": "El enlace no es válido o ya expiró."
+  }
+}
+```
+
+La pantalla del frontend debe leer `token` desde la URL, pedir y confirmar la
+nueva contraseña y, al finalizar, redirigir al login.

@@ -31,10 +31,13 @@ export class ModeloSesion {
 
   async buscarActivaPorHash(hashTokenRenovacion) {
     // Además de revisar la sesión, confirma que el usuario siga disponible.
+    // También recupera si debe cambiar su contraseña para conservar esa regla
+    // cuando React restaura la sesión mediante /refresh.
     const [filas] = await this.conexiones.execute(
       `SELECT s.id AS sesion_id, s.usuario_id, s.hash_token_renovacion,
               s.expira_en, s.es_persistente,
-              u.nombres, u.apellidos, u.correo, r.nombre AS rol
+              u.nombres, u.apellidos, u.correo, u.debe_cambiar_contrasena,
+              r.nombre AS rol
          FROM sesiones_usuario s
          JOIN usuarios u ON u.id = s.usuario_id
          JOIN roles r ON r.id = u.rol_id

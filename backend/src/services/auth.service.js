@@ -166,12 +166,15 @@ export class ServicioAutenticacion {
   }
 
   #crearUsuarioRespuesta(usuario) {
+    // Entrega únicamente los datos seguros que necesita el frontend.
     return {
       id: usuario.id,
       nombres: usuario.nombres,
       apellidos: usuario.apellidos,
       correo: usuario.correo,
       rol: usuario.rol,
+      // Permite redirigir una cuenta nueva a la pantalla de cambio obligatorio.
+      debeCambiarContrasena: Boolean(usuario.debe_cambiar_contrasena),
     };
   }
 

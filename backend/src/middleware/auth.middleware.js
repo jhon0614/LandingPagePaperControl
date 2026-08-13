@@ -82,7 +82,21 @@ export function crearMiddlewareAutenticacion({ modeloUsuario, secretoAcceso }) {
         id: usuario.id,
         correo: usuario.correo,
         rol: usuario.rol,
+        debeCambiarContrasena: Boolean(usuario.debe_cambiar_contrasena),
       };
+
+      // Una cuenta creada con contraseña temporal solo puede cambiarla antes
+      // de utilizar los demás módulos protegidos.
+      if (
+        solicitud.usuario.debeCambiarContrasena &&
+        solicitud.originalUrl?.split("?")[0] !== "/api/auth/contrasena"
+      ) {
+        throw new ErrorAplicacion(
+          "Debes cambiar la contraseña temporal antes de continuar.",
+          403,
+          "CAMBIO_CONTRASENA_REQUERIDO",
+        );
+      }
 
       // 6. Permitir que continúe la solicitud.
       return siguiente();

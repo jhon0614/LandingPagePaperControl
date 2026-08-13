@@ -170,4 +170,63 @@ export class ModeloUsuario {
 
     return resultado.affectedRows > 0;
   }
+
+  async actualizarContrasena(usuarioId, hashContrasena) {
+    // Guarda la nueva contraseña y limpia los estados relacionados con el acceso.
+    const [resultado] = await this.conexiones.execute(
+      `UPDATE usuarios
+        SET hash_contrasena = ?,
+            debe_cambiar_contrasena = FALSE,
+            contrasena_cambiada_en = UTC_TIMESTAMP(),
+            intentos_acceso_fallidos = 0,
+            bloqueado_hasta = NULL
+      WHERE id = ?
+        AND eliminado_en IS NULL`,
+      [hashContrasena, usuarioId],
+    );
+
+    return resultado.affectedRows > 0;
+  }
+
+  async desbloquear(usuarioId) {
+    // Permite que el usuario vuelva a intentar iniciar sesión.
+    const [resultado] = await this.conexiones.execute(
+      `UPDATE usuarios
+        SET intentos_acceso_fallidos = 0,
+            bloqueado_hasta = NULL
+      WHERE id = ?
+        AND eliminado_en IS NULL`,
+      [usuarioId],
+    );
+
+    return resultado.affectedRows > 0;
+  }
+  
+  async buscarContrasenaPorId(usuarioId) {
+    const [filas] = await this.conexiones.execute(
+      `SELECT id, hash_contrasena
+       FROM usuarios
+      WHERE id = ?
+        AND esta_activo = TRUE
+        AND eliminado_en IS NULL
+      LIMIT 1`,
+      [usuarioId],
+    );
+
+    return filas[0] ?? null;
+  }
+
+  async buscarActivoPorCorreo(correo) {
+    const [filas] = await this.conexiones.execute(
+      `SELECT id, nombres, apellidos, correo
+       FROM usuarios
+      WHERE correo = ?
+        AND esta_activo = TRUE
+        AND eliminado_en IS NULL
+      LIMIT 1`,
+      [correo],
+    );
+
+    return filas[0] ?? null;
+  }
 }

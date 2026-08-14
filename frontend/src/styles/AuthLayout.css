@@ -118,19 +118,26 @@
   border: none;
   border-radius: 8px;
 
-  background: #05788a;
+  background: red;
   color: white;
 
-  font-weight: 700;
+  font-weight: 600;
   font-size: 16px;
 
   cursor: pointer;
 
-  transition: .3s;
+  transition: 
+        background-color 0.2s ease,
+        transform 0.2s ease;
 }
 
 .auth-button:hover {
-  background: #046977;
+  background: #087482;
+}
+
+.auth-button:disabled {
+    background: #8bbec5;
+    cursor: not-allowed;
 }
 
 .auth-footer {
@@ -147,4 +154,68 @@
   .auth-options {
     flex-direction: column;
   }
+}
+
+.auth-link-button {
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: #0b8a9a;
+
+    font: inherit;
+
+    cursor: pointer;
+
+    text-decoration: none;
+}
+
+.auth-link-button:hover {
+    text-decoration: underline;
+}
+
+.auth-link-button {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    color: #0b8a9a;
+    font: inherit;
+    cursor: pointer;
+}
+
+.auth-link-button:hover {
+    text-decoration: underline;
+}
+
+.auth-link-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+.auth-error-bloqueo {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    text-align: left;
+}
+
+
+.auth-error-bloqueo > i {
+    font-size: 20px;
+    margin-top: 2px;
+}
+
+
+.auth-error-bloqueo strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+
+.auth-error-bloqueo p {
+    margin: 0;
 }

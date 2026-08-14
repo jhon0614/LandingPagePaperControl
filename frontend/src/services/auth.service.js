@@ -1,50 +1,178 @@
-const API_URL = import.meta.env.VITE_API_URL;
+import {
+    apiFetch,
+    establecerToken,
+    limpiarToken,
+} from "./api";
 
-export async function login(correo, contrasena) {
+/*
+=========================================================
+LOGIN
+=========================================================
+*/
 
-  const respuesta = await fetch(
-    `${API_URL}/api/auth/login`,
-    {
-      method: "POST",
+export async function login(
+    correo,
+    contrasena
+) {
 
-      headers: {
-        "Content-Type": "application/json",
-      },
+    /*
+     * El login es una ruta pública.
+     */
 
-      credentials: "include",
+    const respuesta = await apiFetch(
+        "/api/auth/login",
+        {
+            method: "POST",
 
-      body: JSON.stringify({
-        correo,
-        contrasena,
-      }),
+            body: JSON.stringify({
+                correo,
+                contrasena,
+            }),
+        }
+    );
+
+
+    /*
+     * El backend devuelve:
+     *
+     * respuesta.datos.usuario
+     * respuesta.datos.tokenAcceso
+     *
+     * respuesta.datos.usuario.debeCambiarContrasena
+     */
+
+    const token =
+        respuesta?.datos?.tokenAcceso;
+
+
+    /*
+     * El token se mantiene únicamente
+     * en memoria.
+     */
+
+    if (token) {
+
+        establecerToken(token);
+
     }
-  );
 
 
-  let datos = null;
-
-  try {
-
-    datos = await respuesta.json();
-
-  } catch {
-
-    datos = null;
-
-  }
+    return respuesta;
+}
 
 
-  if (!respuesta.ok) {
+/*
+=========================================================
+CAMBIAR CONTRASEÑA
+=========================================================
+*/
 
-    const mensaje =
-      datos?.error?.mensaje ||
-      datos?.mensaje ||
-      "No fue posible iniciar sesión.";
+export async function cambiarContrasena(
+    datos
+) {
 
-    throw new Error(mensaje);
+    const respuesta = await apiFetch(
+        "/api/auth/contrasena",
+        {
+            method: "PATCH",
 
-  }
+            body: JSON.stringify({
+
+                contrasenaActual:
+                    datos.contrasenaActual,
+
+                contrasenaNueva:
+                    datos.contrasenaNueva,
+
+            }),
+        }
+    );
 
 
-  return datos;
+    return respuesta;
+}
+
+
+/*
+=========================================================
+SOLICITAR RESTABLECIMIENTO
+"OLVIDÉ MI CONTRASEÑA"
+=========================================================
+*/
+
+export async function solicitarRestablecimiento(
+    correo
+) {
+
+    const respuesta = await apiFetch(
+        "/api/auth/olvide-contrasena",
+        {
+            method: "POST",
+
+            body: JSON.stringify({
+                correo,
+            }),
+        }
+    );
+
+
+    return respuesta;
+}
+
+
+/*
+=========================================================
+RESTABLECER CONTRASEÑA
+DESDE EL ENLACE DEL CORREO
+=========================================================
+*/
+
+export async function restablecerContrasena(
+    token,
+    contrasenaNueva
+) {
+
+    const respuesta = await apiFetch(
+        "/api/auth/restablecer-contrasena",
+        {
+            method: "POST",
+
+            body: JSON.stringify({
+
+                token,
+
+                contrasenaNueva,
+
+            }),
+        }
+    );
+
+
+    return respuesta;
+}
+
+
+/*
+=========================================================
+CERRAR SESIÓN
+=========================================================
+*/
+
+export function cerrarSesion() {
+
+    /*
+     * El token solamente existe en memoria.
+     */
+
+    limpiarToken();
+
+
+    /*
+     * Eliminamos los datos temporales
+     * del usuario.
+     */
+
+    localStorage.removeItem(
+        "usuario"
+    );
 }

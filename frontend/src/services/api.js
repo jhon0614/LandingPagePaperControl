@@ -1,31 +1,86 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
 
-    export async function apiFetch(
+/*
+=========================================================
+TOKEN EN MEMORIA
+=========================================================
+*/
+
+let tokenEnMemoria = null;
+
+
+/*
+=========================================================
+GUARDAR TOKEN
+=========================================================
+*/
+
+export function establecerToken(token) {
+    tokenEnMemoria = token || null;
+}
+
+
+/*
+=========================================================
+OBTENER TOKEN
+=========================================================
+*/
+
+export function obtenerToken() {
+    return tokenEnMemoria;
+}
+
+
+/*
+=========================================================
+LIMPIAR TOKEN
+=========================================================
+*/
+
+export function limpiarToken() {
+    tokenEnMemoria = null;
+}
+
+
+/*
+=========================================================
+CLIENTE API
+=========================================================
+*/
+
+export async function apiFetch(
     endpoint,
     opciones = {}
-    ) {
-
-    const token = localStorage.getItem("token");
-
+) {
 
     const headers = {
         ...opciones.headers,
     };
 
 
-    if (token) {
+    /*
+     * El token se obtiene únicamente
+     * desde memoria.
+     */
+
+    if (tokenEnMemoria) {
 
         headers.Authorization =
-        `Bearer ${token}`;
+            `Bearer ${tokenEnMemoria}`;
 
     }
 
 
+    /*
+     * Agregar Content-Type solamente
+     * cuando existe un body.
+     */
+
     if (opciones.body) {
 
         headers["Content-Type"] =
-        "application/json";
+            "application/json";
 
     }
 
@@ -33,12 +88,16 @@ const API_URL = import.meta.env.VITE_API_URL;
     const respuesta = await fetch(
         `${API_URL}${endpoint}`,
         {
-        ...opciones,
-        headers,
-        credentials: "include",
+            ...opciones,
+            headers,
+            credentials: "include",
         }
     );
 
+
+    /*
+     * Respuesta sin contenido.
+     */
 
     if (respuesta.status === 204) {
 
@@ -48,6 +107,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 
     let datos = null;
+
 
     try {
 
@@ -60,25 +120,29 @@ const API_URL = import.meta.env.VITE_API_URL;
     }
 
 
+    /*
+     * Manejo uniforme de errores.
+     */
+
     if (!respuesta.ok) {
 
         const error = new Error(
-        datos?.error?.mensaje ||
-        datos?.mensaje ||
-        "Ocurrió un error en la petición."
+            datos?.error?.mensaje ||
+            datos?.mensaje ||
+            "Ocurrió un error en la petición."
         );
 
 
         error.status =
-        respuesta.status;
+            respuesta.status;
 
 
         error.codigo =
-        datos?.error?.codigo;
+            datos?.error?.codigo;
 
 
         error.detalles =
-        datos?.error?.detalles;
+            datos?.error?.detalles;
 
 
         throw error;

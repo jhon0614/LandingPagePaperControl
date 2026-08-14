@@ -8,6 +8,8 @@ import {
     crearUsuario as crearUsuarioApi,
     actualizarUsuario as actualizarUsuarioApi,
     cambiarEstadoUsuario as cambiarEstadoUsuarioApi,
+    desbloquearUsuario as desbloquearUsuarioApi,
+    enviarRestablecimientoUsuario as enviarRestablecimientoUsuarioApi,
     eliminarUsuario as eliminarUsuarioApi,
 } from "../services/usuarios.service";
 
@@ -19,15 +21,8 @@ function Usuarios() {
 
     /*
      * USUARIO EN SESIÓN
-     *
-     * Se usa para evitar que el administrador intente
-     * cambiar su propio rol, desactivarse o eliminarse
-     * a sí mismo, ya que el backend rechaza esas acciones
-     * (CAMBIO_ROL_PROPIO_PROHIBIDO, AUTO_DESACTIVACION_PROHIBIDA,
-     * AUTO_ELIMINACION_PROHIBIDA). Deshabilitamos los botones
-     * de antemano en vez de dejar que el usuario los intente
-     * y reciba el error del backend.
      */
+
     const usuarioEnSesion = JSON.parse(
         localStorage.getItem("usuario")
     );
@@ -36,14 +31,21 @@ function Usuarios() {
         usuarioEnSesion?.id ?? null;
 
 
+    /*
+     * ESTADOS
+     */
+
     const [usuarios, setUsuarios] = useState([]);
     const [roles, setRoles] = useState([]);
 
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState("");
 
-    const [usuarioEditando, setUsuarioEditando] = useState(null);
-    const [modalNuevoUsuario, setModalNuevoUsuario] = useState(false);
+    const [usuarioEditando, setUsuarioEditando] =
+        useState(null);
+
+    const [modalNuevoUsuario, setModalNuevoUsuario] =
+        useState(false);
 
     const [formulario, setFormulario] = useState({
         nombres: "",
@@ -53,9 +55,19 @@ function Usuarios() {
         rolId: "",
     });
 
-    const [guardando, setGuardando] = useState(false);
-    const [cambiandoEstado, setCambiandoEstado] = useState(null);
+    const [guardando, setGuardando] =
+        useState(false);
 
+    const [cambiandoEstado, setCambiandoEstado] =
+        useState(null);
+
+    const [desbloqueandoUsuario, setDesbloqueandoUsuario] =
+        useState(null);
+
+
+    /*
+     * CARGAR DATOS
+     */
 
     useEffect(() => {
 
@@ -71,14 +83,21 @@ function Usuarios() {
             setCargando(true);
             setError("");
 
-            const [usuariosObtenidos, rolesObtenidos] =
-                await Promise.all([
-                    obtenerUsuarios(),
-                    obtenerRoles(),
-                ]);
+            const [
+                usuariosObtenidos,
+                rolesObtenidos,
+            ] = await Promise.all([
+                obtenerUsuarios(),
+                obtenerRoles(),
+            ]);
 
-            setUsuarios(usuariosObtenidos);
-            setRoles(rolesObtenidos);
+            setUsuarios(
+                usuariosObtenidos || []
+            );
+
+            setRoles(
+                rolesObtenidos || []
+            );
 
         } catch (error) {
 
@@ -98,9 +117,13 @@ function Usuarios() {
     }
 
 
+    /*
+     * MANEJO DE ERRORES
+     */
+
     function manejarError(error) {
 
-        if (error.status === 401) {
+        if (error?.status === 401) {
 
             localStorage.removeItem("token");
             localStorage.removeItem("usuario");
@@ -108,10 +131,11 @@ function Usuarios() {
             window.location.hash = "#/login";
 
             return;
+
         }
 
 
-        if (error.status === 403) {
+        if (error?.status === 403) {
 
             setError(
                 error.message ||
@@ -119,11 +143,12 @@ function Usuarios() {
             );
 
             return;
+
         }
 
 
         setError(
-            error.message ||
+            error?.message ||
             "Ocurrió un error al realizar la operación."
         );
 
@@ -131,18 +156,33 @@ function Usuarios() {
 
 
     /*
-     * ¿Esta fila corresponde al usuario que tiene la
-     * sesión iniciada?
+     * VERIFICAR SI ES EL USUARIO EN SESIÓN
      */
+
     function esUsuarioEnSesion(usuario) {
 
         return (
             idUsuarioEnSesion !== null &&
-            usuario.id === idUsuarioEnSesion
+            usuario?.id === idUsuarioEnSesion
         );
 
     }
 
+
+    function usuarioEstaBloqueado(usuario) {
+
+        if (!usuario?.bloqueadoHasta) {
+            return false;
+        }
+
+        return new Date(usuario.bloqueadoHasta) > new Date();
+
+    }
+
+
+    /*
+     * ABRIR NUEVO USUARIO
+     */
 
     function abrirNuevoUsuario() {
 
@@ -163,6 +203,10 @@ function Usuarios() {
     }
 
 
+    /*
+     * CERRAR NUEVO USUARIO
+     */
+
     function cerrarNuevoUsuario() {
 
         if (guardando) {
@@ -182,6 +226,10 @@ function Usuarios() {
     }
 
 
+    /*
+     * ABRIR EDITAR USUARIO
+     */
+
     function abrirEditarUsuario(usuario) {
 
         setError("");
@@ -191,15 +239,28 @@ function Usuarios() {
         setUsuarioEditando(usuario);
 
         setFormulario({
-            nombres: usuario.nombres || "",
-            apellidos: usuario.apellidos || "",
-            correo: usuario.correo || "",
-            contrasenaTemporal: "",
-            rolId: usuario.rol?.id || "",
+            nombres:
+                usuario?.nombres || "",
+
+            apellidos:
+                usuario?.apellidos || "",
+
+            correo:
+                usuario?.correo || "",
+
+            contrasenaTemporal:
+                "",
+
+            rolId:
+                usuario?.rol?.id || "",
         });
 
     }
 
+
+    /*
+     * CERRAR EDITAR USUARIO
+     */
 
     function cerrarEditarUsuario() {
 
@@ -220,17 +281,31 @@ function Usuarios() {
     }
 
 
+    /*
+     * CAMBIO DEL FORMULARIO
+     */
+
     function manejarCambioFormulario(e) {
 
-        const { name, value } = e.target;
+        const {
+            name,
+            value,
+        } = e.target;
 
-        setFormulario((formularioActual) => ({
-            ...formularioActual,
-            [name]: value,
-        }));
+
+        setFormulario(
+            (formularioActual) => ({
+                ...formularioActual,
+                [name]: value,
+            })
+        );
 
     }
 
+
+    /*
+     * CREAR USUARIO
+     */
 
     async function guardarNuevoUsuario(e) {
 
@@ -241,7 +316,9 @@ function Usuarios() {
 
         if (!formulario.nombres.trim()) {
 
-            setError("El nombre es obligatorio.");
+            setError(
+                "El nombre es obligatorio."
+            );
 
             return;
 
@@ -250,7 +327,9 @@ function Usuarios() {
 
         if (!formulario.apellidos.trim()) {
 
-            setError("Los apellidos son obligatorios.");
+            setError(
+                "Los apellidos son obligatorios."
+            );
 
             return;
 
@@ -259,7 +338,9 @@ function Usuarios() {
 
         if (!formulario.correo.trim()) {
 
-            setError("El correo es obligatorio.");
+            setError(
+                "El correo es obligatorio."
+            );
 
             return;
 
@@ -314,13 +395,12 @@ function Usuarios() {
                 });
 
 
-            setUsuarios((usuariosActuales) => [
-
-                ...usuariosActuales,
-
-                usuarioCreado,
-
-            ]);
+            setUsuarios(
+                (usuariosActuales) => [
+                    ...usuariosActuales,
+                    usuarioCreado,
+                ]
+            );
 
 
             cerrarNuevoUsuario();
@@ -343,6 +423,10 @@ function Usuarios() {
 
     }
 
+
+    /*
+     * EDITAR USUARIO
+     */
 
     async function guardarCambios(e) {
 
@@ -400,16 +484,10 @@ function Usuarios() {
         }
 
 
-        /*
-         * Si está editando su propia cuenta, no enviamos
-         * rolId aunque el select lo tenga precargado, para
-         * no disparar CAMBIO_ROL_PROPIO_PROHIBIDO cuando en
-         * realidad no cambió el rol (el backend igual lo
-         * rechazaría si detecta un intento de cambio real).
-         */
-
         const editandoPropiaCuenta =
-            esUsuarioEnSesion(usuarioEditando);
+            esUsuarioEnSesion(
+                usuarioEditando
+            );
 
 
         try {
@@ -431,6 +509,11 @@ function Usuarios() {
             };
 
 
+            /*
+             * No permitimos enviar rolId cuando
+             * se está editando la propia cuenta.
+             */
+
             if (!editandoPropiaCuenta) {
 
                 datosActualizar.rolId =
@@ -441,26 +524,20 @@ function Usuarios() {
 
             const usuarioActualizado =
                 await actualizarUsuarioApi(
-
                     usuarioEditando.id,
-
                     datosActualizar
-
                 );
 
 
-            setUsuarios((usuariosActuales) =>
-
-                usuariosActuales.map((usuario) =>
-
-                    usuario.id === usuarioEditando.id
-
-                        ? usuarioActualizado
-
-                        : usuario
-
-                )
-
+            setUsuarios(
+                (usuariosActuales) =>
+                    usuariosActuales.map(
+                        (usuario) =>
+                            usuario.id ===
+                            usuarioEditando.id
+                                ? usuarioActualizado
+                                : usuario
+                    )
             );
 
 
@@ -485,6 +562,10 @@ function Usuarios() {
     }
 
 
+    /*
+     * ACTIVAR / DESACTIVAR USUARIO
+     */
+
     async function cambiarEstadoUsuario(usuario) {
 
         if (esUsuarioEnSesion(usuario)) {
@@ -502,11 +583,10 @@ function Usuarios() {
                 : "desactivar";
 
 
-        const confirmar = window.confirm(
-
-            `¿Seguro que deseas ${accion} a ${usuario.nombres} ${usuario.apellidos}?`
-
-        );
+        const confirmar =
+            window.confirm(
+                `¿Seguro que deseas ${accion} a ${usuario.nombres} ${usuario.apellidos}?`
+            );
 
 
         if (!confirmar) {
@@ -518,31 +598,27 @@ function Usuarios() {
 
             setError("");
 
-            setCambiandoEstado(usuario.id);
+            setCambiandoEstado(
+                usuario.id
+            );
 
 
             const usuarioActualizado =
                 await cambiarEstadoUsuarioApi(
-
                     usuario.id,
-
                     nuevoEstado
-
                 );
 
 
-            setUsuarios((usuariosActuales) =>
-
-                usuariosActuales.map((usuarioActual) =>
-
-                    usuarioActual.id === usuario.id
-
-                        ? usuarioActualizado
-
-                        : usuarioActual
-
-                )
-
+            setUsuarios(
+                (usuariosActuales) =>
+                    usuariosActuales.map(
+                        (usuarioActual) =>
+                            usuarioActual.id ===
+                            usuario.id
+                                ? usuarioActualizado
+                                : usuarioActual
+                    )
             );
 
 
@@ -564,18 +640,36 @@ function Usuarios() {
     }
 
 
-    async function eliminarUsuario(usuario) {
+    /*
+     * DESBLOQUEAR CUENTA
+     *
+     * Esta función solamente cambia el estado de
+     * bloqueo de la cuenta.
+     *
+     * El backend es quien realmente debe ejecutar
+     * el desbloqueo y reiniciar los datos de seguridad.
+     */
+
+    async function desbloquearUsuario(usuario) {
 
         if (esUsuarioEnSesion(usuario)) {
+
+            /*
+             * Aunque técnicamente el administrador podría
+             * desbloquear su propia cuenta, no tiene sentido
+             * hacerlo desde esta pantalla porque si está
+             * conectado su cuenta ya está permitiendo acceso.
+             */
+
             return;
+
         }
 
 
-        const confirmar = window.confirm(
-
-            `¿Seguro que deseas eliminar a ${usuario.nombres} ${usuario.apellidos}?`
-
-        );
+        const confirmar =
+            window.confirm(
+                `¿Seguro que deseas desbloquear la cuenta de ${usuario.nombres} ${usuario.apellidos}?`
+            );
 
 
         if (!confirmar) {
@@ -587,21 +681,117 @@ function Usuarios() {
 
             setError("");
 
+            setDesbloqueandoUsuario(
+                usuario.id
+            );
+
+
+            const usuarioActualizado =
+                await desbloquearUsuarioApi(
+                    usuario.id
+                );
+
+
+            setUsuarios(
+                (usuariosActuales) =>
+                    usuariosActuales.map(
+                        (usuarioActual) =>
+                            usuarioActual.id ===
+                            usuario.id
+                                ? usuarioActualizado
+                                : usuarioActual
+                    )
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Error desbloqueando usuario:",
+                error
+            );
+
+            manejarError(error);
+
+        } finally {
+
+            setDesbloqueandoUsuario(null);
+
+        }
+
+    }
+
+    /*
+    =========================================================
+    ENVIAR RESTABLECIMIENTO DE CONTRASEÑA
+    =========================================================
+    */
+
+    async function enviarRestablecimiento(usuario) {
+
+        const confirmar = window.confirm(
+            `Se enviará un correo de restablecimiento a ${usuario.correo}. ¿Deseas continuar?`
+        );
+
+        if (!confirmar) return;
+
+        try {
+
+            await enviarRestablecimientoUsuarioApi(usuario.id);
+
+            alert(
+                "Las instrucciones fueron enviadas al correo registrado."
+            );
+
+        } catch (error) {
+
+            console.error(error);
+            manejarError(error);
+
+        }
+
+    }
+
+
+    /*
+     * ELIMINAR USUARIO
+     */
+
+    async function eliminarUsuario(usuario) {
+
+        if (esUsuarioEnSesion(usuario)) {
+            return;
+        }
+
+
+        const confirmar =
+            window.confirm(
+                `¿Seguro que deseas eliminar a ${usuario.nombres} ${usuario.apellidos}?`
+            );
+
+
+        if (!confirmar) {
+            return;
+        }
+
+
+        try {
+
+            setError("");
+
+
             await eliminarUsuarioApi(
                 usuario.id
             );
 
 
-            setUsuarios((usuariosActuales) =>
-
-                usuariosActuales.filter(
-
-                    (usuarioActual) =>
-
-                        usuarioActual.id !== usuario.id
-
-                )
-
+            setUsuarios(
+                (usuariosActuales) =>
+                    usuariosActuales.filter(
+                        (usuarioActual) =>
+                            usuarioActual.id !==
+                            usuario.id
+                    )
             );
 
 
@@ -619,6 +809,10 @@ function Usuarios() {
     }
 
 
+    /*
+     * LISTAS
+     */
+
     const usuariosActivos =
         usuarios.filter(
             (usuario) =>
@@ -633,6 +827,13 @@ function Usuarios() {
         );
 
 
+    const usuariosBloqueados =
+        usuarios.filter(
+            (usuario) =>
+                usuarioEstaBloqueado(usuario)
+        );
+
+
     const modalAbierto =
         modalNuevoUsuario ||
         usuarioEditando;
@@ -640,12 +841,16 @@ function Usuarios() {
 
     const editandoPropiaCuentaEnModal =
         usuarioEditando &&
-        esUsuarioEnSesion(usuarioEditando);
+        esUsuarioEnSesion(
+            usuarioEditando
+        );
 
 
     return (
 
         <Layout>
+
+            {/* HEADER */}
 
             <div className="usuarios-header">
 
@@ -676,6 +881,8 @@ function Usuarios() {
 
             </div>
 
+
+            {/* ERROR */}
 
             {error && (
 
@@ -767,6 +974,21 @@ function Usuarios() {
 
                         </div>
 
+
+                        <div className="card-estadistica">
+
+                            <i className="fa-solid fa-lock"></i>
+
+                            <h3>
+                                {usuariosBloqueados.length}
+                            </h3>
+
+                            <p>
+                                Cuentas bloqueadas
+                            </p>
+
+                        </div>
+
                     </div>
 
 
@@ -779,10 +1001,15 @@ function Usuarios() {
                             <div>
 
                                 <h2>
+
                                     <span className="usuarios-titulo-activos">
+
                                         <span className="usuarios-punto activo"></span>
+
                                         Usuarios activos
+
                                     </span>
+
                                 </h2>
 
                                 <p>
@@ -791,8 +1018,11 @@ function Usuarios() {
 
                             </div>
 
+
                             <span className="usuarios-contador activo">
+
                                 {usuariosActivos.length}
+
                             </span>
 
                         </div>
@@ -819,6 +1049,10 @@ function Usuarios() {
                                         </th>
 
                                         <th>
+                                            Intentos
+                                        </th>
+
+                                        <th>
                                             Estado
                                         </th>
 
@@ -838,12 +1072,10 @@ function Usuarios() {
                                         <tr>
 
                                             <td
-                                                colSpan="5"
+                                                colSpan="6"
                                                 className="usuarios-vacio"
                                             >
-
                                                 No hay usuarios activos.
-
                                             </td>
 
                                         </tr>
@@ -854,158 +1086,240 @@ function Usuarios() {
                                             (usuario) => {
 
                                                 const esPropia =
-                                                    esUsuarioEnSesion(usuario);
+                                                    esUsuarioEnSesion(
+                                                        usuario
+                                                    );
+
+                                                const bloqueado =
+                                                    usuarioEstaBloqueado(
+                                                        usuario
+                                                    );
+
 
                                                 return (
 
-                                                <tr
-                                                    key={usuario.id}
-                                                >
+                                                    <tr
+                                                        key={
+                                                            usuario.id
+                                                        }
+                                                    >
 
-                                                    <td>
+                                                        <td>
 
-                                                        <div className="usuario-nombre">
+                                                            <div className="usuario-nombre">
 
-                                                            <div className="usuario-avatar">
+                                                                <div className="usuario-avatar">
 
-                                                                {usuario.nombres
-                                                                    ?.charAt(0)
-                                                                    ?.toUpperCase()}
+                                                                    {usuario.nombres
+                                                                        ?.charAt(0)
+                                                                        ?.toUpperCase()}
+
+                                                                </div>
+
+
+                                                                <div>
+
+                                                                    <strong>
+
+                                                                        {usuario.nombres}{" "}
+
+                                                                        {usuario.apellidos}
+
+
+                                                                        {esPropia && (
+
+                                                                            <span className="usuario-tu-cuenta">
+
+                                                                                (Tú)
+
+                                                                            </span>
+
+                                                                        )}
+
+                                                                    </strong>
+
+                                                                </div>
 
                                                             </div>
 
-
-                                                            <div>
-
-                                                                <strong>
-
-                                                                    {usuario.nombres}{" "}
-
-                                                                    {usuario.apellidos}
-
-                                                                    {esPropia && (
-
-                                                                        <span className="usuario-tu-cuenta">
-                                                                            (Tú)
-                                                                        </span>
-
-                                                                    )}
-
-                                                                </strong>
-
-                                                            </div>
-
-                                                        </div>
-
-                                                    </td>
+                                                        </td>
 
 
-                                                    <td>
-                                                        {usuario.correo}
-                                                    </td>
+                                                        <td>
+                                                            {usuario.correo}
+                                                        </td>
 
 
-                                                    <td>
+                                                        <td>
 
-                                                        <span className="badge-rol">
+                                                            <span className="badge-rol">
 
-                                                            {usuario.rol?.nombre}
+                                                                {usuario.rol?.nombre}
 
-                                                        </span>
+                                                            </span>
 
-                                                    </td>
+                                                        </td>
+                                                        
+                                                            <td>
+                                                                <span className="badge-intentos">
+                                                                    {usuario.intentosAccesoFallidos ?? 0}
+                                                                </span>
+                                                            </td>
+
+                                                        <td>
+
+                                                            {bloqueado ? (
+
+                                                                <span className="estado-bloqueado">
+
+                                                                    <i className="fa-solid fa-lock"></i>
+
+                                                                    Bloqueado
+
+                                                                </span>
+
+                                                            ) : (
+
+                                                                <span className="estado-activo">
+
+                                                                    Activo
+
+                                                                </span>
+
+                                                            )}
+
+                                                        </td>
 
 
-                                                    <td>
+                                                        <td>
 
-                                                        <span className="estado-activo">
+                                                            <div className="acciones-usuario">
 
-                                                            Activo
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn-editar"
+                                                                    title="Editar usuario"
+                                                                    onClick={() =>
+                                                                        abrirEditarUsuario(
+                                                                            usuario
+                                                                        )
+                                                                    }
+                                                                >
 
-                                                        </span>
+                                                                    <i className="fa-solid fa-pen"></i>
 
-                                                    </td>
+                                                                </button>
 
-
-                                                    <td>
-
-                                                        <div className="acciones-usuario">
-
-                                                            <button
-                                                                type="button"
-                                                                className="btn-editar"
-                                                                title="Editar usuario"
-                                                                onClick={() =>
-                                                                    abrirEditarUsuario(
-                                                                        usuario
-                                                                    )
-                                                                }
-                                                            >
-
-                                                                <i className="fa-solid fa-pen"></i>
-
-                                                            </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn-restablecer"
+                                                                    title="Enviar restablecimiento"
+                                                                    onClick={() => enviarRestablecimiento(usuario)}
+                                                                >
+                                                                    <i className="fa-solid fa-key"></i>
+                                                                </button>
 
 
-                                                            <button
-                                                                type="button"
-                                                                className="btn-desactivar"
-                                                                title={
-                                                                    esPropia
-                                                                        ? "No puedes desactivar tu propia cuenta"
-                                                                        : "Desactivar usuario"
-                                                                }
-                                                                disabled={
-                                                                    esPropia ||
-                                                                    cambiandoEstado ===
-                                                                    usuario.id
-                                                                }
-                                                                onClick={() =>
-                                                                    cambiarEstadoUsuario(
-                                                                        usuario
-                                                                    )
-                                                                }
-                                                            >
+                                                                {bloqueado ? (
 
-                                                                {cambiandoEstado ===
-                                                                usuario.id ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn-desbloquear"
+                                                                        title={
+                                                                            esPropia
+                                                                                ? "No puedes desbloquear tu propia cuenta desde aquí"
+                                                                                : "Desbloquear usuario"
+                                                                        }
+                                                                        disabled={
+                                                                            esPropia ||
+                                                                            desbloqueandoUsuario ===
+                                                                            usuario.id
+                                                                        }
+                                                                        onClick={() =>
+                                                                            desbloquearUsuario(
+                                                                                usuario
+                                                                            )
+                                                                        }
+                                                                    >
 
-                                                                    <i className="fa-solid fa-spinner fa-spin"></i>
+                                                                        {desbloqueandoUsuario ===
+                                                                        usuario.id ? (
+
+                                                                            <i className="fa-solid fa-spinner fa-spin"></i>
+
+                                                                        ) : (
+
+                                                                            <i className="fa-solid fa-lock-open"></i>
+
+                                                                        )}
+
+                                                                    </button>
 
                                                                 ) : (
 
-                                                                    <i className="fa-solid fa-user-slash"></i>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn-desactivar"
+                                                                        title={
+                                                                            esPropia
+                                                                                ? "No puedes desactivar tu propia cuenta"
+                                                                                : "Desactivar usuario"
+                                                                        }
+                                                                        disabled={
+                                                                            esPropia ||
+                                                                            cambiandoEstado ===
+                                                                            usuario.id
+                                                                        }
+                                                                        onClick={() =>
+                                                                            cambiarEstadoUsuario(
+                                                                                usuario
+                                                                            )
+                                                                        }
+                                                                    >
+
+                                                                        {cambiandoEstado ===
+                                                                        usuario.id ? (
+
+                                                                            <i className="fa-solid fa-spinner fa-spin"></i>
+
+                                                                        ) : (
+
+                                                                            <i className="fa-solid fa-user-slash"></i>
+
+                                                                        )}
+
+                                                                    </button>
 
                                                                 )}
 
-                                                            </button>
 
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn-eliminar"
+                                                                    title={
+                                                                        esPropia
+                                                                            ? "No puedes eliminar tu propia cuenta"
+                                                                            : "Eliminar usuario"
+                                                                    }
+                                                                    disabled={
+                                                                        esPropia
+                                                                    }
+                                                                    onClick={() =>
+                                                                        eliminarUsuario(
+                                                                            usuario
+                                                                        )
+                                                                    }
+                                                                >
 
-                                                            <button
-                                                                type="button"
-                                                                className="btn-eliminar"
-                                                                title={
-                                                                    esPropia
-                                                                        ? "No puedes eliminar tu propia cuenta"
-                                                                        : "Eliminar usuario"
-                                                                }
-                                                                disabled={esPropia}
-                                                                onClick={() =>
-                                                                    eliminarUsuario(
-                                                                        usuario
-                                                                    )
-                                                                }
-                                                            >
+                                                                    <i className="fa-solid fa-trash"></i>
 
-                                                                <i className="fa-solid fa-trash"></i>
+                                                                </button>
 
-                                                            </button>
+                                                            </div>
 
-                                                        </div>
+                                                        </td>
 
-                                                    </td>
-
-                                                </tr>
+                                                    </tr>
 
                                                 );
 
@@ -1032,10 +1346,15 @@ function Usuarios() {
                             <div>
 
                                 <h2>
+
                                     <span className="usuarios-titulo-inactivos">
+
                                         <span className="usuarios-punto inactivo"></span>
+
                                         Usuarios inactivos
+
                                     </span>
+
                                 </h2>
 
                                 <p>
@@ -1044,8 +1363,11 @@ function Usuarios() {
 
                             </div>
 
+
                             <span className="usuarios-contador inactivo">
+
                                 {usuariosInactivos.length}
+
                             </span>
 
                         </div>
@@ -1091,12 +1413,10 @@ function Usuarios() {
                                         <tr>
 
                                             <td
-                                                colSpan="5"
+                                                colSpan="6"
                                                 className="usuarios-vacio"
                                             >
-
                                                 No hay usuarios inactivos.
-
                                             </td>
 
                                         </tr>
@@ -1107,7 +1427,9 @@ function Usuarios() {
                                             (usuario) => (
 
                                                 <tr
-                                                    key={usuario.id}
+                                                    key={
+                                                        usuario.id
+                                                    }
                                                 >
 
                                                     <td>
@@ -1155,6 +1477,11 @@ function Usuarios() {
 
                                                     </td>
 
+                                                        <td>
+                                                            <span className="badge-intentos">
+                                                                {usuario.intentosAccesoFallidos ?? 0}
+                                                            </span>
+                                                        </td>
 
                                                     <td>
 
@@ -1248,7 +1575,8 @@ function Usuarios() {
                     onMouseDown={(e) => {
 
                         if (
-                            e.target === e.currentTarget &&
+                            e.target ===
+                            e.currentTarget &&
                             !guardando
                         ) {
 
@@ -1285,9 +1613,7 @@ function Usuarios() {
                                 <p>
 
                                     {modalNuevoUsuario
-
                                         ? "Crea un nuevo usuario para PaperControl."
-
                                         : "Actualiza la información del usuario."}
 
                                 </p>
@@ -1303,7 +1629,9 @@ function Usuarios() {
                                         ? cerrarNuevoUsuario
                                         : cerrarEditarUsuario
                                 }
-                                disabled={guardando}
+                                disabled={
+                                    guardando
+                                }
                                 title="Cerrar"
                             >
 
@@ -1333,12 +1661,16 @@ function Usuarios() {
                                     id="usuario-nombres"
                                     name="nombres"
                                     type="text"
-                                    value={formulario.nombres}
+                                    value={
+                                        formulario.nombres
+                                    }
                                     onChange={
                                         manejarCambioFormulario
                                     }
                                     required
-                                    disabled={guardando}
+                                    disabled={
+                                        guardando
+                                    }
                                     maxLength="80"
                                 />
 
@@ -1355,12 +1687,16 @@ function Usuarios() {
                                     id="usuario-apellidos"
                                     name="apellidos"
                                     type="text"
-                                    value={formulario.apellidos}
+                                    value={
+                                        formulario.apellidos
+                                    }
                                     onChange={
                                         manejarCambioFormulario
                                     }
                                     required
-                                    disabled={guardando}
+                                    disabled={
+                                        guardando
+                                    }
                                     maxLength="80"
                                 />
 
@@ -1377,12 +1713,16 @@ function Usuarios() {
                                     id="usuario-correo"
                                     name="correo"
                                     type="email"
-                                    value={formulario.correo}
+                                    value={
+                                        formulario.correo
+                                    }
                                     onChange={
                                         manejarCambioFormulario
                                     }
                                     required
-                                    disabled={guardando}
+                                    disabled={
+                                        guardando
+                                    }
                                     maxLength="191"
                                 />
 
@@ -1411,7 +1751,9 @@ function Usuarios() {
                                             manejarCambioFormulario
                                         }
                                         required
-                                        disabled={guardando}
+                                        disabled={
+                                            guardando
+                                        }
                                         minLength="12"
                                         maxLength="200"
                                         placeholder="Mínimo 12 caracteres"
@@ -1462,18 +1804,24 @@ function Usuarios() {
                                     </option>
 
 
-                                    {roles.map((rol) => (
+                                    {roles.map(
+                                        (rol) => (
 
-                                        <option
-                                            key={rol.id}
-                                            value={rol.id}
-                                        >
+                                            <option
+                                                key={
+                                                    rol.id
+                                                }
+                                                value={
+                                                    rol.id
+                                                }
+                                            >
 
-                                            {rol.nombre}
+                                                {rol.nombre}
 
-                                        </option>
+                                            </option>
 
-                                    ))}
+                                        )
+                                    )}
 
                                 </select>
 
@@ -1501,7 +1849,9 @@ function Usuarios() {
                                             ? cerrarNuevoUsuario
                                             : cerrarEditarUsuario
                                     }
-                                    disabled={guardando}
+                                    disabled={
+                                        guardando
+                                    }
                                 >
 
                                     Cancelar
@@ -1512,7 +1862,9 @@ function Usuarios() {
                                 <button
                                     type="submit"
                                     className="btn-guardar-usuario"
-                                    disabled={guardando}
+                                    disabled={
+                                        guardando
+                                    }
                                 >
 
                                     {guardando ? (
@@ -1532,9 +1884,7 @@ function Usuarios() {
                                             <i className="fa-solid fa-floppy-disk"></i>
 
                                             {modalNuevoUsuario
-
                                                 ? "Crear usuario"
-
                                                 : "Guardar cambios"}
 
                                         </>

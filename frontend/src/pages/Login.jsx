@@ -1,213 +1,617 @@
 import Logo from "../components/Logo";
 import "../styles/AuthLayout.css";
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../services/auth.service";
+
+import {
+    login,
+} from "../services/auth.service";
+
+import {
+    establecerToken,
+    limpiarToken,
+} from "../services/api";
+
 
 function Login() {
 
     const navigate = useNavigate();
 
-    const [correo, setCorreo] = useState("");
-    const [contrasena, setContrasena] = useState("");
-    const [error, setError] = useState("");
 
+    const [correo, setCorreo] =
+        useState("");
+
+    const [contrasena, setContrasena] =
+        useState("");
+
+    const [error, setError] =
+        useState("");
+
+    const [cargando, setCargando] =
+        useState(false);
+
+    const [cuentaBloqueada, setCuentaBloqueada] =
+        useState(false);
+
+
+    /*
+    =========================================================
+    INICIAR SESIÓN
+    =========================================================
+    */
 
     const iniciarSesion = async (e) => {
 
-      e.preventDefault();
-
-      setError("");
+        e.preventDefault();
 
 
-      if (!correo.trim() || !contrasena) {
-
-        setError("Todos los campos son obligatorios");
-
-        return;
-      }
+        setError("");
+        setCuentaBloqueada(false);
 
 
-      try {
+        /*
+        =====================================================
+        VALIDACIÓN BÁSICA
+        =====================================================
+        */
 
+        if (
+            !correo.trim() ||
+            !contrasena
+        ) {
 
-        const datos = await login(
-          correo.trim(),
-          contrasena
-        );
+            setError(
+                "Todos los campos son obligatorios."
+            );
 
-
-        const usuario = datos.datos.usuario;
-        const token = datos.datos.tokenAcceso;
-
-        localStorage.setItem(
-          "usuario",
-          JSON.stringify(usuario)
-        );
-
-        localStorage.setItem(
-          "token",
-          token
-        );
-
-
-        console.log("Usuario autenticado:", usuario);
-
-
-        const rol = usuario.rol;
-
-
-        if (rol === "ADMINISTRADOR") {
-
-          navigate("/admin");
-
-        } else if (rol === "VENDEDOR") {
-
-          navigate("/vendedor");
-
-        } else if (rol === "DUENO") {
-
-          navigate("/dueno");
-
-        } else {
-
-          setError(
-            "El usuario no tiene un rol válido."
-          );
-
+            return;
         }
 
 
-      } catch (error) {
+        try {
 
-        setError(
-          error.message || "No fue posible iniciar sesión."
-        );
+            setCargando(true);
 
-      }
+
+            /*
+            =================================================
+            LOGIN
+            =================================================
+            */
+
+            const datos =
+                await login(
+                    correo.trim(),
+                    contrasena
+                );
+
+
+            /*
+            =================================================
+            DATOS DE AUTENTICACIÓN
+            =================================================
+            */
+
+            const usuario =
+                datos?.datos?.usuario;
+
+            const token =
+                datos?.datos?.tokenAcceso;
+
+
+            if (
+                !usuario ||
+                !token
+            ) {
+
+                throw new Error(
+                    "La respuesta del servidor no contiene los datos de autenticación."
+                );
+
+            }
+
+
+            /*
+            =================================================
+            TOKEN EN MEMORIA
+            =================================================
+
+            IMPORTANTE:
+
+            NO utilizamos localStorage para guardar
+            el token.
+            */
+
+            establecerToken(token);
+
+
+            /*
+            =================================================
+            USUARIO
+            =================================================
+
+            Conservamos temporalmente los datos del usuario
+            para la interfaz.
+
+            El token NO se guarda aquí.
+            */
+
+            localStorage.setItem(
+                "usuario",
+                JSON.stringify(usuario)
+            );
+
+
+            console.log(
+                "Usuario autenticado:",
+                usuario
+            );
+
+
+            /*
+            =================================================
+            CAMBIO OBLIGATORIO DE CONTRASEÑA
+            =================================================
+
+            El backend devuelve:
+
+            usuario.debeCambiarContrasena
+
+            Si es true:
+
+            - No entra al dashboard.
+            - Va directamente a cambiar contraseña.
+            */
+
+            if (
+                usuario.debeCambiarContrasena === true
+            ) {
+
+                navigate(
+                    "/cambiar-contrasena"
+                );
+
+                return;
+            }
+
+
+            /*
+            =================================================
+            ROL DEL USUARIO
+            =================================================
+            */
+
+            const rol =
+                usuario.rol;
+
+
+            /*
+            =================================================
+            ADMINISTRADOR
+            =================================================
+            */
+
+            if (
+                rol === "ADMINISTRADOR"
+            ) {
+
+                navigate(
+                    "/admin"
+                );
+
+                return;
+            }
+
+
+            /*
+            =================================================
+            VENDEDOR
+            =================================================
+            */
+
+            if (
+                rol === "VENDEDOR"
+            ) {
+
+                navigate(
+                    "/vendedor"
+                );
+
+                return;
+            }
+
+
+            /*
+            =================================================
+            DUEÑO
+            =================================================
+            */
+
+            if (
+                rol === "DUENO"
+            ) {
+
+                navigate(
+                    "/dueno"
+                );
+
+                return;
+            }
+
+
+            /*
+            =================================================
+            ROL NO VÁLIDO
+            =================================================
+            */
+
+            limpiarToken();
+
+            localStorage.removeItem(
+                "usuario"
+            );
+
+
+            setError(
+                "El usuario no tiene un rol válido."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Error iniciando sesión:",
+                error
+            );
+
+
+            /*
+            =================================================
+            INFORMACIÓN DEL ERROR
+            =================================================
+            */
+
+            const codigo =
+                String(
+                    error?.codigo || ""
+                ).toUpperCase();
+
+
+            const mensajeBackend =
+                String(
+                    error?.message || ""
+                ).toLowerCase();
+
+
+            /*
+            =================================================
+            DETECTAR CUENTA BLOQUEADA
+            =================================================
+            */
+
+            const bloqueoPorCodigo =
+                codigo.includes(
+                    "BLOQUE"
+                ) ||
+                codigo.includes(
+                    "LOCK"
+                );
+
+
+            const bloqueoPorMensaje =
+                mensajeBackend.includes(
+                    "bloqueada"
+                ) ||
+                mensajeBackend.includes(
+                    "bloqueado"
+                ) ||
+                mensajeBackend.includes(
+                    "demasiados intentos"
+                ) ||
+                mensajeBackend.includes(
+                    "intentos fallidos"
+                );
+
+
+            const bloqueoPorEstado =
+                error?.status === 423 ||
+                error?.status === 429;
+
+
+            if (
+                bloqueoPorCodigo ||
+                bloqueoPorMensaje ||
+                bloqueoPorEstado
+            ) {
+
+                setCuentaBloqueada(
+                    true
+                );
+
+
+                setError(
+                    error.message ||
+                    "Tu cuenta está bloqueada temporalmente. Intenta nuevamente más tarde o contacta al administrador."
+                );
+
+
+                return;
+            }
+
+
+            /*
+            =================================================
+            ERROR NORMAL DE LOGIN
+            =================================================
+            */
+
+            setError(
+                error.message ||
+                "No fue posible iniciar sesión."
+            );
+
+
+        } finally {
+
+            setCargando(false);
+
+        }
 
     };
 
 
+    /*
+    =========================================================
+    IR A OLVIDÉ MI CONTRASEÑA
+    =========================================================
+    */
+
+    function irARecuperarContrasena() {
+
+        navigate(
+            "/olvide-contrasena"
+        );
+
+    }
+
+
+    /*
+    =========================================================
+    RENDER
+    =========================================================
+    */
+
     return (
-      <main className="auth-page">
 
-        <section className="auth-card">
+        <main className="auth-page">
 
-          <div className="auth-logo">
-            <Logo />
-          </div>
+            <section className="auth-card">
 
 
-          <div className="auth-header">
+                {/* LOGO */}
 
-            <h1>
-              Iniciar sesión
-            </h1>
+                <div className="auth-logo">
 
-            <p>
-              Ingresa tus credenciales para acceder a PaperControl
-            </p>
+                    <Logo />
 
-          </div>
+                </div>
 
 
-          <form
-            className="auth-form"
-            onSubmit={iniciarSesion}
-          >
+                {/* ENCABEZADO */}
 
-            <div className="auth-group">
+                <div className="auth-header">
 
-              <label htmlFor="email">
-                Correo electrónico
-              </label>
+                    <h1>
+                        Iniciar sesión
+                    </h1>
 
-              <input
-                id="email"
-                type="email"
-                placeholder="correo@empresa.com"
-                value={correo}
-                onChange={(e) =>
-                  setCorreo(e.target.value)
-                }
-              />
+                    <p>
+                        Ingresa tus credenciales
+                        para acceder a PaperControl
+                    </p>
 
-            </div>
+                </div>
 
 
-            <div className="auth-group">
+                {/* FORMULARIO */}
 
-              <label htmlFor="password">
-                Contraseña
-              </label>
-
-              <input
-                id="password"
-                type="password"
-                placeholder="Ingresa tu contraseña"
-                value={contrasena}
-                onChange={(e) =>
-                  setContrasena(e.target.value)
-                }
-              />
-
-            </div>
+                <form
+                    className="auth-form"
+                    onSubmit={iniciarSesion}
+                    noValidate
+                >
 
 
-            <div className="auth-options">
+                    {/* CORREO */}
 
-              <label>
+                    <div className="auth-group">
 
-                <input type="checkbox" />
+                        <label htmlFor="email">
 
-                Recordarme
+                            Correo electrónico
 
-              </label>
-
-
-              <a href="#recuperar">
-                ¿Olvidaste tu contraseña?
-              </a>
-
-            </div>
+                        </label>
 
 
-            {error && (
+                        <input
+                            id="email"
+                            type="email"
+                            placeholder="correo@empresa.com"
+                            value={correo}
+                            onChange={(e) =>
+                                setCorreo(
+                                    e.target.value
+                                )
+                            }
+                            disabled={cargando}
+                            autoComplete="username"
+                        />
 
-              <p className="auth-error">
-                {error}
-              </p>
-
-            )}
-
-
-            <button
-              type="submit"
-              className="auth-button"
-            >
-              Iniciar sesión
-            </button>
-
-          </form>
+                    </div>
 
 
-          <p className="auth-footer">
+                    {/* CONTRASEÑA */}
 
-            ¿No tienes una cuenta?
+                    <div className="auth-group">
 
-            {" "}
+                        <label htmlFor="password">
 
-            <a href="#contacto">
-              Contáctanos
-            </a>
+                            Contraseña
 
-          </p>
+                        </label>
 
-        </section>
 
-      </main>
+                        <input
+                            id="password"
+                            type="password"
+                            placeholder="Ingresa tu contraseña"
+                            value={contrasena}
+                            onChange={(e) =>
+                                setContrasena(
+                                    e.target.value
+                                )
+                            }
+                            disabled={cargando}
+                            autoComplete="current-password"
+                        />
+
+                    </div>
+
+
+                    {/* OPCIONES */}
+
+                    <div className="auth-options">
+
+
+                        <label>
+
+                            <input
+                                type="checkbox"
+                                disabled={cargando}
+                            />
+
+                            Recordarme
+
+                        </label>
+
+
+                        <button
+                            type="button"
+                            className="auth-link-button"
+                            onClick={
+                                irARecuperarContrasena
+                            }
+                            disabled={cargando}
+                        >
+
+                            ¿Olvidaste tu contraseña?
+
+                        </button>
+
+
+                    </div>
+
+
+                    {/* CUENTA BLOQUEADA */}
+
+                    {cuentaBloqueada && (
+
+                        <div
+                            className="auth-error auth-error-bloqueo"
+                        >
+
+                            <i className="fa-solid fa-lock"></i>
+
+                            <div>
+
+                                <strong>
+                                    Cuenta bloqueada
+                                </strong>
+
+                                <p>
+                                    {error}
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    )}
+
+
+                    {/* ERROR NORMAL */}
+
+                    {error &&
+                        !cuentaBloqueada && (
+
+                            <p className="auth-error">
+
+                                {error}
+
+                            </p>
+
+                        )}
+
+
+                    {/* BOTÓN */}
+
+                    <button
+                        type="submit"
+                        className="auth-button"
+                        disabled={cargando}
+                    >
+
+                        {cargando ? (
+
+                            <>
+
+                                <i className="fa-solid fa-spinner fa-spin"></i>
+
+                                Verificando...
+
+                            </>
+
+                        ) : (
+
+                            <>
+
+                                <i className="fa-solid fa-right-to-bracket"></i>
+
+                                Iniciar sesión
+
+                            </>
+
+                        )}
+
+                    </button>
+
+
+                </form>
+
+
+                {/* FOOTER */}
+
+                <p className="auth-footer">
+
+                    ¿No tienes una cuenta?
+
+                    {" "}
+
+                    <a href="#contacto">
+                        Contáctanos
+                    </a>
+
+                </p>
+
+
+            </section>
+
+        </main>
+
     );
+
 }
+
 
 export default Login;

@@ -1,0 +1,440 @@
+/*
+=========================================================
+OLVIDÉ MI CONTRASEÑA
+=========================================================
+*/
+
+.auth-page {
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 32px 20px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f5f7fb 0%,
+            #eef2f7 100%
+        );
+
+    box-sizing: border-box;
+}
+
+
+/*
+=========================================================
+TARJETA
+=========================================================
+*/
+
+.auth-card {
+    width: 100%;
+
+    max-width: 460px;
+
+    background: #ffffff;
+
+    border-radius: 18px;
+
+    padding: 40px;
+
+    box-shadow:
+        0 10px 35px rgba(
+            0,
+            0,
+            0,
+            0.08
+        );
+
+    box-sizing: border-box;
+}
+
+
+/*
+=========================================================
+LOGO
+=========================================================
+*/
+
+.auth-logo {
+    display: flex;
+
+    justify-content: center;
+
+    margin-bottom: 24px;
+}
+
+
+/*
+=========================================================
+ENCABEZADO
+=========================================================
+*/
+
+.auth-header {
+    text-align: center;
+
+    margin-bottom: 30px;
+}
+
+
+.auth-header h1 {
+    margin: 0 0 10px;
+
+    font-size: 28px;
+
+    font-weight: 700;
+
+    color: #1f2937;
+}
+
+
+.auth-header p {
+    margin: 0;
+
+    font-size: 15px;
+
+    line-height: 1.6;
+
+    color: #6b7280;
+}
+
+
+/*
+=========================================================
+FORMULARIO
+=========================================================
+*/
+
+.auth-form {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+
+/*
+=========================================================
+GRUPO
+=========================================================
+*/
+
+.auth-group {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+
+.auth-group label {
+    font-size: 14px;
+
+    font-weight: 600;
+
+    color: #374151;
+}
+
+
+.auth-group input {
+    width: 100%;
+
+    padding: 13px 14px;
+
+    border: 1px solid #d1d5db;
+
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: #1f2937;
+
+    font-size: 15px;
+
+    outline: none;
+
+    box-sizing: border-box;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+.auth-group input::placeholder {
+    color: #9ca3af;
+}
+
+
+.auth-group input:focus {
+    border-color: #0b8a9a;
+
+    box-shadow:
+        0 0 0 3px rgba(
+            37,
+            99,
+            235,
+            0.12
+        );
+}
+
+
+.auth-group input:disabled {
+    background: #f3f4f6;
+
+    cursor: not-allowed;
+}
+
+
+/*
+=========================================================
+ERROR
+=========================================================
+*/
+
+.auth-error {
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 10px;
+
+    padding: 12px 14px;
+
+    border-radius: 10px;
+
+    background: #fef2f2;
+
+    border: 1px solid #fecaca;
+
+    color: #b91c1c;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+    box-sizing: border-box;
+}
+
+
+.auth-error i {
+    margin-top: 2px;
+
+    flex-shrink: 0;
+}
+
+
+/*
+=========================================================
+ÉXITO
+=========================================================
+*/
+
+.auth-success {
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 10px;
+
+    padding: 12px 14px;
+
+    border-radius: 10px;
+
+    background: #ecfdf5;
+
+    border: 1px solid #a7f3d0;
+
+    color: #047857;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+    box-sizing: border-box;
+}
+
+
+.auth-success i {
+    margin-top: 2px;
+
+    flex-shrink: 0;
+}
+
+
+/*
+=========================================================
+BOTÓN PRINCIPAL
+=========================================================
+*/
+
+.auth-button {
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 9px;
+
+    padding: 13px 18px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: #0b8a9a;
+
+    color: #ffffff;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.1s ease,
+        box-shadow 0.2s ease;
+}
+
+
+.auth-button:hover:not(:disabled) {
+    background: #087482;
+    box-shadow: 0 5px 15px rgba(11, 138, 154, 0.2);
+}
+
+
+.auth-button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+
+.auth-button:disabled {
+    opacity: 0.65;
+
+    cursor: not-allowed;
+}
+
+
+/*
+=========================================================
+BOTÓN VOLVER
+=========================================================
+*/
+
+.auth-back-button {
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    margin-top: 2px;
+
+    padding: 8px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #0b8a9a;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+
+.auth-back-button:hover:not(:disabled) {
+    color: #0b8a9a;
+
+    text-decoration: underline;
+}
+
+
+.auth-back-button:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+}
+
+
+/*
+=========================================================
+FOOTER
+=========================================================
+*/
+
+.auth-footer {
+    margin: 26px 0 0;
+
+    text-align: center;
+
+    font-size: 14px;
+
+    color: #6b7280;
+}
+
+
+.auth-footer a {
+    color: #0b8a9a;
+
+    font-weight: 600;
+
+    text-decoration: none;
+}
+
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+
+/*
+=========================================================
+RESPONSIVE
+=========================================================
+*/
+
+@media (max-width: 520px) {
+
+    .auth-page {
+        padding: 20px 14px;
+    }
+
+
+    .auth-card {
+        padding: 30px 22px;
+
+        border-radius: 14px;
+    }
+
+
+    .auth-header h1 {
+        font-size: 24px;
+    }
+
+
+    .auth-header p {
+        font-size: 14px;
+    }
+
+}

@@ -4,6 +4,7 @@ import PrivateRoute from "./routes/PrivateRoute";
 
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
+import OlvideContrasena from "./pages/OlvideContrasena";
 import AccesoDenegado from "./pages/AccesoDenegado";
 
 import Admin from "./pages/Admin";
@@ -15,7 +16,8 @@ import Ventas from "./pages/Ventas";
 import Reportes from "./pages/Reportes";
 import Clientes from "./pages/Clientes";
 import Inventario from "./pages/Inventario";
-
+import RestablecerContrasena from "./pages/RestablecerContrasena";
+import CambiarContrasena from "./pages/CambiarContrasena";
 
 function App() {
 
@@ -39,10 +41,34 @@ function App() {
                 element={<Login />}
             />
 
+            <Route
+                path="/olvide-contrasena"
+                element={<OlvideContrasena />}
+            />
+
+            <Route
+                path="/restablecer-contrasena"
+                element={<RestablecerContrasena />}
+            />
 
             <Route
                 path="/acceso-denegado"
                 element={<AccesoDenegado />}
+            />
+
+            <Route
+                path="/cambiar-contrasena"
+                element={
+                    <PrivateRoute
+                        rolesPermitidos={[
+                            "ADMINISTRADOR",
+                            "VENDEDOR",
+                            "DUENO"
+                        ]}
+                    >
+                        <CambiarContrasena />
+                    </PrivateRoute>
+                }
             />
 
 

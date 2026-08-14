@@ -1082,3 +1082,107 @@
     background: #dc2626;
     color: white;
 }
+
+/* =========================================================
+   USUARIO BLOQUEADO
+   ========================================================= */
+
+.estado-bloqueado {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 5px 10px;
+
+    border-radius: 999px;
+
+    background: #fff1f2;
+
+    color: #be123c;
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+
+.estado-bloqueado i {
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   BOTÓN DESBLOQUEAR
+   ========================================================= */
+
+.btn-desbloquear {
+    width: 34px;
+    height: 34px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #ecfdf5;
+
+    color: #059669;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+
+.btn-desbloquear:hover {
+    background: #d1fae5;
+
+    color: #047857;
+
+    transform: translateY(-1px);
+}
+
+
+.btn-desbloquear:disabled {
+    opacity: 0.5;
+
+    cursor: not-allowed;
+
+    transform: none;
+}
+
+/* Intentos */
+
+.badge-intentos{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    min-width:30px;
+    height:30px;
+
+    border-radius:50%;
+    background:#e2e8f0;
+    color:#334155;
+
+    font-size:13px;
+    font-weight:700;
+}
+
+/* Restablecimiento */
+
+.btn-restablecer{
+    background:#dbeafe;
+    color:#2563eb;
+}
+
+.btn-restablecer:hover{
+    background:#2563eb;
+    color:white;
+}

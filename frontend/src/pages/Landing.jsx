@@ -398,7 +398,7 @@ function Landing() {
 
               <div className="contacto-card">
                 <i className="fa-solid fa-envelope"></i>
-                <p>contacto@papercontrol.com</p>
+                <p>paper.control2026@gmail.com</p>
               </div>
 
               <div className="contacto-card">

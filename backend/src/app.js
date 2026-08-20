@@ -36,6 +36,10 @@ import {
   crearRutasGastosCaja,
   crearRutasTurnosCaja,
 } from "./routes/cash-register.routes.js";
+import { ModeloVenta } from "./models/sale.model.js";
+import { ServicioVenta } from "./services/sale.service.js";
+import { ControladorVenta } from "./controllers/sale.controller.js";
+import { crearRutasVentas } from "./routes/sale.routes.js";
 
 // Construye la aplicación Express y conecta las piezas del patrón MVC.
 // Recibir las conexiones y la configuración como parámetros facilita las pruebas.
@@ -80,6 +84,9 @@ export function crearAplicacion({ conexiones, configuracion }) {
   const controladorCliente = new ControladorCliente(servicioCliente);
   const controladorTurnoCaja = new ControladorTurnoCaja(
     new ServicioTurnoCaja(new ModeloTurnoCaja(conexiones)),
+  );
+  const controladorVenta = new ControladorVenta(
+    new ServicioVenta(new ModeloVenta(conexiones)),
   );
 
   // Se crean los modelos y se entregan al servicio responsable del login.
@@ -158,6 +165,10 @@ export function crearAplicacion({ conexiones, configuracion }) {
   aplicacion.use(
     "/api/gastos-caja",
     crearRutasGastosCaja({ autenticar, controlador: controladorTurnoCaja }),
+  );
+  aplicacion.use(
+    "/api/ventas",
+    crearRutasVentas({ autenticar, controlador: controladorVenta }),
   );
 
   // Estos manejadores deben permanecer al final de todas las rutas.

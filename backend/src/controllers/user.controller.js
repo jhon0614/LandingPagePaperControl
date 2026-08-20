@@ -23,7 +23,7 @@ export class ControladorUsuario {
 
   buscarPorId = async (solicitud, respuesta, siguiente) => {
     try {
-      // obtener el ID desde solicitud.params.
+      // obtener el ID del usuario desde solicitud.params.
       const id = solicitud.params.id;
 
       // solicitar el usuario al servicio.
@@ -92,13 +92,13 @@ export class ControladorUsuario {
 
   cambiarEstado = async (solicitud, respuesta, siguiente) => {
     try {
-      // obtener solicitud.params.id.
+      // obtener el id con solicitud.params.id.
       const usuarioId = solicitud.params.id;
 
-      // obtener solicitud.body.estaActivo.
+      // obtener el estado con solicitud.body.estaActivo.
       const { estaActivo } = solicitud.body;
 
-      // obtener solicitud.usuario.id.
+      // obtener el id del administrador con solicitud.usuario.id.
       const administradorId = solicitud.usuario.id;
 
       // llamar servicioUsuario.cambiarEstado().
@@ -109,7 +109,7 @@ export class ControladorUsuario {
         solicitud.ip,
       );
 
-      // responder 200 con el usuario.
+      // responder 200 con el usuario modificado.
       return respuesta.status(200).json({
         exito: true,
         datos: {

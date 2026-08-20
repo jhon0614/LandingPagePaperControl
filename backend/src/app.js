@@ -25,6 +25,17 @@ import { ModeloRestablecimientoContrasena } from "./models/password-reset.model.
 import { ServicioContrasena } from "./services/password.service.js";
 import { ServicioCorreo } from "./services/email.service.js";
 import { ControladorContrasena } from "./controllers/password.controller.js";
+import { ModeloCliente } from "./models/client.model.js";
+import { ServicioCliente } from "./services/client.service.js";
+import { ControladorCliente } from "./controllers/client.controller.js";
+import { crearRutasClientes } from "./routes/client.routes.js";
+import { ModeloTurnoCaja } from "./models/cash-register.model.js";
+import { ServicioTurnoCaja } from "./services/cash-register.service.js";
+import { ControladorTurnoCaja } from "./controllers/cash-register.controller.js";
+import {
+  crearRutasGastosCaja,
+  crearRutasTurnosCaja,
+} from "./routes/cash-register.routes.js";
 
 // Construye la aplicación Express y conecta las piezas del patrón MVC.
 // Recibir las conexiones y la configuración como parámetros facilita las pruebas.
@@ -62,6 +73,14 @@ export function crearAplicacion({ conexiones, configuracion }) {
     modeloAuditoria,
   );
   const controladorUsuario = new ControladorUsuario(servicioUsuario);
+  const servicioCliente = new ServicioCliente(
+    new ModeloCliente(conexiones),
+    modeloAuditoria,
+  );
+  const controladorCliente = new ControladorCliente(servicioCliente);
+  const controladorTurnoCaja = new ControladorTurnoCaja(
+    new ServicioTurnoCaja(new ModeloTurnoCaja(conexiones)),
+  );
 
   // Se crean los modelos y se entregan al servicio responsable del login.
   const servicioAutenticacion = new ServicioAutenticacion({
@@ -124,6 +143,22 @@ export function crearAplicacion({ conexiones, configuracion }) {
     }),
   );
 
+  aplicacion.use(
+    "/api/clientes",
+    crearRutasClientes({
+      autenticar,
+      controladorCliente,
+    }),
+  );
+
+  aplicacion.use(
+    "/api/turnos-caja",
+    crearRutasTurnosCaja({ autenticar, controlador: controladorTurnoCaja }),
+  );
+  aplicacion.use(
+    "/api/gastos-caja",
+    crearRutasGastosCaja({ autenticar, controlador: controladorTurnoCaja }),
+  );
 
   // Estos manejadores deben permanecer al final de todas las rutas.
   aplicacion.use(manejarNoEncontrado);

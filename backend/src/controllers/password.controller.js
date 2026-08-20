@@ -2,12 +2,14 @@
 // servicio. Las reglas de seguridad permanecen en ServicioContrasena.
 export class ControladorContrasena {
   constructor(servicioContrasena) {
+    // El controlador recibe el servicio que contiene la lógica de seguridad.
     this.servicioContrasena = servicioContrasena;
   }
 
   cambiarContrasena = async (solicitud, respuesta, siguiente) => {
     try {
-      // El ID proviene del token validado, no del cuerpo enviado por el cliente.
+      // El ID del usuario se obtiene del token JWT validado previamente.
+      // El servicio se encarga de verificar la contraseña actual y aplicar la nueva.
       const resultado = await this.servicioContrasena.cambiarContrasena({
         usuarioId: solicitud.usuario.id,
         contrasenaActual: solicitud.body.contrasenaActual,
@@ -25,7 +27,8 @@ export class ControladorContrasena {
 
   solicitarRestablecimiento = async (solicitud, respuesta, siguiente) => {
     try {
-      // Esta acción es pública porque se usa cuando la persona no puede ingresar.
+      // Acción pública: el usuario no necesita estar autenticado.
+      // El servicio genera un token y envía un correo con el enlace de restablecimiento.
       const resultado = await this.servicioContrasena.solicitarRestablecimiento(
         {
           correo: solicitud.body.correo,
@@ -43,7 +46,8 @@ export class ControladorContrasena {
 
   restablecerContrasena = async (solicitud, respuesta, siguiente) => {
     try {
-      // El token llega desde el enlace enviado al correo del usuario.
+      // El token proviene del enlace enviado al correo.
+      // El servicio valida el token y aplica la nueva contraseña.
       const resultado = await this.servicioContrasena.restablecerContrasena({
         token: solicitud.body.token,
         contrasenaNueva: solicitud.body.contrasenaNueva,
@@ -64,7 +68,8 @@ export class ControladorContrasena {
     siguiente,
   ) => {
     try {
-      // solicitud.usuario identifica al administrador o dueño responsable.
+      // Usado por un administrador para forzar el restablecimiento de otro usuario.
+      // Se registra el responsable y la IP para auditoría.
       const resultado =
         await this.servicioContrasena.solicitarRestablecimientoAdministrativo({
           usuarioId: solicitud.params.id,
@@ -83,7 +88,8 @@ export class ControladorContrasena {
 
   desbloquearUsuario = async (solicitud, respuesta, siguiente) => {
     try {
-      // La ruta ya comprobó que el responsable tiene permisos administrativos.
+      // Acción administrativa: desbloquea la cuenta de un usuario.
+      // La ruta ya validó que el responsable tiene permisos.
       const resultado = await this.servicioContrasena.desbloquearUsuario({
         usuarioId: solicitud.params.id,
         responsableId: solicitud.usuario.id,

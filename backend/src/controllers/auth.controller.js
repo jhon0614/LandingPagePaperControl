@@ -57,10 +57,10 @@ export class ControladorAutenticacion {
   renovarSesion = async (solicitud, respuesta, siguiente) => {
     try {
       const resultado = await this.servicioAutenticacion.renovarSesion(
-        obtenerCookie(solicitud, "tokenRenovacion"),
+        obtenerCookie(solicitud, "tokenRenovacion"), //valida la cookie tokenRenovación
       );
 
-      this.#guardarCookieRenovacion(respuesta, resultado);
+      this.#guardarCookieRenovacion(respuesta, resultado); //devuelve un token de acceso y datos del usuario
       respuesta.status(200).json({
         exito: true,
         datos: {
@@ -78,9 +78,9 @@ export class ControladorAutenticacion {
   cerrarSesion = async (solicitud, respuesta, siguiente) => {
     try {
       await this.servicioAutenticacion.cerrarSesion(
-        obtenerCookie(solicitud, "tokenRenovacion"),
+        obtenerCookie(solicitud, "tokenRenovacion"),// lee la cookie tokenRenovación
       );
-      this.#eliminarCookieRenovacion(respuesta);
+      this.#eliminarCookieRenovacion(respuesta); //invalida el token
       respuesta.status(204).send();
     } catch (error) {
       siguiente(error);
@@ -89,14 +89,14 @@ export class ControladorAutenticacion {
 
   #opcionesCookie() {
     return {
-      httpOnly: true,
-      secure: this.configuracion.entorno === "production",
-      sameSite: "strict",
-      path: "/api/auth",
+      httpOnly: true,//no accesible desde JS
+      secure: this.configuracion.entorno === "production", //solo se envía en conexiones HTTPS
+      sameSite: "strict", //no se envía en solicitudes cross-site
+      path: "/api/auth",//ruta donde se encuentra el endpoint de autenticación
     };
   }
 
-  #guardarCookieRenovacion(respuesta, resultado) {
+  #guardarCookieRenovacion(respuesta, resultado) {//almacena el token de renovación en una cookie
     const opciones = this.#opcionesCookie();
     if (resultado.esPersistente) {
       opciones.expires = resultado.expiracionTokenRenovacion;
@@ -105,7 +105,7 @@ export class ControladorAutenticacion {
     respuesta.cookie("tokenRenovacion", resultado.tokenRenovacion, opciones);
   }
 
-  #eliminarCookieRenovacion(respuesta) {
+  #eliminarCookieRenovacion(respuesta) { //elimina la cookie de renovación
     respuesta.clearCookie("tokenRenovacion", this.#opcionesCookie());
   }
 }

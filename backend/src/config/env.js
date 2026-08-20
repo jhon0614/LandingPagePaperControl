@@ -24,7 +24,7 @@ function enteroPositivo(nombre, valorDefecto) {
 export function cargarConfiguracion() {
   const entorno = process.env.NODE_ENV ?? "development";
 
-  return Object.freeze({
+  return Object.freeze({ //freeze para que no se pueda modificar
     entorno,
     puerto: enteroPositivo("PORT", 3000),
     origenFrontend: process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",

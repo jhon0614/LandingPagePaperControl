@@ -23,6 +23,23 @@ function formatoMoneda(valor) {
 
 }
 
+function formatearEntrada(valor) {
+
+    const digitos = String(valor || "").replace(/\D/g, "");
+
+    if (!digitos) return "";
+
+    return Number(digitos).toLocaleString("es-CO");
+
+}
+
+
+function limpiarEntrada(valorFormateado) {
+
+    return String(valorFormateado).replace(/\D/g, "");
+
+}
+
 
 function Caja() {
 
@@ -437,13 +454,12 @@ function Caja() {
                         <label>Monto inicial de efectivo</label>
 
                         <input
-                            type="number"
-                            min="0"
-                            step="100"
-                            placeholder="Ej: 100000"
-                            value={montoInicial}
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="Ej: 100.000"
+                            value={formatearEntrada(montoInicial)}
                             onChange={(e) =>
-                                setMontoInicial(e.target.value)
+                                setMontoInicial(limpiarEntrada(e.target.value))
                             }
                             disabled={abriendo}
                         />
@@ -602,13 +618,12 @@ function Caja() {
                     />
 
                     <input
-                        type="number"
-                        min="0"
-                        step="100"
+                        type="text"
+                        inputMode="numeric"
                         placeholder="Monto"
-                        value={montoGasto}
+                        value={formatearEntrada(montoGasto)}
                         onChange={(e) =>
-                            setMontoGasto(e.target.value)
+                            setMontoGasto(limpiarEntrada(e.target.value))
                         }
                         disabled={guardandoGasto}
                     />
@@ -766,13 +781,12 @@ function Caja() {
                                     <label>Monto contado</label>
 
                                     <input
-                                        type="number"
-                                        min="0"
-                                        step="100"
-                                        placeholder="Ej: 200000"
-                                        value={montoContado}
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="Ej: 200.000"
+                                        value={formatearEntrada(montoContado)}
                                         onChange={(e) =>
-                                            setMontoContado(e.target.value)
+                                            setMontoContado(limpiarEntrada(e.target.value))
                                         }
                                         disabled={cerrando}
                                     />

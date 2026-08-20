@@ -8,6 +8,17 @@ import {
     solicitarRestablecimiento,
 } from "../services/auth.service";
 
+function irAContacto() {
+    navigate("/");
+
+    setTimeout(() => {
+        document
+            .getElementById("contacto")
+            ?.scrollIntoView({
+                behavior: "smooth",
+            });
+    }, 150);
+}
 
 function OlvideContrasena() {
 
@@ -226,6 +237,29 @@ function OlvideContrasena() {
 
     /*
     =========================================================
+    IR A CONTACTO
+    =========================================================
+    */
+
+    function irAContacto() {
+
+        navigate("/");
+
+        setTimeout(() => {
+
+            document
+                .getElementById("contacto")
+                ?.scrollIntoView({
+                    behavior: "smooth",
+                });
+
+        }, 150);
+
+    }
+
+
+    /*
+    =========================================================
     RENDER
     =========================================================
     */
@@ -418,9 +452,13 @@ function OlvideContrasena() {
 
                     {" "}
 
-                    <a href="#contacto">
+                    <button
+                        type="button"
+                        className="auth-link-button"
+                        onClick={irAContacto}
+                    >
                         Contáctanos
-                    </a>
+                    </button>
 
                 </p>
 

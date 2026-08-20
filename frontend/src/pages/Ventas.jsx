@@ -1,9 +1,13 @@
 import { useMemo, useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Layout from "../components/Layout";
 
 import "../styles/Dashboard.css";
 import "../styles/Ventas.css";
+import "../styles/Caja.css";
+
+import { obtenerTurnoActual } from "../services/caja.service";
 
 
 function Dropdown({
@@ -176,6 +180,36 @@ function Dropdown({
 
 function Ventas() {
 
+    const navigate = useNavigate();
+
+    const [turnoActivo, setTurnoActivo] = useState(null);
+    const [verificandoCaja, setVerificandoCaja] = useState(true);
+
+    useEffect(() => {
+
+        async function verificarCaja() {
+
+            try {
+
+                const turno = await obtenerTurnoActual();
+
+                setTurnoActivo(turno);
+
+            } catch (error) {
+
+                setTurnoActivo(null);
+
+            } finally {
+
+                setVerificandoCaja(false);
+
+            }
+
+        }
+
+        verificarCaja();
+
+    }, []);
 
     const usuarioActual = JSON.parse(
         localStorage.getItem("usuario")
@@ -947,6 +981,42 @@ function Ventas() {
 
         }, [metodosPagoActivos]);
 
+        if (verificandoCaja) {
+
+        return (
+            <Layout>
+                <div className="caja-cargando">
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <p>Verificando estado de caja...</p>
+                </div>
+            </Layout>
+        );
+
+    }
+
+    if (!turnoActivo) {
+
+        return (
+            <Layout>
+                <div className="caja-apertura-card">
+                    <i className="fa-solid fa-lock"></i>
+                    <h2>Caja cerrada</h2>
+                    <p>
+                        Debes abrir la caja antes de poder
+                        registrar ventas.
+                    </p>
+                    <button
+                        type="button"
+                        className="auth-button"
+                        onClick={() => navigate("/caja")}
+                    >
+                        Ir a Caja
+                    </button>
+                </div>
+            </Layout>
+        );
+
+    }
 
     return (
 

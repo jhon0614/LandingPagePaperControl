@@ -19,8 +19,13 @@ function Login() {
     const navigate = useNavigate();
 
 
-    const [correo, setCorreo] =
-        useState("");
+    const [correo, setCorreo] = useState(
+    localStorage.getItem("correoRecordado") || ""
+    );
+
+    const [recordarme, setRecordarme] = useState(
+        localStorage.getItem("recordarme") === "true"
+    );
 
     const [contrasena, setContrasena] =
         useState("");
@@ -111,6 +116,29 @@ function Login() {
 
             }
 
+            if (recordarme) {
+
+                localStorage.setItem(
+                    "correoRecordado",
+                    correo.trim()
+                );
+
+                localStorage.setItem(
+                    "recordarme",
+                    "true"
+                );
+
+            } else {
+
+                localStorage.removeItem(
+                    "correoRecordado"
+                );
+
+                localStorage.removeItem(
+                    "recordarme"
+                );
+
+            }
 
             /*
             =================================================
@@ -375,12 +403,35 @@ function Login() {
 
     }
 
+    /*
+    =========================================================
+    IR A CONTACTO
+    =========================================================
+    */
+    function irAContacto() {
+
+    navigate("/");
+
+    setTimeout(() => {
+
+        document
+            .getElementById("contacto")
+            ?.scrollIntoView({
+                behavior: "smooth",
+            });
+
+    }, 150);
+
+}
+
 
     /*
     =========================================================
     RENDER
     =========================================================
     */
+
+    function volverAlInicio() {navigate("/");}
 
     return (
 
@@ -412,7 +463,6 @@ function Login() {
                     </p>
 
                 </div>
-
 
                 {/* FORMULARIO */}
 
@@ -485,14 +535,15 @@ function Login() {
 
 
                         <label>
-
                             <input
                                 type="checkbox"
+                                checked={recordarme}
+                                onChange={(e) =>
+                                    setRecordarme(e.target.checked)
+                                }
                                 disabled={cargando}
                             />
-
                             Recordarme
-
                         </label>
 
 
@@ -554,7 +605,7 @@ function Login() {
                         )}
 
 
-                    {/* BOTÓN */}
+                    {/* BOTÓN INICIAR SESIÓN */}
 
                     <button
                         type="submit"
@@ -586,6 +637,17 @@ function Login() {
 
                     </button>
 
+                    {/* VOLVER AL INICIO */}
+
+                    <button
+                        type="button"
+                        className="btn-volver-inicio"
+                        onClick={volverAlInicio}
+                    >
+                        <i className="fa-solid fa-arrow-left"></i>
+                        Volver al inicio
+                    </button>
+
 
                 </form>
 
@@ -594,13 +656,15 @@ function Login() {
 
                 <p className="auth-footer">
 
-                    ¿No tienes una cuenta?
+                    ¿Necesitas ayuda?{" "}
 
-                    {" "}
-
-                    <a href="#contacto">
+                    <button
+                        type="button"
+                        className="auth-link-button"
+                        onClick={irAContacto}
+                    >
                         Contáctanos
-                    </a>
+                    </button>
 
                 </p>
 

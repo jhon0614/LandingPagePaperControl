@@ -1,0 +1,406 @@
+/* =========================================================
+   HEADER
+========================================================= */
+
+.caja-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.caja-header h1 {
+    color: #062f3d;
+    margin-bottom: 6px;
+}
+
+.caja-header p {
+    margin: 0;
+}
+
+.caja-cargando {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+}
+
+.caja-cargando i {
+    font-size: 26px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.caja-error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   APERTURA
+========================================================= */
+
+.caja-apertura-card {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 420px;
+    margin: 40px auto;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
+}
+
+.caja-apertura-card i {
+    font-size: 34px;
+    color: #05788a;
+    margin-bottom: 14px;
+}
+
+.caja-apertura-card h2 {
+    color: #062f3d;
+    margin: 0 0 8px;
+}
+
+.caja-apertura-card p {
+    color: #64748b;
+    margin: 0 0 20px;
+    font-size: 14px;
+}
+
+.caja-apertura-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+}
+
+.caja-apertura-form label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.caja-apertura-form input {
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 11px 14px;
+    font-size: 14px;
+    outline: none;
+}
+
+.caja-apertura-form input:focus {
+    border-color: #05788a;
+}
+
+
+/* =========================================================
+   BOTÓN CERRAR CAJA
+========================================================= */
+
+.btn-cerrar-caja {
+    border: none;
+    background: #dc2626;
+    color: white;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: fit-content;
+}
+
+.btn-cerrar-caja:hover {
+    background: #b91c1c;
+}
+
+
+/* =========================================================
+   RESUMEN CARDS
+========================================================= */
+
+.caja-resumen-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 26px;
+}
+
+.caja-resumen-card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .06);
+}
+
+.caja-resumen-card span {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.caja-resumen-card strong {
+    font-size: 19px;
+    color: #062f3d;
+}
+
+.caja-resumen-negativo {
+    color: #dc2626 !important;
+}
+
+.caja-resumen-destacado {
+    background: #e6f7fa;
+    border: 1px solid #b7e6ec;
+}
+
+.caja-resumen-destacado strong {
+    color: #05788a;
+}
+
+
+/* =========================================================
+   GASTOS
+========================================================= */
+
+.caja-gastos-panel {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
+}
+
+.caja-gastos-panel h2 {
+    margin: 0 0 16px;
+    color: #062f3d;
+    font-size: 17px;
+}
+
+.caja-gasto-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.caja-gasto-form input[type="text"] {
+    flex: 1;
+}
+
+.caja-gasto-form input[type="number"] {
+    width: 160px;
+}
+
+.caja-gasto-form input {
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 10px 14px;
+    font-size: 14px;
+    outline: none;
+}
+
+.caja-gasto-form input:focus {
+    border-color: #05788a;
+}
+
+.btn-agregar-gasto {
+    border: none;
+    background: #05788a;
+    color: white;
+    padding: 0 18px;
+    border-radius: 9px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-agregar-gasto:hover {
+    background: #046273;
+}
+
+.caja-gastos-tabla table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.caja-gastos-tabla th {
+    text-align: left;
+    font-size: 12px;
+    color: #64748b;
+    padding: 10px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.caja-gastos-tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #1e293b;
+    border-bottom: 1px solid #f8fafc;
+}
+
+.caja-gastos-vacio {
+    text-align: center;
+    color: #94a3b8;
+    padding: 24px;
+}
+
+.caja-gasto-eliminar {
+    border: none;
+    background: #fee2e2;
+    color: #dc2626;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.caja-gasto-eliminar:hover {
+    background: #dc2626;
+    color: white;
+}
+
+
+/* =========================================================
+   MODAL CIERRE
+========================================================= */
+
+.caja-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1000;
+}
+
+.caja-modal {
+    width: 100%;
+    max-width: 460px;
+    background: white;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, .25);
+}
+
+.caja-modal-header h2 {
+    margin: 0 0 6px;
+    color: #062f3d;
+}
+
+.caja-modal-header p {
+    margin: 0 0 18px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.caja-modal-resumen {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+}
+
+.caja-modal-resumen span {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.caja-modal-resumen strong {
+    font-size: 20px;
+    color: #05788a;
+}
+
+.caja-cierre-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.caja-cierre-form label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.caja-cierre-form input {
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 11px 14px;
+    font-size: 14px;
+    outline: none;
+}
+
+.caja-modal-acciones {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.caja-modal-acciones button {
+    flex: 1;
+}
+
+.btn-cancelar-cierre {
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #334155;
+    padding: 11px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-cancelar-cierre:hover {
+    background: #f8fafc;
+}
+
+
+/* =========================================================
+   CUADRE FINAL
+========================================================= */
+
+.caja-cuadre-detalle {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.caja-cuadre-detalle > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 9px;
+}
+
+.caja-cuadre-detalle span {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.caja-cuadre-detalle strong {
+    color: #1e293b;
+}
+
+.caja-cuadre-diferencia {
+    background: #f1f5f9 !important;
+}
+
+.caja-cuadre-diferencia.negativa strong {
+    color: #dc2626;
+}
+
+.caja-cuadre-diferencia.positiva strong {
+    color: #16a34a;
+}

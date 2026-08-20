@@ -16,6 +16,7 @@ import Ventas from "./pages/Ventas";
 import Reportes from "./pages/Reportes";
 import Clientes from "./pages/Clientes";
 import Inventario from "./pages/Inventario";
+import Caja from "./pages/Caja";
 import RestablecerContrasena from "./pages/RestablecerContrasena";
 import CambiarContrasena from "./pages/CambiarContrasena";
 
@@ -54,6 +55,21 @@ function App() {
             <Route
                 path="/acceso-denegado"
                 element={<AccesoDenegado />}
+            />
+
+            <Route
+                path="/caja"
+                element={
+                    <PrivateRoute
+                        rolesPermitidos={[
+                            "ADMINISTRADOR",
+                            "VENDEDOR",
+                            "DUENO"
+                        ]}
+                    >
+                        <Caja />
+                    </PrivateRoute>
+                }
             />
 
             <Route

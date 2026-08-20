@@ -487,34 +487,34 @@ function Landing() {
         <div className="footer-links">
           <div>
             <h4>Producto</h4>
-            <a href="#Precios">Precios</a>
-            <a href="#API">API</a>
-            <a href="#Demo">Demo</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>Precios</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>API</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>Demo</a>
           </div>
 
           <div>
             <h4>Empresa</h4>
-            <a href="#Nosotros">Sobre nosotros</a>
-            <a href="#Blog">Blog</a>
-            <a href="#Carreras">Carreras</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>Sobre nosotros</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>Blog</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>Carreras</a>
           </div>
 
           <div>
             <h4>Legal</h4>
-            <a href="#Privacidad">Privacidad</a>
-            <a href="#Terminos">Términos</a>
-            <a href="#Cookies">Cookies</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>Privacidad</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>Términos</a>
+            <a href="#" onClick={(e) => e.preventDefault()}>Cookies</a>
           </div>
 
           <div>
             <h4>Redes</h4>
 
             <div className="footer-social">
-              <a href="#Redes" aria-label="Compartir">
+              <a href="#" onClick={(e) => e.preventDefault()} aria-label="Compartir">
                 <i className="fa-solid fa-share-nodes"></i>
               </a>
 
-              <a href="#Web" aria-label="Sitio web">
+              <a href="#" onClick={(e) => e.preventDefault()} aria-label="Sitio web">
                 <i className="fa-solid fa-earth-americas"></i>
               </a>
             </div>

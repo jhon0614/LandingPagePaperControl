@@ -61,6 +61,11 @@ function Sidebar() {
 
                         </NavLink>
 
+                        <NavLink to="/caja">
+                            <i className="fa-solid fa-cash-register"></i>
+                            Caja
+                        </NavLink>
+
 
                         <NavLink to="/usuarios">
 
@@ -118,6 +123,11 @@ function Sidebar() {
 
                         </NavLink>
 
+                        <NavLink to="/caja">
+                            <i className="fa-solid fa-cash-register"></i>
+                            Caja
+                        </NavLink>
+
 
                         <NavLink to="/ventas">
 
@@ -164,6 +174,11 @@ function Sidebar() {
 
                             Inventario
 
+                        </NavLink>
+
+                        <NavLink to="/caja">
+                            <i className="fa-solid fa-cash-register"></i>
+                            Caja
                         </NavLink>
 
 

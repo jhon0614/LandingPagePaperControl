@@ -1,8 +1,27 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Layout from "../components/Layout";
 import "../styles/Inventario.css";
 
+import {
+    obtenerProductos,
+    crearProducto,
+    actualizarProducto,
+    cambiarEstadoProducto,
+    eliminarProducto,
+    obtenerMovimientosProducto,
+    registrarMovimiento,
+} from "../services/productos.service";
+
+import {
+    obtenerProveedores,
+    obtenerProveedoresDeProducto,
+    asociarProveedor,
+    quitarProveedor,
+} from "../services/proveedores.service";
+
+
 function Inventario() {
+
     const [busqueda, setBusqueda] = useState("");
 
     const [filtroCategoria, setFiltroCategoria] =
@@ -26,106 +45,100 @@ function Inventario() {
     const [menuAbierto, setMenuAbierto] =
         useState(null);
 
-    const [productos, setProductos] = useState([
-        {
-            id: 1,
-            nombre: "Lapicero",
-            marca: "Paper Mate",
-            codigo: "LAP-PM-001",
-            categoria: "Escritura",
-            proveedor: "Distribuidora ABC",
-            precioMayor: 900,
-            precioDetal: 1500,
-            stock: 40,
-            stockMinimo: 10,
-            estaActivo: true,
-        },
-        {
-            id: 2,
-            nombre: "Lapicero",
-            marca: "Ofiesco",
-            codigo: "LAP-OF-001",
-            categoria: "Escritura",
-            proveedor: "Papelería XYZ",
-            precioMayor: 700,
-            precioDetal: 1000,
-            stock: 8,
-            stockMinimo: 10,
-            estaActivo: true,
-        },
-        {
-            id: 3,
-            nombre: "Lapicero",
-            marca: "Kilométrico",
-            codigo: "LAP-KM-001",
-            categoria: "Escritura",
-            proveedor: "Distribuidora ABC",
-            precioMayor: 800,
-            precioDetal: 1200,
-            stock: 25,
-            stockMinimo: 10,
-            estaActivo: true,
-        },
-        {
-            id: 4,
-            nombre: "Lapicero",
-            marca: "BIC",
-            codigo: "LAP-BIC-001",
-            categoria: "Escritura",
-            proveedor: "Mayorista Nacional",
-            precioMayor: 950,
-            precioDetal: 1500,
-            stock: 0,
-            stockMinimo: 10,
-            estaActivo: true,
-        },
-        {
-            id: 5,
-            nombre: "Cuaderno",
-            marca: "Norma",
-            codigo: "CUA-NOR-001",
-            categoria: "Papelería",
-            proveedor: "Distribuciones Escolar",
-            precioMayor: 4500,
-            precioDetal: 6500,
-            stock: 32,
-            stockMinimo: 8,
-            estaActivo: true,
-        },
-        {
-            id: 6,
-            nombre: "Borrador",
-            marca: "Maped",
-            codigo: "BOR-MAP-001",
-            categoria: "Escritura",
-            proveedor: "Papelería XYZ",
-            precioMayor: 600,
-            precioDetal: 1000,
-            stock: 18,
-            stockMinimo: 5,
-            estaActivo: false,
-        },
-        {
-            id: 7,
-            nombre: "Pegante",
-            marca: "Pegaucho",
-            codigo: "COL-PEG-001",
-            categoria: "Manualidades",
-            proveedor: "Mayorista Nacional",
-            precioMayor: 2200,
-            precioDetal: 3500,
-            stock: 0,
-            stockMinimo: 5,
-            estaActivo: false,
-        },
-    ]);
+    const [productos, setProductos] = useState([]);
+
+    const [proveedoresDisponibles, setProveedoresDisponibles] =
+        useState([]);
+
+    const [cargando, setCargando] = useState(true);
+
+    const [error, setError] = useState("");
+
+    /*
+     * =====================================================
+     * MODAL DE HISTORIAL DE MOVIMIENTOS
+     * =====================================================
+     */
+
+    const [modalHistorial, setModalHistorial] = useState(false);
+
+    const [productoHistorial, setProductoHistorial] = useState(null);
+
+    const [movimientos, setMovimientos] = useState([]);
+
+    const [cargandoMovimientos, setCargandoMovimientos] =
+        useState(false);
+
+    const [nuevoMovimiento, setNuevoMovimiento] = useState({
+        tipo: "ENTRADA",
+        cantidad: "",
+        nota: "",
+    });
+
+
+    /*
+     * =====================================================
+     * PROVEEDORES ASOCIADOS AL PRODUCTO EN EDICIÓN
+     * =====================================================
+     */
+
+    const [proveedoresProducto, setProveedoresProducto] =
+        useState([]);
+
+    const [proveedorSeleccionado, setProveedorSeleccionado] =
+        useState("");
+
+
+    /*
+     * =====================================================
+     * CARGA INICIAL
+     * =====================================================
+     */
+
+    async function cargarDatos() {
+
+        try {
+
+            setError("");
+
+            const [listaProductos, listaProveedores] =
+                await Promise.all([
+                    obtenerProductos(),
+                    obtenerProveedores(),
+                ]);
+
+            setProductos(listaProductos);
+
+            setProveedoresDisponibles(listaProveedores);
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible cargar el inventario."
+            );
+
+        } finally {
+
+            setCargando(false);
+
+        }
+
+    }
+
+    useEffect(() => {
+
+        cargarDatos();
+
+    }, []);
+
 
     // =========================================================
     // NORMALIZAR TEXTO
     // =========================================================
 
     const normalizarTexto = (texto = "") => {
-        return texto
+        return String(texto)
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
             .toLowerCase()
@@ -146,15 +159,15 @@ function Inventario() {
         ];
     }, [productos]);
 
-    const proveedores = useMemo(() => {
+    const nombresProveedores = useMemo(() => {
         return [
             ...new Set(
-                productos.map(
-                    (producto) => producto.proveedor
+                proveedoresDisponibles.map(
+                    (proveedor) => proveedor.nombre
                 )
             ),
         ];
-    }, [productos]);
+    }, [proveedoresDisponibles]);
 
     // =========================================================
     // FILTRAR PRODUCTOS
@@ -164,33 +177,29 @@ function Inventario() {
         const texto = normalizarTexto(busqueda);
 
         return productos.filter((producto) => {
+
+            const nombresProveedoresProducto =
+                (producto.proveedores || [])
+                    .map((p) => p.nombre)
+                    .join(" ");
+
             const coincideBusqueda =
                 !texto ||
-                normalizarTexto(producto.nombre).includes(
-                    texto
-                ) ||
-                normalizarTexto(producto.marca).includes(
-                    texto
-                ) ||
-                normalizarTexto(producto.codigo).includes(
-                    texto
-                ) ||
-                normalizarTexto(
-                    producto.categoria
-                ).includes(texto) ||
-                normalizarTexto(
-                    producto.proveedor
-                ).includes(texto);
+                normalizarTexto(producto.nombre).includes(texto) ||
+                normalizarTexto(producto.marca || "").includes(texto) ||
+                normalizarTexto(producto.codigo || "").includes(texto) ||
+                normalizarTexto(producto.categoria || "").includes(texto) ||
+                normalizarTexto(nombresProveedoresProducto).includes(texto);
 
             const coincideCategoria =
-                filtroCategoria ===
-                    "Todas las categorías" ||
+                filtroCategoria === "Todas las categorías" ||
                 producto.categoria === filtroCategoria;
 
             const coincideProveedor =
-                filtroProveedor ===
-                    "Todos los proveedores" ||
-                producto.proveedor === filtroProveedor;
+                filtroProveedor === "Todos los proveedores" ||
+                (producto.proveedores || []).some(
+                    (p) => p.nombre === filtroProveedor
+                );
 
             let coincideEstado = true;
 
@@ -231,239 +240,363 @@ function Inventario() {
         filtroEstado,
     ]);
 
-    // =========================================================
-    // SEPARAR TABLAS
-    // =========================================================
+    const productosActivos = productosFiltrados.filter(
+        (p) => p.estaActivo && Number(p.stock) > 0
+    );
 
-    const productosActivos =
-        productosFiltrados.filter(
-            (producto) =>
-                producto.estaActivo &&
-                Number(producto.stock) > 0
-        );
+    const productosAgotados = productosFiltrados.filter(
+        (p) => p.estaActivo && Number(p.stock) === 0
+    );
 
-    const productosAgotados =
-        productosFiltrados.filter(
-            (producto) =>
-                producto.estaActivo &&
-                Number(producto.stock) === 0
-        );
-
-    const productosDesactivados =
-        productosFiltrados.filter(
-            (producto) => !producto.estaActivo
-        );
+    const productosDesactivados = productosFiltrados.filter(
+        (p) => !p.estaActivo
+    );
 
     // =========================================================
     // ESTADÍSTICAS
     // =========================================================
 
-    const productosActivosTotal =
-        productos.filter(
-            (producto) => producto.estaActivo
-        );
+    const productosActivosTotal = productos.filter(
+        (p) => p.estaActivo
+    );
 
     const unidadesTotal = productos
-        .filter((producto) => producto.estaActivo)
-        .reduce(
-            (total, producto) =>
-                total + Number(producto.stock || 0),
-            0
-        );
+        .filter((p) => p.estaActivo)
+        .reduce((total, p) => total + Number(p.stock || 0), 0);
 
     const stockBajoTotal = productos.filter(
-        (producto) =>
-            producto.estaActivo &&
-            Number(producto.stock) > 0 &&
-            Number(producto.stock) <=
-                Number(producto.stockMinimo)
+        (p) =>
+            p.estaActivo &&
+            Number(p.stock) > 0 &&
+            Number(p.stock) <= Number(p.stockMinimo)
     ).length;
 
     const agotadosTotal = productos.filter(
-        (producto) =>
-            producto.estaActivo &&
-            Number(producto.stock) === 0
+        (p) => p.estaActivo && Number(p.stock) === 0
     ).length;
 
-    // =========================================================
-    // VALOR TOTAL MAYORISTA
-    // =========================================================
-
     const valorMayoristaTotal = productos
-        .filter((producto) => producto.estaActivo)
+        .filter((p) => p.estaActivo)
         .reduce(
-            (total, producto) =>
-                total +
-                Number(producto.stock || 0) *
-                    Number(producto.precioMayor || 0),
+            (total, p) =>
+                total + Number(p.stock || 0) * Number(p.precioMayor || 0),
             0
         );
-
-    // =========================================================
-    // VALOR TOTAL AL DETAL
-    // =========================================================
 
     const valorDetalTotal = productos
-        .filter((producto) => producto.estaActivo)
+        .filter((p) => p.estaActivo)
         .reduce(
-            (total, producto) =>
-                total +
-                Number(producto.stock || 0) *
-                    Number(producto.precioDetal || 0),
+            (total, p) =>
+                total + Number(p.stock || 0) * Number(p.precioDetal || 0),
             0
         );
 
-    // =========================================================
-    // FORMATEAR DINERO
-    // =========================================================
-
     const formatoPrecio = (valor) => {
-        return `$ ${Number(valor || 0).toLocaleString(
-            "es-CO"
-        )}`;
+        return `$ ${Number(valor || 0).toLocaleString("es-CO")}`;
+    };
+
+    const formatoFecha = (fecha) => {
+
+        if (!fecha) return "—";
+
+        return new Date(fecha).toLocaleString("es-CO");
+
     };
 
     // =========================================================
-    // ABRIR MODAL NUEVO
+    // MODAL PRODUCTO — ABRIR / CERRAR
     // =========================================================
 
     const abrirNuevoProducto = () => {
+
         setProductoEditar(null);
+
+        setProveedoresProducto([]);
+
+        setProveedorSeleccionado("");
+
         setModalAbierto(true);
+
     };
 
-    // =========================================================
-    // ABRIR MODAL EDITAR
-    // =========================================================
+    const abrirEditarProducto = async (producto) => {
 
-    const abrirEditarProducto = (producto) => {
         setProductoEditar(producto);
+
         setModalAbierto(true);
+
         setMenuAbierto(null);
+
+        try {
+
+            const listaProveedores =
+                await obtenerProveedoresDeProducto(producto.id);
+
+            setProveedoresProducto(listaProveedores);
+
+        } catch (error) {
+
+            setProveedoresProducto(producto.proveedores || []);
+
+        }
+
     };
+
+    // =========================================================
+    // ASOCIAR / QUITAR PROVEEDOR EN EL MODAL
+    // =========================================================
+
+    async function manejarAsociarProveedor() {
+
+        if (!proveedorSeleccionado || !productoEditar) return;
+
+        try {
+
+            await asociarProveedor(
+                productoEditar.id,
+                proveedorSeleccionado
+            );
+
+            const proveedor = proveedoresDisponibles.find(
+                (p) => String(p.id) === String(proveedorSeleccionado)
+            );
+
+            if (proveedor) {
+
+                setProveedoresProducto((actuales) => [
+                    ...actuales,
+                    proveedor,
+                ]);
+
+            }
+
+            setProveedorSeleccionado("");
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible asociar el proveedor."
+            );
+
+        }
+
+    }
+
+    async function manejarQuitarProveedor(idProveedor) {
+
+        if (!productoEditar) return;
+
+        try {
+
+            await quitarProveedor(productoEditar.id, idProveedor);
+
+            setProveedoresProducto((actuales) =>
+                actuales.filter((p) => p.id !== idProveedor)
+            );
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible quitar el proveedor."
+            );
+
+        }
+
+    }
 
     // =========================================================
     // GUARDAR PRODUCTO
     // =========================================================
 
-    const guardarProducto = (evento) => {
+    const guardarProducto = async (evento) => {
+
         evento.preventDefault();
 
-        const formulario =
-            new FormData(evento.currentTarget);
+        const formulario = new FormData(evento.currentTarget);
 
         const datos = {
-            nombre: formulario
-                .get("nombre")
-                .trim(),
-
-            marca: formulario
-                .get("marca")
-                .trim(),
-
-            codigo: formulario
-                .get("codigo")
-                .trim(),
-
-            categoria: formulario
-                .get("categoria")
-                .trim(),
-
-            proveedor: formulario
-                .get("proveedor")
-                .trim(),
-
-            precioMayor: Number(
-                formulario.get("precioMayor")
-            ),
-
-            precioDetal: Number(
-                formulario.get("precioDetal")
-            ),
-
-            stock: Number(
-                formulario.get("stock")
-            ),
-
-            stockMinimo: Number(
-                formulario.get("stockMinimo")
-            ),
+            nombre: formulario.get("nombre").trim(),
+            marca: formulario.get("marca").trim(),
+            codigo: formulario.get("codigo").trim(),
+            categoria: formulario.get("categoria").trim(),
+            precioMayor: Number(formulario.get("precioMayor")),
+            precioDetal: Number(formulario.get("precioDetal")),
+            stock: Number(formulario.get("stock")),
+            stockMinimo: Number(formulario.get("stockMinimo")),
         };
 
-        if (productoEditar) {
-            setProductos(
-                (productosActuales) =>
-                    productosActuales.map(
-                        (producto) =>
-                            producto.id ===
-                            productoEditar.id
-                                ? {
-                                      ...producto,
-                                      ...datos,
-                                  }
-                                : producto
-                    )
+        try {
+
+            if (productoEditar) {
+
+                await actualizarProducto(productoEditar.id, datos);
+
+            } else {
+
+                await crearProducto(datos);
+
+            }
+
+            setModalAbierto(false);
+
+            setProductoEditar(null);
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible guardar el producto."
             );
-        } else {
-            setProductos(
-                (productosActuales) => [
-                    ...productosActuales,
-                    {
-                        id: Date.now(),
-                        ...datos,
-                        estaActivo: true,
-                    },
-                ]
-            );
+
         }
 
-        setModalAbierto(false);
-        setProductoEditar(null);
     };
 
     // =========================================================
     // ACTIVAR / DESACTIVAR
     // =========================================================
 
-    const cambiarEstadoProducto = (id) => {
-        setProductos(
-            (productosActuales) =>
-                productosActuales.map(
-                    (producto) =>
-                        producto.id === id
-                            ? {
-                                  ...producto,
-                                  estaActivo:
-                                      !producto.estaActivo,
-                              }
-                            : producto
-                )
-        );
+    const manejarCambiarEstado = async (producto) => {
+
+        try {
+
+            await cambiarEstadoProducto(
+                producto.id,
+                !producto.estaActivo
+            );
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible cambiar el estado del producto."
+            );
+
+        }
 
         setMenuAbierto(null);
+
     };
 
     // =========================================================
-    // ELIMINAR
+    // ELIMINAR (PROTEGIDO)
     // =========================================================
 
-    const eliminarProducto = (id) => {
+    const manejarEliminarProducto = async (producto) => {
+
         const confirmar = window.confirm(
-            "¿Deseas eliminar este producto definitivamente?"
+            `¿Deseas eliminar "${producto.nombre}"? Si tiene ventas registradas, en su lugar se desactivará.`
         );
 
         if (!confirmar) return;
 
-        setProductos(
-            (productosActuales) =>
-                productosActuales.filter(
-                    (producto) =>
-                        producto.id !== id
-                )
-        );
+        try {
+
+            await eliminarProducto(producto.id);
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            // El backend responde con un mensaje claro cuando el
+            // producto tiene ventas asociadas y no puede borrarse.
+            setError(
+                error.message ||
+                "No fue posible eliminar el producto."
+            );
+
+        }
 
         setMenuAbierto(null);
+
     };
+
+    // =========================================================
+    // HISTORIAL DE MOVIMIENTOS
+    // =========================================================
+
+    async function abrirHistorial(producto) {
+
+        setProductoHistorial(producto);
+
+        setModalHistorial(true);
+
+        setMenuAbierto(null);
+
+        setCargandoMovimientos(true);
+
+        try {
+
+            const lista = await obtenerMovimientosProducto(
+                producto.id
+            );
+
+            setMovimientos(lista);
+
+        } catch (error) {
+
+            setMovimientos([]);
+
+        } finally {
+
+            setCargandoMovimientos(false);
+
+        }
+
+    }
+
+    async function manejarRegistrarMovimiento(evento) {
+
+        evento.preventDefault();
+
+        if (
+            !nuevoMovimiento.cantidad ||
+            Number(nuevoMovimiento.cantidad) <= 0
+        ) {
+
+            setError("Ingresa una cantidad válida.");
+
+            return;
+
+        }
+
+        try {
+
+            await registrarMovimiento(
+                productoHistorial.id,
+                nuevoMovimiento
+            );
+
+            setNuevoMovimiento({
+                tipo: "ENTRADA",
+                cantidad: "",
+                nota: "",
+            });
+
+            const lista = await obtenerMovimientosProducto(
+                productoHistorial.id
+            );
+
+            setMovimientos(lista);
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible registrar el movimiento."
+            );
+
+        }
+
+    }
 
     // =========================================================
     // LIMPIAR FILTROS
@@ -471,35 +604,23 @@ function Inventario() {
 
     const limpiarFiltros = () => {
         setBusqueda("");
-        setFiltroCategoria(
-            "Todas las categorías"
-        );
-        setFiltroProveedor(
-            "Todos los proveedores"
-        );
-        setFiltroEstado(
-            "Todos los estados"
-        );
+        setFiltroCategoria("Todas las categorías");
+        setFiltroProveedor("Todos los proveedores");
+        setFiltroEstado("Todos los estados");
     };
 
     // =========================================================
     // COMPONENTE DROPDOWN
     // =========================================================
 
-    const Dropdown = ({
-        id,
-        valor,
-        opciones,
-        cambiar,
-    }) => {
+    const Dropdown = ({ id, valor, opciones, cambiar }) => {
+
         const abierto = menuAbierto === id;
 
         return (
             <div
                 className="inventario-dropdown"
-                onClick={(evento) =>
-                    evento.stopPropagation()
-                }
+                onClick={(e) => e.stopPropagation()}
             >
                 <button
                     type="button"
@@ -507,13 +628,10 @@ function Inventario() {
                         abierto ? "abierto" : ""
                     }`}
                     onClick={() =>
-                        setMenuAbierto(
-                            abierto ? null : id
-                        )
+                        setMenuAbierto(abierto ? null : id)
                     }
                 >
                     <span>{valor}</span>
-
                     <i
                         className={`fa-solid fa-chevron-down ${
                             abierto ? "rotado" : ""
@@ -528,19 +646,14 @@ function Inventario() {
                                 type="button"
                                 key={opcion}
                                 className={
-                                    opcion === valor
-                                        ? "seleccionado"
-                                        : ""
+                                    opcion === valor ? "seleccionado" : ""
                                 }
                                 onClick={() => {
                                     cambiar(opcion);
-                                    setMenuAbierto(
-                                        null
-                                    );
+                                    setMenuAbierto(null);
                                 }}
                             >
                                 <span>{opcion}</span>
-
                                 {opcion === valor && (
                                     <i className="fa-solid fa-check"></i>
                                 )}
@@ -550,16 +663,15 @@ function Inventario() {
                 )}
             </div>
         );
+
     };
 
     // =========================================================
     // TABLA DE PRODUCTOS
     // =========================================================
 
-    const TablaProductos = ({
-        lista,
-        tipo,
-    }) => {
+    const TablaProductos = ({ lista, tipo }) => {
+
         return (
             <div className="inventario-tabla-wrapper">
                 <table className="inventario-tabla">
@@ -568,10 +680,11 @@ function Inventario() {
                             <th>PRODUCTO</th>
                             <th>CÓDIGO</th>
                             <th>CATEGORÍA</th>
-                            <th>PROVEEDOR</th>
+                            <th>PROVEEDORES</th>
                             <th>MAYOR</th>
                             <th>DETAL</th>
                             <th>STOCK</th>
+                            <th>ÚLTIMA MOD.</th>
                             <th>ESTADO</th>
                             <th>ACCIONES</th>
                         </tr>
@@ -580,234 +693,251 @@ function Inventario() {
                     <tbody>
                         {lista.length === 0 ? (
                             <tr>
-                                <td
-                                    colSpan="9"
-                                    className="inventario-vacio"
-                                >
+                                <td colSpan="10" className="inventario-vacio">
                                     <div>
                                         <i className="fa-solid fa-box-open"></i>
-
                                         <strong>
-                                            No hay productos
-                                            para mostrar
+                                            No hay productos para mostrar
                                         </strong>
-
                                         <span>
-                                            Intenta cambiar
-                                            los filtros de
+                                            Intenta cambiar los filtros de
                                             búsqueda.
                                         </span>
                                     </div>
                                 </td>
                             </tr>
                         ) : (
-                            lista.map(
-                                (producto) => {
-                                    const stock =
-                                        Number(
-                                            producto.stock
-                                        );
+                            lista.map((producto) => {
 
-                                    const stockMinimo =
-                                        Number(
-                                            producto.stockMinimo
-                                        );
+                                const stock = Number(producto.stock);
 
-                                    const agotado =
-                                        stock === 0;
+                                const stockMinimo = Number(
+                                    producto.stockMinimo
+                                );
 
-                                    const stockBajo =
-                                        stock > 0 &&
-                                        stock <=
-                                            stockMinimo;
+                                const agotado = stock === 0;
 
-                                    return (
-                                        <tr
-                                            key={
-                                                producto.id
-                                            }
-                                        >
-                                            <td>
-                                                <div className="producto-info">
-                                                    <div
-                                                        className={`producto-icono ${
-                                                            tipo ===
-                                                            "desactivados"
-                                                                ? "inactivo"
-                                                                : ""
-                                                        }`}
-                                                    >
-                                                        <i className="fa-solid fa-box"></i>
-                                                    </div>
+                                const stockBajo =
+                                    stock > 0 && stock <= stockMinimo;
 
-                                                    <div>
-                                                        <strong>
-                                                            {
-                                                                producto.nombre
-                                                            }
-                                                        </strong>
+                                return (
+                                    <tr key={producto.id}>
 
-                                                        <span>
-                                                            {
-                                                                producto.marca
-                                                            }
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            <td>
-                                                <span className="codigo-producto">
-                                                    {
-                                                        producto.codigo
-                                                    }
-                                                </span>
-                                            </td>
-
-                                            <td>
-                                                {
-                                                    producto.categoria
-                                                }
-                                            </td>
-
-                                            <td>
-                                                {
-                                                    producto.proveedor
-                                                }
-                                            </td>
-
-                                            <td>
-                                                {formatoPrecio(
-                                                    producto.precioMayor
-                                                )}
-                                            </td>
-
-                                            <td>
-                                                <strong>
-                                                    {formatoPrecio(
-                                                        producto.precioDetal
-                                                    )}
-                                                </strong>
-                                            </td>
-
-                                            <td>
+                                        <td>
+                                            <div className="producto-info">
                                                 <div
-                                                    className={`stock-wrapper ${
-                                                        agotado
-                                                            ? "agotado"
-                                                            : stockBajo
-                                                            ? "bajo"
+                                                    className={`producto-icono ${
+                                                        tipo ===
+                                                        "desactivados"
+                                                            ? "inactivo"
                                                             : ""
                                                     }`}
                                                 >
-                                                    <strong>
-                                                        {
-                                                            stock
-                                                        }
-                                                    </strong>
-
-                                                    <small>
-                                                        Mín.{" "}
-                                                        {
-                                                            stockMinimo
-                                                        }
-                                                    </small>
+                                                    <i className="fa-solid fa-box"></i>
                                                 </div>
-                                            </td>
+                                                <div>
+                                                    <strong>
+                                                        {producto.nombre}
+                                                    </strong>
+                                                    <span>
+                                                        {producto.marca}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
 
-                                            <td>
-                                                {tipo ===
-                                                "desactivados" ? (
-                                                    <span className="estado-badge inactivo">
-                                                        <span></span>
-                                                        Inactivo
-                                                    </span>
-                                                ) : agotado ? (
-                                                    <span className="estado-badge agotado">
-                                                        <span></span>
-                                                        Agotado
-                                                    </span>
-                                                ) : stockBajo ? (
-                                                    <span className="estado-badge stock-bajo">
-                                                        <span></span>
-                                                        Stock bajo
+                                        <td>
+                                            <span className="codigo-producto">
+                                                {producto.codigo}
+                                            </span>
+                                        </td>
+
+                                        <td>{producto.categoria}</td>
+
+                                        <td>
+                                            <div className="proveedores-celda">
+                                                {(producto.proveedores || [])
+                                                    .length === 0 ? (
+                                                    <span className="sin-proveedor">
+                                                        Sin proveedor
                                                     </span>
                                                 ) : (
-                                                    <span className="estado-badge disponible">
-                                                        <span></span>
-                                                        Disponible
-                                                    </span>
+                                                    producto.proveedores.map(
+                                                        (p) => (
+                                                            <span
+                                                                className="proveedor-chip"
+                                                                key={p.id}
+                                                            >
+                                                                {p.nombre}
+                                                            </span>
+                                                        )
+                                                    )
                                                 )}
-                                            </td>
+                                            </div>
+                                        </td>
 
-                                            <td>
-                                                <div className="acciones-producto">
-                                                    {tipo ===
-                                                    "desactivados" ? (
-                                                        <button
-                                                            type="button"
-                                                            className="accion activar"
-                                                            title="Activar producto"
-                                                            onClick={() =>
-                                                                cambiarEstadoProducto(
-                                                                    producto.id
-                                                                )
-                                                            }
-                                                        >
-                                                            <i className="fa-solid fa-check"></i>
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            type="button"
-                                                            className="accion desactivar"
-                                                            title="Desactivar producto"
-                                                            onClick={() =>
-                                                                cambiarEstadoProducto(
-                                                                    producto.id
-                                                                )
-                                                            }
-                                                        >
-                                                            <i className="fa-solid fa-ban"></i>
-                                                        </button>
-                                                    )}
+                                        <td>
+                                            {formatoPrecio(
+                                                producto.precioMayor
+                                            )}
+                                        </td>
 
+                                        <td>
+                                            <strong>
+                                                {formatoPrecio(
+                                                    producto.precioDetal
+                                                )}
+                                            </strong>
+                                        </td>
+
+                                        <td>
+                                            <div
+                                                className={`stock-wrapper ${
+                                                    agotado
+                                                        ? "agotado"
+                                                        : stockBajo
+                                                        ? "bajo"
+                                                        : ""
+                                                }`}
+                                            >
+                                                <strong>{stock}</strong>
+                                                <small>
+                                                    Mín. {stockMinimo}
+                                                </small>
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <small className="fecha-modificacion">
+                                                {formatoFecha(
+                                                    producto.actualizadoEn
+                                                )}
+                                            </small>
+                                        </td>
+
+                                        <td>
+                                            {tipo === "desactivados" ? (
+                                                <span className="estado-badge inactivo">
+                                                    <span></span>
+                                                    Inactivo
+                                                </span>
+                                            ) : agotado ? (
+                                                <span className="estado-badge agotado">
+                                                    <span></span>
+                                                    Agotado
+                                                </span>
+                                            ) : stockBajo ? (
+                                                <span className="estado-badge stock-bajo">
+                                                    <span></span>
+                                                    Stock bajo
+                                                </span>
+                                            ) : (
+                                                <span className="estado-badge disponible">
+                                                    <span></span>
+                                                    Disponible
+                                                </span>
+                                            )}
+                                        </td>
+
+                                        <td>
+                                            <div className="acciones-producto">
+
+                                                <button
+                                                    type="button"
+                                                    className="accion historial"
+                                                    title="Ver historial de movimientos"
+                                                    onClick={() =>
+                                                        abrirHistorial(
+                                                            producto
+                                                        )
+                                                    }
+                                                >
+                                                    <i className="fa-solid fa-clock-rotate-left"></i>
+                                                </button>
+
+                                                {tipo === "desactivados" ? (
                                                     <button
                                                         type="button"
-                                                        className="accion editar"
-                                                        title="Editar producto"
+                                                        className="accion activar"
+                                                        title="Activar producto"
                                                         onClick={() =>
-                                                            abrirEditarProducto(
+                                                            manejarCambiarEstado(
                                                                 producto
                                                             )
                                                         }
                                                     >
-                                                        <i className="fa-solid fa-pen"></i>
+                                                        <i className="fa-solid fa-check"></i>
                                                     </button>
-
+                                                ) : (
                                                     <button
                                                         type="button"
-                                                        className="accion eliminar"
-                                                        title="Eliminar producto"
+                                                        className="accion desactivar"
+                                                        title="Desactivar producto"
                                                         onClick={() =>
-                                                            eliminarProducto(
-                                                                producto.id
+                                                            manejarCambiarEstado(
+                                                                producto
                                                             )
                                                         }
                                                     >
-                                                        <i className="fa-solid fa-trash"></i>
+                                                        <i className="fa-solid fa-ban"></i>
                                                     </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                }
-                            )
+                                                )}
+
+                                                <button
+                                                    type="button"
+                                                    className="accion editar"
+                                                    title="Editar producto"
+                                                    onClick={() =>
+                                                        abrirEditarProducto(
+                                                            producto
+                                                        )
+                                                    }
+                                                >
+                                                    <i className="fa-solid fa-pen"></i>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    className="accion eliminar"
+                                                    title="Eliminar producto"
+                                                    onClick={() =>
+                                                        manejarEliminarProducto(
+                                                            producto
+                                                        )
+                                                    }
+                                                >
+                                                    <i className="fa-solid fa-trash"></i>
+                                                </button>
+
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>
             </div>
         );
+
     };
+
+    // =========================================================
+    // RENDER — CARGANDO
+    // =========================================================
+
+    if (cargando) {
+
+        return (
+            <Layout>
+                <div className="caja-cargando">
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <p>Cargando inventario...</p>
+                </div>
+            </Layout>
+        );
+
+    }
 
     // =========================================================
     // RENDER
@@ -817,19 +947,15 @@ function Inventario() {
         <Layout>
             <div
                 className="inventario-page"
-                onClick={() =>
-                    setMenuAbierto(null)
-                }
+                onClick={() => setMenuAbierto(null)}
             >
                 {/* ENCABEZADO */}
 
                 <div className="inventario-header">
                     <div>
                         <h1>Inventario</h1>
-
                         <p>
-                            Gestiona productos,
-                            marcas, proveedores,
+                            Gestiona productos, marcas, proveedores,
                             precios y existencias.
                         </p>
                     </div>
@@ -837,15 +963,16 @@ function Inventario() {
                     <button
                         type="button"
                         className="btn-nuevo-producto"
-                        onClick={
-                            abrirNuevoProducto
-                        }
+                        onClick={abrirNuevoProducto}
                     >
                         <i className="fa-solid fa-plus"></i>
-
                         Nuevo producto
                     </button>
                 </div>
+
+                {error && (
+                    <div className="caja-error">{error}</div>
+                )}
 
                 {/* ESTADÍSTICAS */}
 
@@ -854,15 +981,9 @@ function Inventario() {
                         <div className="estadistica-icono azul">
                             <i className="fa-solid fa-boxes-stacked"></i>
                         </div>
-
                         <div>
                             <span>Productos</span>
-
-                            <strong>
-                                {
-                                    productosActivosTotal.length
-                                }
-                            </strong>
+                            <strong>{productosActivosTotal.length}</strong>
                         </div>
                     </div>
 
@@ -870,54 +991,34 @@ function Inventario() {
                         <div className="estadistica-icono azul">
                             <i className="fa-solid fa-cubes"></i>
                         </div>
-
                         <div>
                             <span>Unidades</span>
-
                             <strong>
-                                {unidadesTotal.toLocaleString(
-                                    "es-CO"
-                                )}
+                                {unidadesTotal.toLocaleString("es-CO")}
                             </strong>
                         </div>
                     </div>
-
-                    {/* VALOR MAYORISTA */}
 
                     <div className="estadistica-card">
                         <div className="estadistica-icono verde">
                             <i className="fa-solid fa-money-bill-trend-up"></i>
                         </div>
-
                         <div>
-                            <span>
-                                Valor mayorista
-                            </span>
-
+                            <span>Valor mayorista</span>
                             <strong>
-                                {formatoPrecio(
-                                    valorMayoristaTotal
-                                )}
+                                {formatoPrecio(valorMayoristaTotal)}
                             </strong>
                         </div>
                     </div>
-
-                    {/* VALOR AL DETAL */}
 
                     <div className="estadistica-card">
                         <div className="estadistica-icono morado">
                             <i className="fa-solid fa-cart-shopping"></i>
                         </div>
-
                         <div>
-                            <span>
-                                Valor al detal
-                            </span>
-
+                            <span>Valor al detal</span>
                             <strong>
-                                {formatoPrecio(
-                                    valorDetalTotal
-                                )}
+                                {formatoPrecio(valorDetalTotal)}
                             </strong>
                         </div>
                     </div>
@@ -926,13 +1027,9 @@ function Inventario() {
                         <div className="estadistica-icono naranja">
                             <i className="fa-solid fa-triangle-exclamation"></i>
                         </div>
-
                         <div>
                             <span>Stock bajo</span>
-
-                            <strong>
-                                {stockBajoTotal}
-                            </strong>
+                            <strong>{stockBajoTotal}</strong>
                         </div>
                     </div>
 
@@ -940,13 +1037,9 @@ function Inventario() {
                         <div className="estadistica-icono rojo">
                             <i className="fa-solid fa-circle-xmark"></i>
                         </div>
-
                         <div>
                             <span>Agotados</span>
-
-                            <strong>
-                                {agotadosTotal}
-                            </strong>
+                            <strong>{agotadosTotal}</strong>
                         </div>
                     </div>
                 </div>
@@ -956,24 +1049,18 @@ function Inventario() {
                 <div className="inventario-filtros">
                     <div className="inventario-buscador">
                         <i className="fa-solid fa-magnifying-glass"></i>
-
                         <input
                             type="text"
                             value={busqueda}
-                            onChange={(evento) =>
-                                setBusqueda(
-                                    evento.target.value
-                                )
+                            onChange={(e) =>
+                                setBusqueda(e.target.value)
                             }
                             placeholder="Buscar producto, código, marca o proveedor..."
                         />
-
                         {busqueda && (
                             <button
                                 type="button"
-                                onClick={() =>
-                                    setBusqueda("")
-                                }
+                                onClick={() => setBusqueda("")}
                             >
                                 <i className="fa-solid fa-xmark"></i>
                             </button>
@@ -983,9 +1070,7 @@ function Inventario() {
                     <Dropdown
                         id="categorias"
                         valor={filtroCategoria}
-                        cambiar={
-                            setFiltroCategoria
-                        }
+                        cambiar={setFiltroCategoria}
                         opciones={[
                             "Todas las categorías",
                             ...categorias,
@@ -995,21 +1080,17 @@ function Inventario() {
                     <Dropdown
                         id="proveedores"
                         valor={filtroProveedor}
-                        cambiar={
-                            setFiltroProveedor
-                        }
+                        cambiar={setFiltroProveedor}
                         opciones={[
                             "Todos los proveedores",
-                            ...proveedores,
+                            ...nombresProveedores,
                         ]}
                     />
 
                     <Dropdown
                         id="estados"
                         valor={filtroEstado}
-                        cambiar={
-                            setFiltroEstado
-                        }
+                        cambiar={setFiltroEstado}
                         opciones={[
                             "Todos los estados",
                             "Activos",
@@ -1023,9 +1104,7 @@ function Inventario() {
                         type="button"
                         className="btn-desactivados"
                         onClick={() =>
-                            setMostrarDesactivados(
-                                !mostrarDesactivados
-                            )
+                            setMostrarDesactivados(!mostrarDesactivados)
                         }
                     >
                         <i
@@ -1035,34 +1114,19 @@ function Inventario() {
                                     : "fa-eye"
                             }`}
                         ></i>
-
                         {mostrarDesactivados
                             ? "Ocultar desactivados"
                             : "Ver desactivados"}
                     </button>
                 </div>
 
-                {/* LIMPIAR FILTROS */}
-
                 {(busqueda ||
-                    filtroCategoria !==
-                        "Todas las categorías" ||
-                    filtroProveedor !==
-                        "Todos los proveedores" ||
-                    filtroEstado !==
-                        "Todos los estados") && (
+                    filtroCategoria !== "Todas las categorías" ||
+                    filtroProveedor !== "Todos los proveedores" ||
+                    filtroEstado !== "Todos los estados") && (
                     <div className="filtros-activos">
-                        <span>
-                            Mostrando resultados
-                            filtrados
-                        </span>
-
-                        <button
-                            type="button"
-                            onClick={
-                                limpiarFiltros
-                            }
-                        >
+                        <span>Mostrando resultados filtrados</span>
+                        <button type="button" onClick={limpiarFiltros}>
                             Limpiar filtros
                         </button>
                     </div>
@@ -1079,27 +1143,17 @@ function Inventario() {
                                     Productos activos
                                 </span>
                             </h2>
-
                             <p>
-                                Productos disponibles
-                                para las operaciones
-                                del sistema.
+                                Productos disponibles para las
+                                operaciones del sistema.
                             </p>
                         </div>
-
                         <span className="contador verde">
-                            {
-                                productosActivos.length
-                            }
+                            {productosActivos.length}
                         </span>
                     </div>
 
-                    <TablaProductos
-                        lista={
-                            productosActivos
-                        }
-                        tipo="activos"
-                    />
+                    <TablaProductos lista={productosActivos} tipo="activos" />
                 </section>
 
                 {/* TABLA AGOTADOS */}
@@ -1113,25 +1167,18 @@ function Inventario() {
                                     Productos agotados
                                 </span>
                             </h2>
-
                             <p>
-                                Productos activos que
-                                actualmente no tienen
-                                existencias.
+                                Productos activos que actualmente no
+                                tienen existencias.
                             </p>
                         </div>
-
                         <span className="contador rojo">
-                            {
-                                productosAgotados.length
-                            }
+                            {productosAgotados.length}
                         </span>
                     </div>
 
                     <TablaProductos
-                        lista={
-                            productosAgotados
-                        }
+                        lista={productosAgotados}
                         tipo="agotados"
                     />
                 </section>
@@ -1148,44 +1195,35 @@ function Inventario() {
                                         Productos desactivados
                                     </span>
                                 </h2>
-
                                 <p>
-                                    Productos que no
-                                    están disponibles
+                                    Productos que no están disponibles
                                     actualmente.
                                 </p>
                             </div>
-
                             <span className="contador gris">
-                                {
-                                    productosDesactivados.length
-                                }
+                                {productosDesactivados.length}
                             </span>
                         </div>
 
                         <TablaProductos
-                            lista={
-                                productosDesactivados
-                            }
+                            lista={productosDesactivados}
                             tipo="desactivados"
                         />
                     </section>
                 )}
 
-                {/* MODAL */}
+                {/* =====================================================
+                    MODAL PRODUCTO
+                ===================================================== */}
 
                 {modalAbierto && (
                     <div
                         className="modal-overlay"
-                        onClick={() =>
-                            setModalAbierto(false)
-                        }
+                        onClick={() => setModalAbierto(false)}
                     >
                         <div
                             className="modal-producto"
-                            onClick={(evento) =>
-                                evento.stopPropagation()
-                            }
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <div className="modal-header">
                                 <div>
@@ -1194,82 +1232,56 @@ function Inventario() {
                                             ? "Editar producto"
                                             : "Nuevo producto"}
                                     </h2>
-
                                     <p>
-                                        Completa la
-                                        información
-                                        del producto.
+                                        Completa la información del
+                                        producto.
                                     </p>
                                 </div>
-
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        setModalAbierto(
-                                            false
-                                        )
-                                    }
+                                    onClick={() => setModalAbierto(false)}
                                 >
                                     <i className="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
 
-                            <form
-                                onSubmit={
-                                    guardarProducto
-                                }
-                            >
+                            <form onSubmit={guardarProducto}>
                                 <div className="form-grid">
                                     <div className="campo">
-                                        <label>
-                                            Producto
-                                        </label>
-
+                                        <label>Producto</label>
                                         <input
                                             name="nombre"
                                             defaultValue={
-                                                productoEditar?.nombre ||
-                                                ""
+                                                productoEditar?.nombre || ""
                                             }
                                             required
                                         />
                                     </div>
 
                                     <div className="campo">
-                                        <label>
-                                            Marca
-                                        </label>
-
+                                        <label>Marca</label>
                                         <input
                                             name="marca"
                                             defaultValue={
-                                                productoEditar?.marca ||
-                                                ""
+                                                productoEditar?.marca || ""
                                             }
                                             required
                                         />
                                     </div>
 
                                     <div className="campo">
-                                        <label>
-                                            Código
-                                        </label>
-
+                                        <label>Código</label>
                                         <input
                                             name="codigo"
                                             defaultValue={
-                                                productoEditar?.codigo ||
-                                                ""
+                                                productoEditar?.codigo || ""
                                             }
                                             required
                                         />
                                     </div>
 
                                     <div className="campo">
-                                        <label>
-                                            Categoría
-                                        </label>
-
+                                        <label>Categoría</label>
                                         <input
                                             name="categoria"
                                             defaultValue={
@@ -1280,26 +1292,8 @@ function Inventario() {
                                         />
                                     </div>
 
-                                    <div className="campo campo-completo">
-                                        <label>
-                                            Proveedor
-                                        </label>
-
-                                        <input
-                                            name="proveedor"
-                                            defaultValue={
-                                                productoEditar?.proveedor ||
-                                                ""
-                                            }
-                                            required
-                                        />
-                                    </div>
-
                                     <div className="campo">
-                                        <label>
-                                            Precio proveedor
-                                        </label>
-
+                                        <label>Precio proveedor</label>
                                         <input
                                             name="precioMayor"
                                             type="number"
@@ -1313,10 +1307,7 @@ function Inventario() {
                                     </div>
 
                                     <div className="campo">
-                                        <label>
-                                            Precio al detal
-                                        </label>
-
+                                        <label>Precio al detal</label>
                                         <input
                                             name="precioDetal"
                                             type="number"
@@ -1330,27 +1321,20 @@ function Inventario() {
                                     </div>
 
                                     <div className="campo">
-                                        <label>
-                                            Stock
-                                        </label>
-
+                                        <label>Stock</label>
                                         <input
                                             name="stock"
                                             type="number"
                                             min="0"
                                             defaultValue={
-                                                productoEditar?.stock ??
-                                                0
+                                                productoEditar?.stock ?? 0
                                             }
                                             required
                                         />
                                     </div>
 
                                     <div className="campo">
-                                        <label>
-                                            Stock mínimo
-                                        </label>
-
+                                        <label>Stock mínimo</label>
                                         <input
                                             name="stockMinimo"
                                             type="number"
@@ -1364,14 +1348,110 @@ function Inventario() {
                                     </div>
                                 </div>
 
+                                {/* PROVEEDORES ASOCIADOS — solo al editar
+                                    (para crear, primero se guarda el
+                                    producto y luego se asocian) */}
+
+                                {productoEditar && (
+
+                                    <div className="campo campo-completo proveedores-asociados">
+
+                                        <label>
+                                            Proveedores asociados
+                                        </label>
+
+                                        <div className="proveedores-asociados-lista">
+
+                                            {proveedoresProducto.length === 0 ? (
+
+                                                <span className="sin-proveedor">
+                                                    Este producto no tiene
+                                                    proveedores asociados.
+                                                </span>
+
+                                            ) : (
+
+                                                proveedoresProducto.map(
+                                                    (proveedor) => (
+
+                                                        <span
+                                                            className="proveedor-chip removible"
+                                                            key={proveedor.id}
+                                                        >
+                                                            {proveedor.nombre}
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    manejarQuitarProveedor(
+                                                                        proveedor.id
+                                                                    )
+                                                                }
+                                                            >
+                                                                <i className="fa-solid fa-xmark"></i>
+                                                            </button>
+                                                        </span>
+
+                                                    )
+                                                )
+
+                                            )}
+
+                                        </div>
+
+                                        <div className="proveedores-agregar">
+
+                                            <select
+                                                value={proveedorSeleccionado}
+                                                onChange={(e) =>
+                                                    setProveedorSeleccionado(
+                                                        e.target.value
+                                                    )
+                                                }
+                                            >
+                                                <option value="">
+                                                    Selecciona un proveedor...
+                                                </option>
+
+                                                {proveedoresDisponibles
+                                                    .filter(
+                                                        (p) =>
+                                                            !proveedoresProducto.some(
+                                                                (pp) =>
+                                                                    pp.id === p.id
+                                                            )
+                                                    )
+                                                    .map((proveedor) => (
+                                                        <option
+                                                            key={proveedor.id}
+                                                            value={proveedor.id}
+                                                        >
+                                                            {proveedor.nombre}
+                                                        </option>
+                                                    ))}
+                                            </select>
+
+                                            <button
+                                                type="button"
+                                                className="btn-agregar-proveedor"
+                                                onClick={manejarAsociarProveedor}
+                                                disabled={!proveedorSeleccionado}
+                                            >
+                                                <i className="fa-solid fa-plus"></i>
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                )}
+
                                 <div className="modal-acciones">
                                     <button
                                         type="button"
                                         className="btn-cancelar"
                                         onClick={() =>
-                                            setModalAbierto(
-                                                false
-                                            )
+                                            setModalAbierto(false)
                                         }
                                     >
                                         Cancelar
@@ -1382,7 +1462,6 @@ function Inventario() {
                                         className="btn-guardar"
                                     >
                                         <i className="fa-solid fa-check"></i>
-
                                         {productoEditar
                                             ? "Guardar cambios"
                                             : "Crear producto"}
@@ -1392,6 +1471,148 @@ function Inventario() {
                         </div>
                     </div>
                 )}
+
+                {/* =====================================================
+                    MODAL HISTORIAL DE MOVIMIENTOS
+                ===================================================== */}
+
+                {modalHistorial && (
+
+                    <div
+                        className="modal-overlay"
+                        onClick={() => setModalHistorial(false)}
+                    >
+
+                        <div
+                            className="modal-producto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+
+                            <div className="modal-header">
+                                <div>
+                                    <h2>
+                                        Historial —{" "}
+                                        {productoHistorial?.nombre}
+                                    </h2>
+                                    <p>
+                                        Entradas, ajustes y última
+                                        modificación del producto.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setModalHistorial(false)}
+                                >
+                                    <i className="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+
+                            <form
+                                className="movimiento-form"
+                                onSubmit={manejarRegistrarMovimiento}
+                            >
+
+                                <select
+                                    value={nuevoMovimiento.tipo}
+                                    onChange={(e) =>
+                                        setNuevoMovimiento((actual) => ({
+                                            ...actual,
+                                            tipo: e.target.value,
+                                        }))
+                                    }
+                                >
+                                    <option value="ENTRADA">Entrada</option>
+                                    <option value="AJUSTE">Ajuste</option>
+                                </select>
+
+                                <input
+                                    type="number"
+                                    min="1"
+                                    placeholder="Cantidad"
+                                    value={nuevoMovimiento.cantidad}
+                                    onChange={(e) =>
+                                        setNuevoMovimiento((actual) => ({
+                                            ...actual,
+                                            cantidad: e.target.value,
+                                        }))
+                                    }
+                                />
+
+                                <input
+                                    type="text"
+                                    placeholder="Nota (opcional)"
+                                    value={nuevoMovimiento.nota}
+                                    onChange={(e) =>
+                                        setNuevoMovimiento((actual) => ({
+                                            ...actual,
+                                            nota: e.target.value,
+                                        }))
+                                    }
+                                />
+
+                                <button type="submit">
+                                    <i className="fa-solid fa-plus"></i>
+                                    Registrar
+                                </button>
+
+                            </form>
+
+                            <div className="movimientos-tabla-wrapper">
+
+                                {cargandoMovimientos ? (
+
+                                    <p className="alerta-stock-cargando">
+                                        Cargando movimientos...
+                                    </p>
+
+                                ) : movimientos.length === 0 ? (
+
+                                    <p className="alerta-stock-vacio">
+                                        Este producto no tiene movimientos
+                                        registrados.
+                                    </p>
+
+                                ) : (
+
+                                    <table className="inventario-tabla">
+                                        <thead>
+                                            <tr>
+                                                <th>Tipo</th>
+                                                <th>Cantidad</th>
+                                                <th>Usuario</th>
+                                                <th>Fecha</th>
+                                                <th>Nota</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {movimientos.map((mov) => (
+                                                <tr key={mov.id}>
+                                                    <td>{mov.tipo}</td>
+                                                    <td>{mov.cantidad}</td>
+                                                    <td>
+                                                        {mov.usuarioNombre}
+                                                    </td>
+                                                    <td>
+                                                        {formatoFecha(
+                                                            mov.creadoEn
+                                                        )}
+                                                    </td>
+                                                    <td>{mov.nota || "—"}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                )}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                )}
+
             </div>
         </Layout>
     );

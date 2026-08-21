@@ -1,0 +1,85 @@
+.alerta-stock-panel {
+    background: white;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
+}
+
+.alerta-stock-panel h2 {
+    margin: 0 0 14px;
+    font-size: 16px;
+    color: #062f3d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.alerta-stock-panel h2 i {
+    color: #d97706;
+}
+
+.alerta-stock-cargando,
+.alerta-stock-vacio {
+    color: #94a3b8;
+    font-size: 14px;
+    text-align: center;
+    padding: 16px 0;
+}
+
+.alerta-stock-error {
+    color: #dc2626;
+    font-size: 13px;
+}
+
+.alerta-stock-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.alerta-stock-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+}
+
+.alerta-stock-info strong {
+    display: block;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.alerta-stock-info span {
+    font-size: 12px;
+    color: #b45309;
+}
+
+.alerta-stock-proveedores {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.alerta-stock-proveedor-chip {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.alerta-stock-sin-proveedor {
+    font-size: 12px;
+    color: #94a3b8;
+    font-style: italic;
+}

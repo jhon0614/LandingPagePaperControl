@@ -1,0 +1,37 @@
+.proveedores-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.proveedores-header h1 {
+    color: #062f3d;
+    margin-bottom: 6px;
+}
+
+.proveedores-tabla-wrapper {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
+    overflow: hidden;
+}
+
+.inventario-vacio-standalone {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+}
+
+.inventario-vacio-standalone i {
+    font-size: 30px;
+    color: #94a3b8;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.inventario-vacio-standalone strong {
+    display: block;
+    color: #334155;
+    margin-bottom: 4px;
+}

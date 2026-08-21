@@ -61,6 +61,14 @@ function Sidebar() {
 
                         </NavLink>
 
+                        <NavLink to="/proveedores">
+
+                            <i className="fa-solid fa-truck"></i>
+
+                            Proveedores
+
+                        </NavLink>
+
                         <NavLink to="/caja">
                             <i className="fa-solid fa-cash-register"></i>
                             Caja
@@ -174,6 +182,11 @@ function Sidebar() {
 
                             Inventario
 
+                        </NavLink>
+
+                        <NavLink to="/proveedores">
+                            <i className="fa-solid fa-truck"></i>
+                            Proveedores
                         </NavLink>
 
                         <NavLink to="/caja">

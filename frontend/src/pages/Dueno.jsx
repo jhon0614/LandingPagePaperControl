@@ -1,56 +1,96 @@
+import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
+import AlertaStockBajo from "../components/AlertaStockBajo";
+import ProductosMasVendidos from "../components/ProductosMasVendidos";
 import "../styles/Dashboard.css";
 
+import { obtenerProductos } from "../services/productos.service";
+
 function Dueno() {
+
+    const [totales, setTotales] = useState({
+        productos: 0,
+        stockBajo: 0,
+    });
+
+    useEffect(() => {
+
+        async function cargar() {
+
+            try {
+
+                const productos = await obtenerProductos();
+
+                const activos = productos.filter(
+                    (p) => p.estaActivo
+                );
+
+                const stockBajo = activos.filter(
+                    (p) =>
+                        Number(p.stock) > 0 &&
+                        Number(p.stock) <= Number(p.stockMinimo)
+                ).length;
+
+                setTotales({
+                    productos: activos.length,
+                    stockBajo,
+                });
+
+            } catch (error) {
+
+                // Si falla, se dejan los valores en 0 por defecto.
+
+            }
+
+        }
+
+        cargar();
+
+    }, []);
+
     return (
-      <Layout>
-        <h1>Panel del Dueño</h1>
-        <p className="dashboard-subtitle">
-            Bienvenido al sistema de gestión de PaperControl.
-        </p>
+        <Layout>
+            <h1>Panel Dueño</h1>
+            <p className="dashboard-subtitle">
+                Bienvenido al sistema de gestión de PaperControl.
+            </p>
 
-        <section className="cards">
+            <section className="cards">
 
-            <div className="card">
-            <i className="fa-solid fa-box"></i>
-            <h2>Productos</h2>
-            <span>125</span>
-            </div>
+                <div className="card">
+                    <i className="fa-solid fa-box"></i>
+                    <h2>Productos</h2>
+                    <span>{totales.productos}</span>
+                </div>
 
-            <div className="card">
-            <i className="fa-solid fa-cart-shopping"></i>
-            <h2>Ventas</h2>
-            <span>38</span>
-            </div>
+                <div className="card">
+                    <i className="fa-solid fa-cart-shopping"></i>
+                    <h2>Ventas</h2>
+                    <span>38</span>
+                </div>
 
-            <div className="card">
-            <i className="fa-solid fa-users"></i>
-            <h2>Usuarios</h2>
-            <span>3</span>
-            </div>
+                <div className="card">
+                    <i className="fa-solid fa-users"></i>
+                    <h2>Usuarios</h2>
+                    <span>3</span>
+                </div>
 
-            <div className="card">
-            <i className="fa-solid fa-triangle-exclamation"></i>
-            <h2>Stock Bajo</h2>
-            <span>7</span>
-            </div>
+                <div className="card">
+                    <i className="fa-solid fa-triangle-exclamation"></i>
+                    <h2>Stock Bajo</h2>
+                    <span>{totales.stockBajo}</span>
+                </div>
 
-        </section>
+            </section>
 
-        <section className="dashboard-panels">
+            <section className="dashboard-panels">
 
-            <div className="panel">
-            <h2>Últimos movimientos</h2>
-            <p>Aquí se mostrarán los movimientos de inventario.</p>
-            </div>
+                <AlertaStockBajo />
 
-            <div className="panel">
-            <h2>Ventas recientes</h2>
-            <p>Aquí se mostrarán las últimas ventas realizadas.</p>
-            </div>
+                <ProductosMasVendidos />
 
-        </section>
-      </Layout>
+            </section>
+        </Layout>
     );
 }
 

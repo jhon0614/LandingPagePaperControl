@@ -8,7 +8,10 @@ import "../styles/Ventas.css";
 import "../styles/Caja.css";
 
 import { obtenerTurnoActual } from "../services/caja.service";
-
+import {obtenerVentas, obtenerHistorialVentas, crearVenta, obtenerComprobante, 
+    eliminarVenta,} from "../services/ventas.service";
+import { obtenerProductos } from "../services/productos.service";
+import { registrarVenta as crearVentaApi } from "../services/ventas.service";
 
 function Dropdown({
     value,
@@ -211,6 +214,8 @@ function Ventas() {
 
     }, []);
 
+    
+
     const usuarioActual = JSON.parse(
         localStorage.getItem("usuario")
     );
@@ -230,47 +235,36 @@ function Ventas() {
     }
 
 
-    /*
-     * =========================================================
-     * DATOS TEMPORALES - PRODUCTOS
-     * =========================================================
-     */
+    const [productos, setProductos] = useState([]);
 
-    const [productos] = useState([
+    const [cargandoProductos, setCargandoProductos] = useState(true);
 
-        {
-            id: 1,
-            nombre: "Cuaderno 100 hojas",
-            precio: 4500,
-            stock: 25,
-            categoria: "Cuadernos",
-        },
 
-        {
-            id: 2,
-            nombre: "Lápiz Mongol N°2",
-            precio: 1200,
-            stock: 80,
-            categoria: "Escritura",
-        },
+    async function cargarProductos() {
 
-        {
-            id: 3,
-            nombre: "Resma papel carta",
-            precio: 18000,
-            stock: 12,
-            categoria: "Papelería",
-        },
+        try {
 
-        {
-            id: 4,
-            nombre: "Marcador permanente",
-            precio: 2800,
-            stock: 40,
-            categoria: "Escritura",
-        },
+            const lista = await obtenerProductos();
 
-    ]);
+            setProductos(lista);
+
+        } catch (error) {
+
+            setProductos([]);
+
+        } finally {
+
+            setCargandoProductos(false);
+
+        }
+
+    }
+
+    useEffect(() => {
+
+        cargarProductos();
+
+    }, []);
 
 
     /*
@@ -441,6 +435,87 @@ function Ventas() {
         useState(false);
 
 
+    /* =========================================================
+    HISTORIAL DE VENTAS
+    ========================================================= */
+
+    const [ventas, setVentas] = useState([]);
+
+    const [cargandoVentas, setCargandoVentas] =
+        useState(false);
+
+    const [fechaInicio, setFechaInicio] =
+        useState("");
+
+    const [fechaFin, setFechaFin] =
+        useState("");
+
+    const [orden, setOrden] =
+    useState("fecha");
+
+    /* =========================================================
+    CARGAR HISTORIAL
+    ========================================================= */
+
+    async function cargarVentas() {
+
+        try {
+
+            setCargandoVentas(true);
+
+            let datos = [];
+
+            if (rolActual === "VENDEDOR") {
+
+                datos = await obtenerVentas();
+
+            } else {
+
+                datos =
+                    await obtenerHistorialVentas({
+
+                        fechaInicio,
+
+                        fechaFin,
+
+                        orden,
+
+                    });
+
+            }
+
+            setVentas(datos);
+            console.log("Ventas cargadas:", datos);
+            
+
+        } catch (error) {
+
+            console.error(
+                "Error cargando ventas:",
+                error
+            );
+
+        } finally {
+
+            setCargandoVentas(false);
+
+        }
+
+    }
+
+    // Carga el historial de ventas
+    useEffect(() => {
+        if (!verificandoCaja && turnoActivo) {
+            cargarVentas();
+        }
+    }, [
+        verificandoCaja,
+        turnoActivo,
+        fechaInicio,
+        fechaFin,
+        orden,
+    ]);
+
     /*
      * =========================================================
      * NORMALIZAR TEXTO
@@ -587,6 +662,9 @@ function Ventas() {
 
     function agregarAlCarrito(producto) {
 
+        const stockDisponible = Number(producto.stock || 0);
+
+
         setCarrito((actual) => {
 
             const productoExistente =
@@ -595,6 +673,23 @@ function Ventas() {
                         item.id ===
                         producto.id
                 );
+
+
+            const cantidadActual =
+                productoExistente
+                    ? productoExistente.cantidad
+                    : 0;
+
+
+            if (cantidadActual + 1 > stockDisponible) {
+
+                alert(
+                    `No hay suficiente stock de "${producto.nombre}". Disponible: ${stockDisponible}.`
+                );
+
+                return actual;
+
+            }
 
 
             if (productoExistente) {
@@ -641,21 +736,39 @@ function Ventas() {
 
     function aumentarCantidad(id) {
 
+        const producto = productos.find(
+            (p) => p.id === id
+        );
+
+        const stockDisponible = Number(
+            producto?.stock || 0
+        );
+
+
         setCarrito((actual) =>
 
-            actual.map((item) =>
+            actual.map((item) => {
 
-                item.id === id
+                if (item.id !== id) return item;
 
-                    ? {
-                        ...item,
-                        cantidad:
-                            item.cantidad + 1,
-                    }
 
-                    : item
+                if (item.cantidad + 1 > stockDisponible) {
 
-            )
+                    alert(
+                        `No hay más stock disponible de "${item.nombre}". Disponible: ${stockDisponible}.`
+                    );
+
+                    return item;
+
+                }
+
+
+                return {
+                    ...item,
+                    cantidad: item.cantidad + 1,
+                };
+
+            })
 
         );
 
@@ -856,7 +969,11 @@ function Ventas() {
      * =========================================================
      */
 
-    function registrarVenta() {
+    const [registrandoVenta, setRegistrandoVenta] =
+        useState(false);
+
+
+    async function registrarVenta() {
 
         if (carrito.length === 0) {
 
@@ -918,9 +1035,96 @@ function Ventas() {
         }
 
 
-        alert(
-            "El registro de venta se conectará al backend cuando esté disponible."
-        );
+        /*
+         * Verificación final de stock antes de enviar,
+         * por si el stock cambió desde que se cargó la
+         * página (ej: otra caja vendió el mismo producto).
+         */
+
+        const productosSinStock = carrito.filter((item) => {
+
+            const producto = productos.find(
+                (p) => p.id === item.id
+            );
+
+            return (
+                !producto ||
+                item.cantidad > Number(producto.stock || 0)
+            );
+
+        });
+
+
+        if (productosSinStock.length > 0) {
+
+            alert(
+                `No hay stock suficiente para: ${productosSinStock
+                    .map((item) => item.nombre)
+                    .join(", ")}. Actualiza la página e intenta de nuevo.`
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            setRegistrandoVenta(true);
+
+
+            await crearVentaApi({
+
+                turnoCajaId: turnoActivo.id,
+
+                clienteId: clienteSeleccionado || null,
+
+                metodoPago,
+
+                tipoTarjeta: tipoTarjetaSeleccionado || null,
+
+                banco: bancoSeleccionado || null,
+
+                items: carrito.map((item) => ({
+                    productoId: item.id,
+                    cantidad: item.cantidad,
+                    precioUnitario: item.precio,
+                })),
+
+            });
+
+
+            alert("Venta registrada correctamente.");
+
+
+            setCarrito([]);
+
+            setClienteSeleccionado("");
+
+            setMetodoPago("");
+
+            setTipoTarjetaSeleccionado("");
+
+            setBancoSeleccionado("");
+
+
+            // Refresca el stock mostrado en el catálogo.
+
+            await cargarProductos();
+
+
+        } catch (error) {
+
+            alert(
+                error.message ||
+                "No fue posible registrar la venta."
+            );
+
+        } finally {
+
+            setRegistrandoVenta(false);
+
+        }
 
     }
 
@@ -981,13 +1185,13 @@ function Ventas() {
 
         }, [metodosPagoActivos]);
 
-        if (verificandoCaja) {
+        if (verificandoCaja || cargandoProductos) {
 
         return (
             <Layout>
                 <div className="caja-cargando">
                     <i className="fa-solid fa-spinner fa-spin"></i>
-                    <p>Verificando estado de caja...</p>
+                    <p>Cargando información de ventas...</p>
                 </div>
             </Layout>
         );
@@ -1577,21 +1781,325 @@ function Ventas() {
                         className="btn-registrar-venta"
                         onClick={registrarVenta}
                         disabled={
-                            carrito.length === 0
+                            carrito.length === 0 ||
+                            registrandoVenta
                         }
                     >
+
+                        {registrandoVenta ? (
+
+                            <>
+                                <i className="fa-solid fa-spinner fa-spin"></i>
+                                Registrando...
+                            </>
+
+                        ) : (
+
+                            <>
 
                         <i className="fa-solid fa-check"></i>
 
                         Registrar venta
+                        </>
 
+                        )}
+                        
                     </button>
 
                 </div>
 
             </div>
 
+            {/* =========================================================
+                HISTORIAL DE VENTAS
+            ========================================================= */}
 
+            <section className="historial-ventas">
+
+                <div className="historial-ventas-header">
+
+                    <div>
+                        <h2>
+                            Historial de ventas
+                        </h2>
+
+                        <p>
+                            Consulta las ventas registradas en el sistema.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                {/* =====================================================
+                    FILTROS
+                ===================================================== */}
+
+                <div className="historial-ventas-filtros">
+
+                    <div className="historial-filtro">
+
+                        <label htmlFor="fechaInicio">
+                            Desde
+                        </label>
+
+                        <input
+                            id="fechaInicio"
+                            type="date"
+                            value={fechaInicio}
+                            onChange={(e) =>
+                                setFechaInicio(e.target.value)
+                            }
+                        />
+
+                    </div>
+
+
+                    <div className="historial-filtro">
+
+                        <label htmlFor="fechaFin">
+                            Hasta
+                        </label>
+
+                        <input
+                            id="fechaFin"
+                            type="date"
+                            value={fechaFin}
+                            onChange={(e) =>
+                                setFechaFin(e.target.value)
+                            }
+                        />
+
+                    </div>
+
+
+                    <div className="historial-filtro">
+
+                        <label htmlFor="ordenVentas">
+                            Ordenar por
+                        </label>
+
+                        <select
+                            id="ordenVentas"
+                            value={orden}
+                            onChange={(e) =>
+                                setOrden(e.target.value)
+                            }
+                        >
+
+                            <option value="fecha">
+                                Fecha
+                            </option>
+
+                            <option value="monto">
+                                Monto
+                            </option>
+
+                            <option value="vendedor">
+                                Vendedor
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                {/* =====================================================
+                    CONTENIDO
+                ===================================================== */}
+
+                <div className="historial-ventas-contenido">
+
+                    {cargandoVentas ? (
+
+                        <div className="historial-ventas-vacio">
+
+                            <i className="fa-solid fa-spinner fa-spin"></i>
+
+                            <p>
+                                Cargando ventas...
+                            </p>
+
+                        </div>
+
+                    ) : ventas.length === 0 ? (
+
+                        <div className="historial-ventas-vacio">
+
+                            <i className="fa-solid fa-receipt"></i>
+
+                            <h3>
+                                No hay ventas registradas
+                            </h3>
+
+                            <p>
+                                Cuando se registren ventas,
+                                aparecerán aquí.
+                            </p>
+
+                        </div>
+
+                    ) : (
+
+                        <div className="historial-ventas-tabla">
+
+                            <table>
+
+                                <thead>
+
+                                    <tr>
+                                        <th>Venta</th>
+                                        <th>Fecha</th>
+                                        <th>Vendedor</th>
+                                        <th>Productos</th>
+                                        <th>Método de pago</th>
+                                        <th>Subtotal</th>
+                                        <th>Descuento</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody>
+
+                                    {ventas.map((venta) => (
+
+                                        <tr key={venta.id}>
+
+                                            {/* NÚMERO DE VENTA */}
+
+                                            <td>
+
+                                                <strong>
+                                                    {venta.numero_venta}
+                                                </strong>
+
+                                            </td>
+
+
+                                            {/* FECHA */}
+
+                                            <td>
+
+                                                {venta.confirmado_en
+                                                    ? new Date(
+                                                        venta.confirmado_en
+                                                    ).toLocaleString("es-CO", {
+                                                        dateStyle: "short",
+                                                        timeStyle: "short",
+                                                    })
+                                                    : "—"}
+
+                                            </td>
+
+
+                                            {/* VENDEDOR */}
+
+                                            <td>
+
+                                                {venta.vendedor || "—"}
+
+                                            </td>
+
+
+                                            {/* PRODUCTOS */}
+
+                                            <td>
+
+                                                <span
+                                                    title={
+                                                        venta.productos || ""
+                                                    }
+                                                >
+                                                    {venta.productos || "—"}
+                                                </span>
+
+                                            </td>
+
+
+                                            {/* MÉTODOS DE PAGO */}
+
+                                            <td>
+
+                                                {venta.metodos_pago || "—"}
+
+                                            </td>
+
+
+                                            {/* SUBTOTAL */}
+
+                                            <td>
+
+                                                $
+                                                {Number(
+                                                    venta.subtotal || 0
+                                                ).toLocaleString("es-CO")}
+
+                                            </td>
+
+
+                                            {/* DESCUENTO */}
+
+                                            <td>
+
+                                                $
+                                                {Number(
+                                                    venta.monto_descuento || 0
+                                                ).toLocaleString("es-CO")}
+
+                                            </td>
+
+
+                                            {/* TOTAL */}
+
+                                            <td>
+
+                                                <strong>
+
+                                                    $
+                                                    {Number(
+                                                        venta.monto_total || 0
+                                                    ).toLocaleString("es-CO")}
+
+                                                </strong>
+
+                                            </td>
+
+
+                                            {/* ESTADO */}
+
+                                            <td>
+
+                                                <span
+                                                    className={`historial-estado historial-estado-${String(
+                                                        venta.estado || ""
+                                                    ).toLowerCase()}`}
+                                                >
+                                                    {venta.estado || "—"}
+                                                </span>
+
+                                            </td>
+
+                                        </tr>
+
+                                    ))}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    )}
+
+                </div>
+
+            </section>
+            
             {/* =========================================================
                 MODAL CONFIGURACIÓN
             ========================================================= */}

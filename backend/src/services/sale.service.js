@@ -88,6 +88,34 @@ export class ServicioVenta {
     this.modelo = modelo;
   }
 
+  async metodosPago() {
+    return (await this.modelo.listarMetodosPago()).map((metodo) => ({
+      id: Number(metodo.id),
+      codigo: metodo.codigo,
+      nombre: metodo.nombre,
+      activo: Boolean(metodo.esta_activo),
+    }));
+  }
+
+  async actualizarMetodoPago(id, estaActivo) {
+    const metodo = await this.modelo.actualizarMetodoPago(
+      this.#validarId(id),
+      Boolean(estaActivo),
+    );
+    if (!metodo)
+      throw new ErrorAplicacion(
+        "El método de pago no fue encontrado.",
+        404,
+        "METODO_PAGO_NO_ENCONTRADO",
+      );
+    return {
+      id: Number(metodo.id),
+      codigo: metodo.codigo,
+      nombre: metodo.nombre,
+      activo: Boolean(metodo.esta_activo),
+    };
+  }
+
   async crear(datos, usuarioId) {
     // Esta validación se repite en el servicio para proteger llamadas internas
     // que no atraviesen el esquema Zod de la ruta.

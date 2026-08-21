@@ -16,7 +16,10 @@ const esquemaCrear = z
     clienteId: z.number().int().positive().nullable().optional(),
     productos: z.array(itemVenta).min(1).max(100).optional(),
     items: z.array(itemVenta).min(1).max(100).optional(),
-    metodoPago: z.string().trim().transform((valor) => valor.toUpperCase())
+    metodoPago: z
+      .string()
+      .trim()
+      .transform((valor) => valor.toUpperCase())
       .pipe(z.enum(["EFECTIVO", "TARJETA", "TRANSFERENCIA"])),
     tipoTarjeta: z.string().trim().max(50).nullable().optional(),
     banco: z.string().trim().max(80).nullable().optional(),
@@ -28,7 +31,11 @@ const esquemaCrear = z
   .superRefine((datos, contexto) => {
     const productos = datos.productos ?? datos.items ?? [];
     if (!datos.productos && !datos.items) {
-      contexto.addIssue({ code: "custom", path: ["items"], message: "Debes enviar al menos un producto." });
+      contexto.addIssue({
+        code: "custom",
+        path: ["items"],
+        message: "Debes enviar al menos un producto.",
+      });
     }
     // Las validaciones cruzadas dependen de más de un campo del cuerpo.
     if (!datos.tipoDescuento && datos.valorDescuento !== 0) {
@@ -59,7 +66,9 @@ const esquemaCrear = z
   .transform((datos) => ({
     ...datos,
     productos: datos.productos ?? datos.items,
-    referencia: datos.referencia ?? ([datos.tipoTarjeta, datos.banco].filter(Boolean).join(" - ") || null),
+    referencia:
+      datos.referencia ??
+      ([datos.tipoTarjeta, datos.banco].filter(Boolean).join(" - ") || null),
   }));
 const esquemaAnular = z.preprocess(
   // El DELETE solicitado desde el frontend ya representa la confirmación de
@@ -70,12 +79,20 @@ const esquemaAnular = z.preprocess(
     motivo: z.string().trim().min(3).max(500).optional(),
   }),
 );
+const esquemaEstadoMetodo = z.object({ estaActivo: z.boolean() }).strict();
 
 export function crearRutasVentas({ autenticar, controlador }) {
   const router = Router();
   const rolesVenta = permitirRoles("VENDEDOR", "ADMINISTRADOR", "DUENO");
   // Cualquier operación de ventas requiere una cuenta autenticada con estos roles.
   router.use(autenticar, rolesVenta);
+  router.get("/metodos-pago", controlador.metodosPago);
+  router.patch(
+    "/metodos-pago/:id",
+    permitirRoles("ADMINISTRADOR", "DUENO"),
+    validar(esquemaEstadoMetodo),
+    controlador.actualizarMetodoPago,
+  );
   router.post("/", validar(esquemaCrear), controlador.crear);
   router.get(
     "/historial",

@@ -244,6 +244,8 @@ CREATE TABLE ventas (
   cliente_id BIGINT UNSIGNED NULL,
   vendido_por BIGINT UNSIGNED NOT NULL,
   subtotal DECIMAL(12,2) NOT NULL,
+  tipo_descuento ENUM('PORCENTAJE', 'VALOR_FIJO') NULL,
+  valor_descuento DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   monto_descuento DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   monto_impuesto DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   monto_total DECIMAL(12,2) NOT NULL,
@@ -260,6 +262,11 @@ CREATE TABLE ventas (
   CONSTRAINT foranea_ventas_vendido_por FOREIGN KEY (vendido_por) REFERENCES usuarios (id),
   CONSTRAINT foranea_ventas_cancelado_por FOREIGN KEY (cancelado_por) REFERENCES usuarios (id),
   CONSTRAINT verificar_ventas_subtotal CHECK (subtotal >= 0),
+  CONSTRAINT verificar_ventas_valor_descuento CHECK (valor_descuento >= 0),
+  CONSTRAINT verificar_ventas_tipo_descuento CHECK (
+    (tipo_descuento IS NULL AND valor_descuento = 0)
+    OR tipo_descuento IS NOT NULL
+  ),
   CONSTRAINT verificar_ventas_descuento CHECK (monto_descuento >= 0),
   CONSTRAINT verificar_ventas_impuesto CHECK (monto_impuesto >= 0),
   CONSTRAINT verificar_ventas_total CHECK (monto_total >= 0),

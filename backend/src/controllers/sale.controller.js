@@ -1,38 +1,69 @@
+// Traduce las solicitudes HTTP de ventas a llamadas del servicio; las reglas de
+// inventario, permisos y caja permanecen fuera del controlador.
 export class ControladorVenta {
-  constructor(servicio) { this.servicio = servicio; }
+  constructor(servicio) {
+    this.servicio = servicio;
+  }
 
-  crear = async (req, res, next) => {
+  // Registra una venta usando el cuerpo validado y el usuario autenticado.
+  crear = async (requerimiento, respuesta, siguiente) => {
     try {
-      const venta = await this.servicio.crear(req.body, req.usuario.id);
-      return res.status(201).json({ exito: true, datos: { venta } });
-    } catch (error) { return next(error); }
+      const venta = await this.servicio.crear(
+        requerimiento.body,
+        requerimiento.usuario.id,
+      );
+      return respuesta.status(201).json({ exito: true, datos: { venta } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  propias = async (req, res, next) => {
+  // Limita el listado al vendedor identificado por la sesión.
+  propias = async (requerimiento, respuesta, siguiente) => {
     try {
-      const ventas = await this.servicio.propias(req.usuario.id);
-      return res.status(200).json({ exito: true, datos: { ventas } });
-    } catch (error) { return next(error); }
+      const ventas = await this.servicio.propias(requerimiento.usuario.id);
+      return respuesta.status(200).json({ exito: true, datos: { ventas } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  historial = async (req, res, next) => {
+  // Entrega al servicio los filtros opcionales recibidos en la URL.
+  historial = async (requerimiento, respuesta, siguiente) => {
     try {
-      const ventas = await this.servicio.historial(req.query);
-      return res.status(200).json({ exito: true, datos: { ventas } });
-    } catch (error) { return next(error); }
+      const ventas = await this.servicio.historial(requerimiento.query);
+      return respuesta.status(200).json({ exito: true, datos: { ventas } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  comprobante = async (req, res, next) => {
+  // El servicio comprueba si el usuario puede consultar la venta solicitada.
+  comprobante = async (requerimiento, respuesta, siguiente) => {
     try {
-      const comprobante = await this.servicio.comprobante(req.params.id, req.usuario);
-      return res.status(200).json({ exito: true, datos: { comprobante } });
-    } catch (error) { return next(error); }
+      const comprobante = await this.servicio.comprobante(
+        requerimiento.params.id,
+        requerimiento.usuario,
+      );
+      return respuesta
+        .status(200)
+        .json({ exito: true, datos: { comprobante } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  anular = async (req, res, next) => {
+  // Solicita la anulación junto con el motivo y el responsable autenticado.
+  anular = async (requerimiento, respuesta, siguiente) => {
     try {
-      const venta = await this.servicio.anular(req.params.id, req.body, req.usuario);
-      return res.status(200).json({ exito: true, datos: { venta } });
-    } catch (error) { return next(error); }
+      const venta = await this.servicio.anular(
+        requerimiento.params.id,
+        requerimiento.body,
+        requerimiento.usuario,
+      );
+      return respuesta.status(200).json({ exito: true, datos: { venta } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 }

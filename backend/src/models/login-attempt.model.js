@@ -4,7 +4,14 @@ export class ModeloIntentoAcceso {
     this.conexiones = conexiones;
   }
 
-  async crear({ usuarioId, correo, fueExitoso, motivoFallo, direccionIp, agenteUsuario }) {
+  async crear({
+    usuarioId,
+    correo,
+    fueExitoso,
+    motivoFallo,
+    direccionIp,
+    agenteUsuario,
+  }) {
     await this.conexiones.execute(
       `INSERT INTO intentos_acceso
         (usuario_id, correo_intentado, fue_exitoso, motivo_fallo, direccion_ip, agente_usuario)

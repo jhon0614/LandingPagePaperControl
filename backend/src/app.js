@@ -40,6 +40,18 @@ import { ModeloVenta } from "./models/sale.model.js";
 import { ServicioVenta } from "./services/sale.service.js";
 import { ControladorVenta } from "./controllers/sale.controller.js";
 import { crearRutasVentas } from "./routes/sale.routes.js";
+import { ModeloProducto } from "./models/product.model.js";
+import { ServicioProducto } from "./services/product.service.js";
+import { ControladorProducto } from "./controllers/product.controller.js";
+import { crearRutasProductos } from "./routes/product.routes.js";
+import { ModeloProveedor } from "./models/supplier.model.js";
+import { ServicioProveedor } from "./services/supplier.service.js";
+import { ControladorProveedor } from "./controllers/supplier.controller.js";
+import { crearRutasProveedores } from "./routes/supplier.routes.js";
+import { ModeloReporte } from "./models/report.model.js";
+import { ServicioReporte } from "./services/report.service.js";
+import { ControladorReporte } from "./controllers/report.controller.js";
+import { crearRutasReportes } from "./routes/report.routes.js";
 
 // Construye la aplicación Express y conecta las piezas del patrón MVC.
 // Recibir las conexiones y la configuración como parámetros facilita las pruebas.
@@ -64,8 +76,9 @@ export function crearAplicacion({ conexiones, configuracion }) {
   const modeloSesion = new ModeloSesion(conexiones);
   const modeloAuditoria = new ModeloAuditoria(conexiones);
   // Este modelo utiliza la tabla de tokens temporales ya incluida en el esquema.
-  const modeloRestablecimiento =
-    new ModeloRestablecimientoContrasena(conexiones);
+  const modeloRestablecimiento = new ModeloRestablecimientoContrasena(
+    conexiones,
+  );
 
   const modeloRol = new ModeloRol(conexiones);
   const servicioRol = new ServicioRol(modeloRol);
@@ -87,6 +100,15 @@ export function crearAplicacion({ conexiones, configuracion }) {
   );
   const controladorVenta = new ControladorVenta(
     new ServicioVenta(new ModeloVenta(conexiones)),
+  );
+  const controladorProducto = new ControladorProducto(
+    new ServicioProducto(new ModeloProducto(conexiones)),
+  );
+  const controladorProveedor = new ControladorProveedor(
+    new ServicioProveedor(new ModeloProveedor(conexiones)),
+  );
+  const controladorReporte = new ControladorReporte(
+    new ServicioReporte(new ModeloReporte(conexiones)),
   );
 
   // Se crean los modelos y se entregan al servicio responsable del login.
@@ -113,8 +135,7 @@ export function crearAplicacion({ conexiones, configuracion }) {
     modeloAuditoria,
     configuracion: configuracion.restablecimientoContrasena,
   });
-  const controladorContrasena =
-    new ControladorContrasena(servicioContrasena);
+  const controladorContrasena = new ControladorContrasena(servicioContrasena);
 
   const autenticar = crearMiddlewareAutenticacion({
     modeloUsuario,
@@ -169,6 +190,18 @@ export function crearAplicacion({ conexiones, configuracion }) {
   aplicacion.use(
     "/api/ventas",
     crearRutasVentas({ autenticar, controlador: controladorVenta }),
+  );
+  aplicacion.use(
+    "/api/productos",
+    crearRutasProductos({ autenticar, controlador: controladorProducto }),
+  );
+  aplicacion.use(
+    "/api/proveedores",
+    crearRutasProveedores({ autenticar, controlador: controladorProveedor }),
+  );
+  aplicacion.use(
+    "/api/reportes",
+    crearRutasReportes({ autenticar, controlador: controladorReporte }),
   );
 
   // Estos manejadores deben permanecer al final de todas las rutas.

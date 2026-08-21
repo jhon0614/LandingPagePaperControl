@@ -1,59 +1,101 @@
 export class ControladorTurnoCaja {
-  constructor(servicio) { this.servicio = servicio; }
+  constructor(servicio) {
+    this.servicio = servicio;
+  }
 
-  abrir = async (req, res, next) => {
+  // Recibe el monto inicial y el usuario que abre el turno de caja.
+  abrir = async (requerimiento, respuesta, siguiente) => {
     try {
-      const turno = await this.servicio.abrir(req.body.montoInicial, req.usuario.id);
-      return res.status(201).json({ exito: true, datos: { turno } });
-    } catch (error) { return next(error); }
+      const turno = await this.servicio.abrir(
+        requerimiento.body.montoInicial,
+        requerimiento.usuario.id,
+      );
+      // Responde 201 porque se creó un nuevo turno.
+      return respuesta.status(201).json({ exito: true, datos: { turno } });
+    } catch (error) {
+      // Delega el error al manejador general de Express.
+      return siguiente(error);
+    }
   };
 
-  actual = async (_req, res, next) => {
+  // Consulta el turno que se encuentra abierto actualmente.
+  actual = async (_requerimiento, respuesta, siguiente) => {
     try {
       const turno = await this.servicio.actual();
-      return res.status(200).json({ exito: true, datos: { turno } });
-    } catch (error) { return next(error); }
+      return respuesta.status(200).json({ exito: true, datos: { turno } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  resumen = async (_req, res, next) => {
+  // Obtiene el resumen financiero del turno abierto.
+  resumen = async (_requerimiento, respuesta, siguiente) => {
     try {
       const resumen = await this.servicio.resumen();
-      return res.status(200).json({ exito: true, datos: { resumen } });
-    } catch (error) { return next(error); }
+      return respuesta.status(200).json({ exito: true, datos: { resumen } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  gastos = async (_req, res, next) => {
+  // Lista los gastos registrados en el turno abierto.
+  gastos = async (_requerimiento, respuesta, siguiente) => {
     try {
       const gastos = await this.servicio.gastos();
-      return res.status(200).json({ exito: true, datos: { gastos } });
-    } catch (error) { return next(error); }
+      return respuesta.status(200).json({ exito: true, datos: { gastos } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  registrarGasto = async (req, res, next) => {
+  // Envía al servicio los datos validados y quién registró el gasto.
+  registrarGasto = async (requerimiento, respuesta, siguiente) => {
     try {
-      const gasto = await this.servicio.registrarGasto(req.body, req.usuario.id);
-      return res.status(201).json({ exito: true, datos: { gasto } });
-    } catch (error) { return next(error); }
+      const gasto = await this.servicio.registrarGasto(
+        requerimiento.body,
+        requerimiento.usuario.id,
+      );
+      return respuesta.status(201).json({ exito: true, datos: { gasto } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  eliminarGasto = async (req, res, next) => {
+  // Solicita eliminar el gasto indicado y entrega el usuario autenticado.
+  eliminarGasto = async (requerimiento, respuesta, siguiente) => {
     try {
-      await this.servicio.eliminarGasto(req.params.id, req.usuario);
-      return res.status(200).json({ exito: true, datos: { eliminado: true } });
-    } catch (error) { return next(error); }
+      await this.servicio.eliminarGasto(
+        requerimiento.params.id,
+        requerimiento.usuario,
+      );
+      return respuesta
+        .status(200)
+        .json({ exito: true, datos: { eliminado: true } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  cerrar = async (req, res, next) => {
+  // Recibe el efectivo contado y el usuario responsable del cierre.
+  cerrar = async (requerimiento, respuesta, siguiente) => {
     try {
-      const cuadre = await this.servicio.cerrar(req.body.montoContado, req.usuario.id);
-      return res.status(200).json({ exito: true, datos: { cuadre } });
-    } catch (error) { return next(error); }
+      const cuadre = await this.servicio.cerrar(
+        requerimiento.body.montoContado,
+        requerimiento.usuario.id,
+      );
+      return respuesta.status(200).json({ exito: true, datos: { cuadre } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 
-  historial = async (req, res, next) => {
+  // Envía los filtros de la URL al servicio para consultar turnos anteriores.
+  historial = async (requerimiento, respuesta, siguiente) => {
     try {
-      const turnos = await this.servicio.historial(req.query);
-      return res.status(200).json({ exito: true, datos: { turnos } });
-    } catch (error) { return next(error); }
+      const turnos = await this.servicio.historial(requerimiento.query);
+      return respuesta.status(200).json({ exito: true, datos: { turnos } });
+    } catch (error) {
+      return siguiente(error);
+    }
   };
 }

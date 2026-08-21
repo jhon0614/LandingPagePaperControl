@@ -18,7 +18,12 @@ test("GET de ventas entrega únicamente las del usuario al modelo", async () => 
   const ventas = await servicio.propias(7);
   assert.equal(usuarioRecibido, 7);
   assert.equal(ventas[0].total, 9000);
-  assert.deepEqual(ventas[0].productos, ["Cuaderno x2", "Lápiz x1"]);
+  assert.equal(ventas[0].monto_total, 9000);
+  assert.equal(ventas[0].numero_venta, "V-00000003");
+  assert.equal(ventas[0].confirmado_en, filaListado.confirmado_en);
+  assert.equal(ventas[0].metodos_pago, "EFECTIVO");
+  assert.equal(ventas[0].productos, "Cuaderno x2 | Lápiz x1");
+  assert.deepEqual(ventas[0].productosDetalle, ["Cuaderno x2", "Lápiz x1"]);
 });
 
 test("rechaza un descuento porcentual superior al 100", async () => {

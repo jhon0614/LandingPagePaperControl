@@ -434,8 +434,7 @@ export class ServicioUsuario {
       }
     }
 
-    const fueEliminado =
-      await this.modeloUsuario.eliminarLogicamente(numeroId);
+    const fueEliminado = await this.modeloUsuario.eliminarLogicamente(numeroId);
 
     if (!fueEliminado) {
       throw new ErrorAplicacion(

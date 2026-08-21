@@ -4,6 +4,7 @@ import { permitirRoles } from "../middleware/roles.middleware.js";
 import { validar } from "../middleware/validate.js";
 
 const dinero = z.number().finite().nonnegative().max(9999999999.99);
+// Vendedores, administradores y dueños participan en la operación de caja.
 const rolesCaja = permitirRoles("VENDEDOR", "ADMINISTRADOR", "DUENO");
 
 const esquemaApertura = z.object({ montoInicial: dinero });
@@ -15,6 +16,7 @@ const esquemaCierre = z.object({ montoContado: dinero });
 
 export function crearRutasTurnosCaja({ autenticar, controlador }) {
   const router = Router();
+  // Todas las operaciones siguientes comparten autenticación y autorización.
   router.use(autenticar, rolesCaja);
   router.post("/apertura", validar(esquemaApertura), controlador.abrir);
   router.get("/actual", controlador.actual);
@@ -28,6 +30,7 @@ export function crearRutasTurnosCaja({ autenticar, controlador }) {
 
 export function crearRutasGastosCaja({ autenticar, controlador }) {
   const router = Router();
+  // Se conserva separado porque /api/gastos-caja tiene una base distinta.
   router.delete("/:id", autenticar, rolesCaja, controlador.eliminarGasto);
   return router;
 }

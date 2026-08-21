@@ -1,70 +1,141 @@
 import { randomUUID } from "node:crypto";
 
+// Persiste ventas, pagos e inventario como una única unidad transaccional.
 export class ModeloVenta {
-  constructor(conexiones) { this.conexiones = conexiones; }
+  constructor(conexiones) {
+    this.conexiones = conexiones;
+  }
 
-  async crear({ usuarioId, clienteId, productos, metodoPago, tipoDescuento, valorDescuento, referencia, montoRecibido }) {
+  async crear({
+    usuarioId,
+    clienteId,
+    productos,
+    metodoPago,
+    tipoDescuento,
+    valorDescuento,
+    referencia,
+    montoRecibido,
+    turnoCajaId,
+  }) {
     const conexion = await this.conexiones.getConnection();
     try {
+      // La venta completa se confirma únicamente si caja, stock y pago son válidos.
       await conexion.beginTransaction();
       const [turnos] = await conexion.execute(
         `SELECT id FROM turnos_caja WHERE estado = 'ABIERTO'
+          AND (? IS NULL OR id = ?)
           ORDER BY abierto_en DESC LIMIT 1 FOR UPDATE`,
+        [turnoCajaId ?? null, turnoCajaId ?? null],
       );
-      if (!turnos[0]) return await this.#cancelar(conexion, { error: "SIN_TURNO" });
+      if (!turnos[0])
+        return await this.#cancelar(conexion, { error: "SIN_TURNO" });
 
       if (clienteId) {
         const [clientes] = await conexion.execute(
           `SELECT id FROM clientes WHERE id = ? AND esta_activo = TRUE
-            AND eliminado_en IS NULL LIMIT 1`, [clienteId],
+            AND eliminado_en IS NULL LIMIT 1`,
+          [clienteId],
         );
-        if (!clientes[0]) return await this.#cancelar(conexion, { error: "CLIENTE_INVALIDO" });
+        if (!clientes[0])
+          return await this.#cancelar(conexion, { error: "CLIENTE_INVALIDO" });
       }
 
       const ids = productos.map((producto) => producto.productoId);
       const marcadores = ids.map(() => "?").join(",");
+      // Bloquea los productos para evitar vender el mismo stock simultáneamente.
       const [filasProductos] = await conexion.execute(
         `SELECT id, nombre, sku, precio_venta, stock_actual, stock_minimo,
                 alerta_stock_habilitada, esta_activo
            FROM productos WHERE id IN (${marcadores})
-           ORDER BY id FOR UPDATE`, ids,
+           ORDER BY id FOR UPDATE`,
+        ids,
       );
-      const porId = new Map(filasProductos.map((producto) => [Number(producto.id), producto]));
+      const porId = new Map(
+        filasProductos.map((producto) => [Number(producto.id), producto]),
+      );
       for (const solicitado of productos) {
         const producto = porId.get(solicitado.productoId);
-        if (!producto || !producto.esta_activo) return await this.#cancelar(conexion, { error: "PRODUCTO_INVALIDO", productoId: solicitado.productoId });
-        if (Number(producto.stock_actual) < solicitado.cantidad) return await this.#cancelar(conexion, { error: "STOCK_INSUFICIENTE", productoId: solicitado.productoId, disponible: Number(producto.stock_actual) });
+        if (!producto || !producto.esta_activo)
+          return await this.#cancelar(conexion, {
+            error: "PRODUCTO_INVALIDO",
+            productoId: solicitado.productoId,
+          });
+        if (Number(producto.stock_actual) < solicitado.cantidad)
+          return await this.#cancelar(conexion, {
+            error: "STOCK_INSUFICIENTE",
+            productoId: solicitado.productoId,
+            disponible: Number(producto.stock_actual),
+          });
       }
 
       const [metodos] = await conexion.execute(
         `SELECT id, codigo FROM metodos_pago WHERE codigo = ? AND esta_activo = TRUE LIMIT 1`,
         [metodoPago],
       );
-      if (!metodos[0]) return await this.#cancelar(conexion, { error: "METODO_PAGO_INVALIDO" });
+      if (!metodos[0])
+        return await this.#cancelar(conexion, {
+          error: "METODO_PAGO_INVALIDO",
+        });
 
-      const subtotal = productos.reduce((total, solicitado) => total + Number(porId.get(solicitado.productoId).precio_venta) * solicitado.cantidad, 0);
-      const montoDescuento = tipoDescuento === "PORCENTAJE"
-        ? this.#redondear(subtotal * valorDescuento / 100)
-        : tipoDescuento === "VALOR_FIJO" ? valorDescuento : 0;
-      if (montoDescuento > subtotal) return await this.#cancelar(conexion, { error: "DESCUENTO_INVALIDO" });
+      // Los importes se calculan con los precios recuperados de la base de datos.
+      const subtotal = productos.reduce(
+        (total, solicitado) =>
+          total +
+          Number(porId.get(solicitado.productoId).precio_venta) *
+            solicitado.cantidad,
+        0,
+      );
+      const montoDescuento =
+        tipoDescuento === "PORCENTAJE"
+          ? this.#redondear((subtotal * valorDescuento) / 100)
+          : tipoDescuento === "VALOR_FIJO"
+            ? valorDescuento
+            : 0;
+      if (montoDescuento > subtotal)
+        return await this.#cancelar(conexion, { error: "DESCUENTO_INVALIDO" });
       const total = this.#redondear(subtotal - montoDescuento);
-      if (total <= 0) return await this.#cancelar(conexion, { error: "TOTAL_INVALIDO" });
-      if (metodoPago === "EFECTIVO" && montoRecibido != null && montoRecibido < total) {
-        return await this.#cancelar(conexion, { error: "MONTO_RECIBIDO_INSUFICIENTE", total });
+      if (total <= 0)
+        return await this.#cancelar(conexion, { error: "TOTAL_INVALIDO" });
+      if (
+        metodoPago === "EFECTIVO" &&
+        montoRecibido != null &&
+        montoRecibido < total
+      ) {
+        return await this.#cancelar(conexion, {
+          error: "MONTO_RECIBIDO_INSUFICIENTE",
+          total,
+        });
       }
 
-      const temporal = `TMP-${randomUUID()}`;
+      // El valor temporal satisface la clave única hasta conocer el insertId.
+      // numero_venta admite 30 caracteres, por eso se eliminan los guiones del
+      // UUID y se limita la parte aleatoria a 26 caracteres más el prefijo.
+      const temporal = `TMP-${randomUUID().replaceAll("-", "").slice(0, 26)}`;
       const [venta] = await conexion.execute(
         `INSERT INTO ventas
           (numero_venta, turno_caja_id, cliente_id, vendido_por, subtotal,
            tipo_descuento, valor_descuento, monto_descuento, monto_total)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [temporal, turnos[0].id, clienteId, usuarioId, subtotal, tipoDescuento, valorDescuento, montoDescuento, total],
+        [
+          temporal,
+          turnos[0].id,
+          clienteId,
+          usuarioId,
+          subtotal,
+          tipoDescuento,
+          valorDescuento,
+          montoDescuento,
+          total,
+        ],
       );
       const numeroVenta = `V-${String(venta.insertId).padStart(8, "0")}`;
-      await conexion.execute(`UPDATE ventas SET numero_venta = ? WHERE id = ?`, [numeroVenta, venta.insertId]);
+      await conexion.execute(
+        `UPDATE ventas SET numero_venta = ? WHERE id = ?`,
+        [numeroVenta, venta.insertId],
+      );
 
       for (const solicitado of productos) {
+        // Cada línea descuenta existencias y deja trazabilidad en inventario.
         const producto = porId.get(solicitado.productoId);
         const precio = Number(producto.precio_venta);
         const stockAnterior = Number(producto.stock_actual);
@@ -74,70 +145,128 @@ export class ModeloVenta {
             (venta_id, producto_id, nombre_producto, sku, cantidad,
              precio_unitario, total_linea)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [venta.insertId, producto.id, producto.nombre, producto.sku, solicitado.cantidad, precio, this.#redondear(precio * solicitado.cantidad)],
+          [
+            venta.insertId,
+            producto.id,
+            producto.nombre,
+            producto.sku,
+            solicitado.cantidad,
+            precio,
+            this.#redondear(precio * solicitado.cantidad),
+          ],
         );
-        await conexion.execute(`UPDATE productos SET stock_actual = ? WHERE id = ?`, [stockPosterior, producto.id]);
+        await conexion.execute(
+          `UPDATE productos SET stock_actual = ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
+          [stockPosterior, producto.id],
+        );
         const [movimiento] = await conexion.execute(
           `INSERT INTO movimientos_inventario
             (producto_id, usuario_id, venta_id, tipo_movimiento, cantidad,
              stock_anterior, stock_posterior, referencia)
            VALUES (?, ?, ?, 'VENTA', ?, ?, ?, ?)`,
-          [producto.id, usuarioId, venta.insertId, -solicitado.cantidad, stockAnterior, stockPosterior, numeroVenta],
+          [
+            producto.id,
+            usuarioId,
+            venta.insertId,
+            -solicitado.cantidad,
+            stockAnterior,
+            stockPosterior,
+            numeroVenta,
+          ],
         );
-        if (producto.alerta_stock_habilitada && stockPosterior <= Number(producto.stock_minimo)) {
+        // Solo crea una alerta activa por producto para evitar duplicados.
+        if (
+          producto.alerta_stock_habilitada &&
+          stockPosterior <= Number(producto.stock_minimo)
+        ) {
           await conexion.execute(
             `INSERT INTO alertas_inventario
               (producto_id, movimiento_inventario_id, stock_al_crear, stock_minimo_al_crear)
              SELECT ?, ?, ?, ? WHERE NOT EXISTS (
                SELECT 1 FROM alertas_inventario WHERE producto_id = ? AND estado = 'ACTIVA'
              )`,
-            [producto.id, movimiento.insertId, stockPosterior, producto.stock_minimo, producto.id],
+            [
+              producto.id,
+              movimiento.insertId,
+              stockPosterior,
+              producto.stock_minimo,
+              producto.id,
+            ],
           );
         }
       }
 
-      const cambio = metodoPago === "EFECTIVO" && montoRecibido != null ? this.#redondear(montoRecibido - total) : null;
+      const cambio =
+        metodoPago === "EFECTIVO" && montoRecibido != null
+          ? this.#redondear(montoRecibido - total)
+          : null;
       await conexion.execute(
         `INSERT INTO pagos_venta
           (venta_id, metodo_pago_id, monto, referencia, monto_recibido, cambio)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [venta.insertId, metodos[0].id, total, referencia, montoRecibido, cambio],
+        [
+          venta.insertId,
+          metodos[0].id,
+          total,
+          referencia,
+          montoRecibido,
+          cambio,
+        ],
       );
       await conexion.commit();
       return { id: venta.insertId };
     } catch (error) {
       await conexion.rollback();
       throw error;
-    } finally { conexion.release(); }
+    } finally {
+      conexion.release();
+    }
   }
 
   async #cancelar(conexion, resultado) {
+    // Devuelve un resultado de dominio después de restaurar todos los cambios.
     await conexion.rollback();
     return resultado;
   }
 
-  #redondear(valor) { return Math.round((valor + Number.EPSILON) * 100) / 100; }
+  #redondear(valor) {
+    // Los montos de la venta se almacenan con precisión de dos decimales.
+    return Math.round((valor + Number.EPSILON) * 100) / 100;
+  }
 
   async buscarPorVendedor(usuarioId) {
     const [filas] = await this.conexiones.execute(
       `${this.#consultaListado()} WHERE v.vendido_por = ?
-        GROUP BY v.id ORDER BY v.confirmado_en DESC`, [usuarioId],
+        GROUP BY v.id ORDER BY v.confirmado_en DESC`,
+      [usuarioId],
     );
     return filas;
   }
 
   async historial({ fechaInicio, fechaFin, vendedorId, orden }) {
+    // Los nombres de columna para ordenar provienen de esta lista controlada.
     const condiciones = [];
     const parametros = [];
-    if (fechaInicio) { condiciones.push("v.confirmado_en >= ?"); parametros.push(fechaInicio); }
-    if (fechaFin) { condiciones.push("v.confirmado_en < DATE_ADD(?, INTERVAL 1 DAY)"); parametros.push(fechaFin); }
-    if (vendedorId) { condiciones.push("v.vendido_por = ?"); parametros.push(vendedorId); }
+    if (fechaInicio) {
+      condiciones.push("v.confirmado_en >= ?");
+      parametros.push(fechaInicio);
+    }
+    if (fechaFin) {
+      condiciones.push("v.confirmado_en < DATE_ADD(?, INTERVAL 1 DAY)");
+      parametros.push(fechaFin);
+    }
+    if (vendedorId) {
+      condiciones.push("v.vendido_por = ?");
+      parametros.push(vendedorId);
+    }
     const ordenes = {
       fecha: "v.confirmado_en DESC",
       monto: "v.monto_total DESC, v.confirmado_en DESC",
       vendedor: "u.nombres, u.apellidos, v.confirmado_en DESC",
     };
-    const where = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+    const where = condiciones.length
+      ? `WHERE ${condiciones.join(" AND ")}`
+      : "";
     const [filas] = await this.conexiones.execute(
       `${this.#consultaListado()} ${where} GROUP BY v.id ORDER BY ${ordenes[orden]}`,
       parametros,
@@ -146,6 +275,7 @@ export class ModeloVenta {
   }
 
   #consultaListado() {
+    // Centraliza la proyección compartida entre ventas propias e historial.
     return `SELECT v.id, v.numero_venta, v.vendido_por, v.subtotal,
                    v.tipo_descuento, v.valor_descuento, v.monto_descuento,
                    v.monto_total, v.estado, v.confirmado_en,
@@ -161,6 +291,7 @@ export class ModeloVenta {
   }
 
   async comprobante(id) {
+    // Se consulta en tres bloques para evitar duplicar productos por cada pago.
     const [ventas] = await this.conexiones.execute(
       `SELECT v.*, CONCAT(u.nombres, ' ', u.apellidos) AS vendedor,
               c.tipo_documento, c.numero_documento,
@@ -168,19 +299,22 @@ export class ModeloVenta {
          FROM ventas v
          JOIN usuarios u ON u.id = v.vendido_por
          LEFT JOIN clientes c ON c.id = v.cliente_id
-        WHERE v.id = ? LIMIT 1`, [id],
+        WHERE v.id = ? LIMIT 1`,
+      [id],
     );
     if (!ventas[0]) return null;
     const [productos] = await this.conexiones.execute(
       `SELECT producto_id, nombre_producto, sku, cantidad, precio_unitario,
               monto_descuento, monto_impuesto, total_linea
-         FROM detalles_venta WHERE venta_id = ? ORDER BY id`, [id],
+         FROM detalles_venta WHERE venta_id = ? ORDER BY id`,
+      [id],
     );
     const [pagos] = await this.conexiones.execute(
       `SELECT mp.codigo, mp.nombre, p.monto, p.referencia,
               p.monto_recibido, p.cambio
          FROM pagos_venta p JOIN metodos_pago mp ON mp.id = p.metodo_pago_id
-        WHERE p.venta_id = ? ORDER BY p.id`, [id],
+        WHERE p.venta_id = ? ORDER BY p.id`,
+      [id],
     );
     return { venta: ventas[0], productos, pagos };
   }
@@ -188,33 +322,54 @@ export class ModeloVenta {
   async anular({ id, usuarioId, puedeAnularCualquiera, motivo }) {
     const conexion = await this.conexiones.getConnection();
     try {
+      // La anulación y la devolución del stock deben confirmarse juntas.
       await conexion.beginTransaction();
       const [ventas] = await conexion.execute(
         `SELECT v.id, v.numero_venta, v.vendido_por, v.estado, t.estado AS estado_turno
            FROM ventas v JOIN turnos_caja t ON t.id = v.turno_caja_id
-          WHERE v.id = ? FOR UPDATE`, [id],
+          WHERE v.id = ? FOR UPDATE`,
+        [id],
       );
       const venta = ventas[0];
-      if (!venta) return await this.#cancelar(conexion, { error: "NO_ENCONTRADA" });
-      if (!puedeAnularCualquiera && Number(venta.vendido_por) !== usuarioId) return await this.#cancelar(conexion, { error: "SIN_PERMISO" });
-      if (venta.estado === "ANULADA") return await this.#cancelar(conexion, { error: "YA_ANULADA" });
-      if (venta.estado_turno !== "ABIERTO") return await this.#cancelar(conexion, { error: "TURNO_CERRADO" });
+      if (!venta)
+        return await this.#cancelar(conexion, { error: "NO_ENCONTRADA" });
+      if (!puedeAnularCualquiera && Number(venta.vendido_por) !== usuarioId)
+        return await this.#cancelar(conexion, { error: "SIN_PERMISO" });
+      if (venta.estado === "ANULADA")
+        return await this.#cancelar(conexion, { error: "YA_ANULADA" });
+      if (venta.estado_turno !== "ABIERTO")
+        return await this.#cancelar(conexion, { error: "TURNO_CERRADO" });
       const [detalles] = await conexion.execute(
-        `SELECT producto_id, cantidad FROM detalles_venta WHERE venta_id = ? ORDER BY producto_id`, [id],
+        `SELECT producto_id, cantidad FROM detalles_venta WHERE venta_id = ? ORDER BY producto_id`,
+        [id],
       );
       for (const detalle of detalles) {
+        // Bloquea cada producto antes de restaurar sus existencias.
         const [productos] = await conexion.execute(
-          `SELECT id, stock_actual, stock_minimo FROM productos WHERE id = ? FOR UPDATE`, [detalle.producto_id],
+          `SELECT id, stock_actual, stock_minimo FROM productos WHERE id = ? FOR UPDATE`,
+          [detalle.producto_id],
         );
         const anterior = Number(productos[0].stock_actual);
         const posterior = anterior + Number(detalle.cantidad);
-        await conexion.execute(`UPDATE productos SET stock_actual = ? WHERE id = ?`, [posterior, detalle.producto_id]);
+        await conexion.execute(
+          `UPDATE productos SET stock_actual = ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
+          [posterior, detalle.producto_id],
+        );
         await conexion.execute(
           `INSERT INTO movimientos_inventario
             (producto_id, usuario_id, venta_id, tipo_movimiento, cantidad,
              stock_anterior, stock_posterior, referencia, notas)
            VALUES (?, ?, ?, 'REVERSION_VENTA', ?, ?, ?, ?, ?)`,
-          [detalle.producto_id, usuarioId, id, detalle.cantidad, anterior, posterior, venta.numero_venta, motivo],
+          [
+            detalle.producto_id,
+            usuarioId,
+            id,
+            detalle.cantidad,
+            anterior,
+            posterior,
+            venta.numero_venta,
+            motivo,
+          ],
         );
         if (posterior > Number(productos[0].stock_minimo)) {
           await conexion.execute(
@@ -231,7 +386,11 @@ export class ModeloVenta {
       );
       await conexion.commit();
       return { anulada: true };
-    } catch (error) { await conexion.rollback(); throw error; }
-    finally { conexion.release(); }
+    } catch (error) {
+      await conexion.rollback();
+      throw error;
+    } finally {
+      conexion.release();
+    }
   }
 }

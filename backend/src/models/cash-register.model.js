@@ -1,16 +1,21 @@
+// Encapsula las consultas de turnos y gastos. Las operaciones de apertura y
+// cierre usan transacciones para impedir estados parciales o dos cajas abiertas.
 export class ModeloTurnoCaja {
   constructor(conexiones) {
     this.conexiones = conexiones;
   }
 
   async buscarAbierto(ejecutor = this.conexiones, bloquear = false) {
+    // FOR UPDATE se activa dentro de transacciones que necesitan exclusividad.
     const [filas] = await ejecutor.execute(
-      `SELECT id, abierto_por, cerrado_por, monto_apertura, abierto_en,
-              efectivo_esperado, efectivo_contado, diferencia, cerrado_en,
-              estado, notas_cierre
-         FROM turnos_caja
-        WHERE estado = 'ABIERTO'
-        ORDER BY abierto_en DESC
+      `SELECT t.id, t.abierto_por, t.cerrado_por, t.monto_apertura,
+              t.abierto_en, t.efectivo_esperado, t.efectivo_contado,
+              t.diferencia, t.cerrado_en, t.estado, t.notas_cierre,
+              CONCAT(u.nombres, ' ', u.apellidos) AS abierto_por_nombre
+         FROM turnos_caja t
+         JOIN usuarios u ON u.id = t.abierto_por
+        WHERE t.estado = 'ABIERTO'
+        ORDER BY t.abierto_en DESC
         LIMIT 1${bloquear ? " FOR UPDATE" : ""}`,
     );
     return filas[0] ?? null;
@@ -19,6 +24,7 @@ export class ModeloTurnoCaja {
   async abrir({ usuarioId, montoInicial }) {
     const conexion = await this.conexiones.getConnection();
     try {
+      // El bloqueo serializa aperturas simultáneas antes de insertar el turno.
       await conexion.beginTransaction();
       const abierto = await this.buscarAbierto(conexion, true);
       if (abierto) {
@@ -31,10 +37,13 @@ export class ModeloTurnoCaja {
         [usuarioId, montoInicial],
       );
       const [filas] = await conexion.execute(
-        `SELECT id, abierto_por, cerrado_por, monto_apertura, abierto_en,
-                efectivo_esperado, efectivo_contado, diferencia, cerrado_en,
-                estado, notas_cierre
-           FROM turnos_caja WHERE id = ?`,
+        `SELECT t.id, t.abierto_por, t.cerrado_por, t.monto_apertura,
+                t.abierto_en, t.efectivo_esperado, t.efectivo_contado,
+                t.diferencia, t.cerrado_en, t.estado, t.notas_cierre,
+                CONCAT(u.nombres, ' ', u.apellidos) AS abierto_por_nombre
+           FROM turnos_caja t
+           JOIN usuarios u ON u.id = t.abierto_por
+          WHERE t.id = ?`,
         [resultado.insertId],
       );
       await conexion.commit();
@@ -48,6 +57,7 @@ export class ModeloTurnoCaja {
   }
 
   async obtenerResumen(turnoId, ejecutor = this.conexiones) {
+    // Las ventas anuladas no aportan al cuadre y los gastos reducen el efectivo.
     const [filas] = await ejecutor.execute(
       `SELECT t.monto_apertura,
               COALESCE(v.total_ventas, 0) AS total_ventas,
@@ -129,6 +139,7 @@ export class ModeloTurnoCaja {
   async cerrar({ turnoId, usuarioId, montoContado }) {
     const conexion = await this.conexiones.getConnection();
     try {
+      // Turno, resumen y cierre se calculan bajo la misma transacción.
       await conexion.beginTransaction();
       const [turnos] = await conexion.execute(
         `SELECT id, monto_apertura, estado FROM turnos_caja
@@ -140,7 +151,11 @@ export class ModeloTurnoCaja {
         return null;
       }
       const resumen = await this.obtenerResumen(turnoId, conexion);
-      const esperado = Number(resumen.monto_apertura) + Number(resumen.efectivo) - Number(resumen.total_gastos);
+      // Solo los pagos en efectivo afectan el dinero físico esperado en caja.
+      const esperado =
+        Number(resumen.monto_apertura) +
+        Number(resumen.efectivo) -
+        Number(resumen.total_gastos);
       const diferencia = Number(montoContado) - esperado;
       await conexion.execute(
         `UPDATE turnos_caja
@@ -167,11 +182,20 @@ export class ModeloTurnoCaja {
   }
 
   async listar({ desde, hasta }) {
+    // Los filtros se construyen con fragmentos controlados y valores preparados.
     const condiciones = [];
     const parametros = [];
-    if (desde) { condiciones.push("t.abierto_en >= ?"); parametros.push(desde); }
-    if (hasta) { condiciones.push("t.abierto_en < DATE_ADD(?, INTERVAL 1 DAY)"); parametros.push(hasta); }
-    const where = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+    if (desde) {
+      condiciones.push("t.abierto_en >= ?");
+      parametros.push(desde);
+    }
+    if (hasta) {
+      condiciones.push("t.abierto_en < DATE_ADD(?, INTERVAL 1 DAY)");
+      parametros.push(hasta);
+    }
+    const where = condiciones.length
+      ? `WHERE ${condiciones.join(" AND ")}`
+      : "";
     const [filas] = await this.conexiones.execute(
       `SELECT t.id, t.abierto_por, t.cerrado_por, t.monto_apertura,
               t.abierto_en, t.efectivo_esperado, t.efectivo_contado,

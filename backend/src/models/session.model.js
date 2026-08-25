@@ -53,12 +53,7 @@ export class ModeloSesion {
     return filas[0] ?? null;
   }
 
-  async rotarToken({
-    sesionId,
-    hashTokenActual,
-    hashTokenNuevo,
-    expiraEn,
-  }) {
+  async rotarToken({ sesionId, hashTokenActual, hashTokenNuevo, expiraEn }) {
     // Reemplaza el token anterior. La condición evita que dos renovaciones
     // simultáneas puedan utilizar el mismo token.
     const [resultado] = await this.conexiones.execute(

@@ -78,7 +78,7 @@ export class ControladorAutenticacion {
   cerrarSesion = async (solicitud, respuesta, siguiente) => {
     try {
       await this.servicioAutenticacion.cerrarSesion(
-        obtenerCookie(solicitud, "tokenRenovacion"),// lee la cookie tokenRenovación
+        obtenerCookie(solicitud, "tokenRenovacion"), // lee la cookie tokenRenovación
       );
       this.#eliminarCookieRenovacion(respuesta); //invalida el token
       respuesta.status(204).send();
@@ -89,14 +89,15 @@ export class ControladorAutenticacion {
 
   #opcionesCookie() {
     return {
-      httpOnly: true,//no accesible desde JS
+      httpOnly: true, //no accesible desde JS
       secure: this.configuracion.entorno === "production", //solo se envía en conexiones HTTPS
       sameSite: "strict", //no se envía en solicitudes cross-site
-      path: "/api/auth",//ruta donde se encuentra el endpoint de autenticación
+      path: "/api/auth", //ruta donde se encuentra el endpoint de autenticación
     };
   }
 
-  #guardarCookieRenovacion(respuesta, resultado) {//almacena el token de renovación en una cookie
+  #guardarCookieRenovacion(respuesta, resultado) {
+    //almacena el token de renovación en una cookie
     const opciones = this.#opcionesCookie();
     if (resultado.esPersistente) {
       opciones.expires = resultado.expiracionTokenRenovacion;
@@ -105,7 +106,8 @@ export class ControladorAutenticacion {
     respuesta.cookie("tokenRenovacion", resultado.tokenRenovacion, opciones);
   }
 
-  #eliminarCookieRenovacion(respuesta) { //elimina la cookie de renovación
+  #eliminarCookieRenovacion(respuesta) {
+    //elimina la cookie de renovación
     respuesta.clearCookie("tokenRenovacion", this.#opcionesCookie());
   }
 }

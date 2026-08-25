@@ -18,7 +18,55 @@ test("GET de ventas entrega únicamente las del usuario al modelo", async () => 
   const ventas = await servicio.propias(7);
   assert.equal(usuarioRecibido, 7);
   assert.equal(ventas[0].total, 9000);
-  assert.deepEqual(ventas[0].productos, ["Cuaderno x2", "Lápiz x1"]);
+  assert.equal(ventas[0].monto_total, 9000);
+  assert.equal(ventas[0].numero_venta, "V-00000003");
+  assert.equal(ventas[0].confirmado_en, filaListado.confirmado_en);
+  assert.equal(ventas[0].metodos_pago, "EFECTIVO");
+  assert.equal(ventas[0].productos, "Cuaderno x2 | Lápiz x1");
+  assert.deepEqual(ventas[0].productosDetalle, ["Cuaderno x2", "Lápiz x1"]);
+});
+
+test("lista métodos de pago con el contrato público", async () => {
+  const servicio = new ServicioVenta({
+    listarMetodosPago: async () => [
+      { id: 1, codigo: "EFECTIVO", nombre: "Efectivo", esta_activo: 1 },
+      { id: 2, codigo: "TARJETA", nombre: "Tarjeta", esta_activo: 0 },
+    ],
+  });
+  assert.deepEqual(await servicio.metodosPago(), [
+    { id: 1, codigo: "EFECTIVO", nombre: "Efectivo", activo: true },
+    { id: 2, codigo: "TARJETA", nombre: "Tarjeta", activo: false },
+  ]);
+});
+
+test("actualiza el estado de un método de pago", async () => {
+  let datosRecibidos;
+  const servicio = new ServicioVenta({
+    actualizarMetodoPago: async (id, estaActivo) => {
+      datosRecibidos = { id, estaActivo };
+      return {
+        id,
+        codigo: "TRANSFERENCIA",
+        nombre: "Transferencia",
+        esta_activo: estaActivo,
+      };
+    },
+  });
+  const metodo = await servicio.actualizarMetodoPago("3", false);
+  assert.deepEqual(datosRecibidos, { id: 3, estaActivo: false });
+  assert.equal(metodo.activo, false);
+});
+
+test("informa cuando el método de pago no existe", async () => {
+  const servicio = new ServicioVenta({
+    actualizarMetodoPago: async () => null,
+  });
+  await assert.rejects(
+    servicio.actualizarMetodoPago(99, true),
+    (error) =>
+      error.codigo === "METODO_PAGO_NO_ENCONTRADO" &&
+      error.estadoHttp === 404,
+  );
 });
 
 test("rechaza un descuento porcentual superior al 100", async () => {

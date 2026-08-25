@@ -253,7 +253,7 @@ export class ModeloUsuario {
 
     return resultado.affectedRows > 0;
   }
-  
+
   async buscarContrasenaPorId(usuarioId) {
     // Devuelve el hash solo al servicio encargado de comprobar la contraseña actual.
     const [filas] = await this.conexiones.execute(

@@ -2,6 +2,25 @@
 
 Todas las rutas requieren `Authorization: Bearer <token>`.
 
+## Métodos de pago
+
+`GET /api/ventas/metodos-pago`
+
+Devuelve el catálogo completo para que la interfaz pueda mostrar únicamente
+los métodos activos al registrar una venta.
+
+`PATCH /api/ventas/metodos-pago/:id`
+
+Solo `ADMINISTRADOR` y `DUENO`.
+
+```json
+{
+  "estaActivo": false
+}
+```
+
+El cambio queda persistido y se comparte entre todas las cajas.
+
 ## Crear venta
 
 `POST /api/ventas`

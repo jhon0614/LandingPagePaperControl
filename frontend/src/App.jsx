@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
-
+import { useEffect, useState } from "react";
+import { restaurarSesion } from "./services/api";
 import PrivateRoute from "./routes/PrivateRoute";
 
 import Landing from "./pages/Landing";
@@ -22,6 +23,35 @@ import RestablecerContrasena from "./pages/RestablecerContrasena";
 import CambiarContrasena from "./pages/CambiarContrasena";
 
 function App() {
+
+    const [verificandoSesion, setVerificandoSesion] =
+        useState(true);
+
+    useEffect(() => {
+
+        async function verificar() {
+
+            await restaurarSesion();
+
+            setVerificandoSesion(false);
+
+        }
+
+        verificar();
+
+    }, []);
+
+    if (verificandoSesion) {
+
+        return (
+
+            <div className="app-cargando">
+                <i className="fa-solid fa-spinner fa-spin"></i>
+            </div>
+
+        );
+
+    }
 
     return (
 

@@ -1,45 +1,122 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
 
-/*
-=========================================================
-TOKEN EN MEMORIA
-=========================================================
-*/
-
 let tokenEnMemoria = null;
 
+let refrescoEnCurso = null;
 
-/*
-=========================================================
-GUARDAR TOKEN
-=========================================================
-*/
 
 export function establecerToken(token) {
     tokenEnMemoria = token || null;
 }
 
-
-/*
-=========================================================
-OBTENER TOKEN
-=========================================================
-*/
-
 export function obtenerToken() {
     return tokenEnMemoria;
+}
+
+export function limpiarToken() {
+    tokenEnMemoria = null;
 }
 
 
 /*
 =========================================================
-LIMPIAR TOKEN
+RENOVAR SESIÓN USANDO LA COOKIE HTTPONLY
 =========================================================
 */
 
-export function limpiarToken() {
-    tokenEnMemoria = null;
+async function renovarToken() {
+
+    if (refrescoEnCurso) {
+
+        return refrescoEnCurso;
+
+    }
+
+    refrescoEnCurso = (async () => {
+
+        const respuesta = await fetch(
+            `${API_URL}/api/auth/refresh`,
+            {
+                method: "POST",
+                credentials: "include",
+            }
+        );
+
+        if (!respuesta.ok) {
+
+            throw new Error(
+                "No fue posible renovar la sesión."
+            );
+
+        }
+
+        const datos = await respuesta.json();
+
+        const token = datos?.datos?.tokenAcceso;
+
+        const usuario = datos?.datos?.usuario;
+
+        if (!token) {
+
+            throw new Error(
+                "Respuesta de renovación inválida."
+            );
+
+        }
+
+        establecerToken(token);
+
+        if (usuario) {
+
+            localStorage.setItem(
+                "usuario",
+                JSON.stringify(usuario)
+            );
+
+        }
+
+        return token;
+
+    })();
+
+    try {
+
+        return await refrescoEnCurso;
+
+    } finally {
+
+        refrescoEnCurso = null;
+
+    }
+
+}
+
+
+/*
+=========================================================
+INTENTAR RESTAURAR LA SESIÓN AL CARGAR LA APP
+=========================================================
+*/
+
+export async function restaurarSesion() {
+
+    try {
+
+        await renovarToken();
+
+        return true;
+
+    } catch (error) {
+
+        limpiarToken();
+
+        localStorage.removeItem("usuario");
+
+        return false;
+
+    }
+
 }
 
 
@@ -51,18 +128,13 @@ CLIENTE API
 
 export async function apiFetch(
     endpoint,
-    opciones = {}
+    opciones = {},
+    reintentando = false
 ) {
 
     const headers = {
         ...opciones.headers,
     };
-
-
-    /*
-     * El token se obtiene únicamente
-     * desde memoria.
-     */
 
     if (tokenEnMemoria) {
 
@@ -71,19 +143,12 @@ export async function apiFetch(
 
     }
 
-
-    /*
-     * Agregar Content-Type solamente
-     * cuando existe un body.
-     */
-
     if (opciones.body) {
 
         headers["Content-Type"] =
             "application/json";
 
     }
-
 
     const respuesta = await fetch(
         `${API_URL}${endpoint}`,
@@ -96,8 +161,36 @@ export async function apiFetch(
 
 
     /*
-     * Respuesta sin contenido.
+     * Token vencido: intentamos renovar UNA vez
+     * y repetir la petición original.
      */
+
+    if (
+        respuesta.status === 401 &&
+        !reintentando &&
+        endpoint !== "/api/auth/refresh"
+    ) {
+
+        try {
+
+            await renovarToken();
+
+            return apiFetch(endpoint, opciones, true);
+
+        } catch (error) {
+
+            limpiarToken();
+
+            localStorage.removeItem("usuario");
+
+            window.location.hash = "#/login";
+
+            throw error;
+
+        }
+
+    }
+
 
     if (respuesta.status === 204) {
 
@@ -107,7 +200,6 @@ export async function apiFetch(
 
 
     let datos = null;
-
 
     try {
 
@@ -120,10 +212,6 @@ export async function apiFetch(
     }
 
 
-    /*
-     * Manejo uniforme de errores.
-     */
-
     if (!respuesta.ok) {
 
         const error = new Error(
@@ -132,23 +220,16 @@ export async function apiFetch(
             "Ocurrió un error en la petición."
         );
 
+        error.status = respuesta.status;
 
-        error.status =
-            respuesta.status;
+        error.codigo = datos?.error?.codigo;
 
-
-        error.codigo =
-            datos?.error?.codigo;
-
-
-        error.detalles =
-            datos?.error?.detalles;
-
+        error.detalles = datos?.error?.detalles;
 
         throw error;
 
     }
 
-
     return datos;
+
 }

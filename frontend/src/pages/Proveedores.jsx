@@ -311,6 +311,7 @@ function Proveedores() {
                                     <label>Nombre</label>
                                     <input
                                         name="nombre"
+                                        placeholder="Ej: Distribuidora ABC"
                                         defaultValue={
                                             proveedorEditar?.nombre || ""
                                         }
@@ -323,6 +324,7 @@ function Proveedores() {
                                     <label>Persona de contacto</label>
                                     <input
                                         name="contacto"
+                                        placeholder="Ej: Juan Pérez"
                                         defaultValue={
                                             proveedorEditar?.contacto || ""
                                         }
@@ -334,6 +336,7 @@ function Proveedores() {
                                     <label>Teléfono</label>
                                     <input
                                         name="telefono"
+                                        placeholder="Ej: 3001234567"
                                         defaultValue={
                                             proveedorEditar?.telefono || ""
                                         }
@@ -346,6 +349,7 @@ function Proveedores() {
                                     <input
                                         name="correo"
                                         type="email"
+                                        placeholder="Ej: contacto@distribuidora.com"
                                         defaultValue={
                                             proveedorEditar?.correo || ""
                                         }
@@ -357,6 +361,7 @@ function Proveedores() {
                                     <label>Dirección</label>
                                     <input
                                         name="direccion"
+                                        placeholder="Ej: Calle 123 #45-67, Bogotá"
                                         defaultValue={
                                             proveedorEditar?.direccion || ""
                                         }

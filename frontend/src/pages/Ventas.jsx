@@ -8,10 +8,10 @@ import "../styles/Ventas.css";
 import "../styles/Caja.css";
 
 import { obtenerTurnoActual } from "../services/caja.service";
-import {obtenerVentas, obtenerHistorialVentas, crearVenta, obtenerComprobante, 
-    eliminarVenta,} from "../services/ventas.service";
+import {obtenerVentas, obtenerHistorialVentas, registrarVenta as crearVentaApi,} from "../services/ventas.service";
 import { obtenerProductos } from "../services/productos.service";
-import { registrarVenta as crearVentaApi } from "../services/ventas.service";
+import { obtenerMetodosPago, cambiarEstadoMetodoPago } from "../services/ventas.service";
+import { obtenerClientes, obtenerCliente } from "../services/clientes.service";
 
 function Dropdown({
     value,
@@ -267,36 +267,29 @@ function Ventas() {
     }, []);
 
 
-    /*
-     * =========================================================
-     * DATOS TEMPORALES - CLIENTES
-     * =========================================================
-     */
+    const [clientes, setClientes] = useState([]);
 
-    const [clientes] = useState([
+    useEffect(() => {
 
-        {
-            id: 1,
-            nombres: "Laura",
-            apellidos: "Gómez",
-            documento: "1001234567",
-        },
+        async function cargarClientes() {
 
-        {
-            id: 2,
-            nombres: "Carlos",
-            apellidos: "Martínez",
-            documento: "1002345678",
-        },
+            try {
 
-        {
-            id: 3,
-            nombres: "María",
-            apellidos: "Rodríguez",
-            documento: "1003456789",
-        },
+                const lista = await obtenerClientes();
 
-    ]);
+                setClientes(lista);
+
+            } catch (error) {
+
+                setClientes([]);
+
+            }
+
+        }
+
+        cargarClientes();
+
+    }, []);
 
 
     /*
@@ -305,28 +298,29 @@ function Ventas() {
      * =========================================================
      */
 
-    const [metodosPago, setMetodosPago] =
-        useState([
+    const [metodosPago, setMetodosPago] = useState([]);
 
-            {
-                id: "efectivo",
-                nombre: "Efectivo",
-                activo: true,
-            },
+    useEffect(() => {
 
-            {
-                id: "tarjeta",
-                nombre: "Tarjeta",
-                activo: true,
-            },
+        async function cargarMetodosPago() {
 
-            {
-                id: "transferencia",
-                nombre: "Transferencia",
-                activo: true,
-            },
+            try {
 
-        ]);
+                const lista = await obtenerMetodosPago();
+
+                setMetodosPago(lista);
+
+            } catch (error) {
+
+                setMetodosPago([]);
+
+            }
+
+        }
+
+        cargarMetodosPago();
+
+    }, []);
 
 
     /*
@@ -434,6 +428,46 @@ function Ventas() {
     const [modalConfigPagos, setModalConfigPagos] =
         useState(false);
 
+    const [modalCliente, setModalCliente] = 
+        useState(false);
+
+    const [datosCliente, setDatosCliente] = 
+        useState(null);
+
+    const [cargandoCliente, setCargandoCliente] = 
+        useState(false);
+
+
+    async function verDatosCliente() {
+
+        if (!clienteSeleccionado) return;
+
+        try {
+
+            setCargandoCliente(true);
+
+            setModalCliente(true);
+
+            const cliente = await obtenerCliente(clienteSeleccionado);
+
+            setDatosCliente(cliente);
+
+        } catch (error) {
+
+            alert(
+                error.message ||
+                "No fue posible cargar los datos del cliente."
+            );
+
+            setModalCliente(false);
+
+        } finally {
+
+            setCargandoCliente(false);
+
+        }
+
+    }
 
     /* =========================================================
     HISTORIAL DE VENTAS
@@ -810,6 +844,58 @@ function Ventas() {
 
     }
 
+    /*
+     * =========================================================
+     * CAMBIAR CANTIDAD MANUAL
+     * =========================================================
+     */
+    function cambiarCantidadManual(id, valorTexto) {
+
+        const producto = productos.find((p) => p.id === id);
+
+        const stockDisponible = Number(producto?.stock || 0);
+
+        const valor = Number(valorTexto);
+
+
+        if (valorTexto === "" ) {
+
+            return;
+
+        }
+
+
+        if (!Number.isFinite(valor) || valor < 1) {
+
+            return;
+
+        }
+
+
+        if (valor > stockDisponible) {
+
+            alert(
+                `No hay suficiente stock de "${producto?.nombre}". Disponible: ${stockDisponible}.`
+            );
+
+            return;
+
+        }
+
+
+        setCarrito((actual) =>
+
+            actual.map((item) =>
+
+                item.id === id
+                    ? { ...item, cantidad: valor }
+                    : item
+
+            )
+
+        );
+
+    }
 
     /*
      * =========================================================
@@ -835,7 +921,7 @@ function Ventas() {
      * =========================================================
      */
 
-    function toggleMetodoPago(id) {
+    async function toggleMetodoPago(metodo) {
 
         if (!puedeAdministrar()) {
 
@@ -843,34 +929,41 @@ function Ventas() {
 
         }
 
+        try {
 
-        setMetodosPago((actuales) =>
+            await cambiarEstadoMetodoPago(
+                metodo.id,
+                !metodo.activo
+            );
 
-            actuales.map((metodo) =>
+            setMetodosPago((actuales) =>
 
-                metodo.id === id
+                actuales.map((m) =>
 
-                    ? {
-                        ...metodo,
-                        activo:
-                            !metodo.activo,
-                    }
+                    m.id === metodo.id
+                        ? { ...m, activo: !m.activo }
+                        : m
 
-                    : metodo
+                )
 
-            )
+            );
 
-        );
+            if (metodoPago === metodo.codigo) {
 
+                setMetodoPago("");
 
-        if (metodoPago === id) {
+            }
 
-            setMetodoPago("");
+        } catch (error) {
+
+            alert(
+                error.message ||
+                "No fue posible cambiar el estado del método de pago."
+            );
 
         }
 
     }
-
 
     /*
      * =========================================================
@@ -994,7 +1087,7 @@ function Ventas() {
 
 
         if (
-            metodoPago === "tarjeta" &&
+            metodoPago === "TARJETA" &&
             !tipoTarjetaSeleccionado
         ) {
 
@@ -1008,7 +1101,7 @@ function Ventas() {
 
 
         if (
-            metodoPago === "tarjeta" &&
+            metodoPago === "TARJETA" &&
             !bancoSeleccionado
         ) {
 
@@ -1022,7 +1115,7 @@ function Ventas() {
 
 
         if (
-            metodoPago === "transferencia" &&
+            metodoPago === "TRANSFERENCIA" &&
             !bancoSeleccionado
         ) {
 
@@ -1176,7 +1269,7 @@ function Ventas() {
 
                 ...metodosPagoActivos.map(
                     (metodo) => ({
-                        value: metodo.id,
+                        value: metodo.codigo,
                         label: metodo.nombre,
                     })
                 ),
@@ -1409,6 +1502,19 @@ function Ventas() {
                             }
                         />
 
+                        {clienteSeleccionado && (
+
+                            <button
+                                type="button"
+                                className="btn-ver-cliente"
+                                onClick={verDatosCliente}
+                            >
+                                <i className="fa-solid fa-id-card"></i>
+                                Ver datos del cliente
+                            </button>
+
+                        )}
+
                     </div>
 
 
@@ -1491,13 +1597,23 @@ function Ventas() {
                                             </button>
 
 
-                                            {/* CANTIDAD */}
+                                             {/* CANTIDAD */}
 
-                                            <span className="pos-cantidad">
-
-                                                {item.cantidad}
-
-                                            </span>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                className="pos-cantidad-input"
+                                                value={item.cantidad}
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                                onChange={(e) =>
+                                                    cambiarCantidadManual(
+                                                        item.id,
+                                                        e.target.value
+                                                    )
+                                                }
+                                            />
 
 
                                             {/* MÁS */}
@@ -1610,7 +1726,7 @@ function Ventas() {
                             TIPO DE TARJETA
                         ================================================= */}
 
-                        {metodoPago === "tarjeta" && (
+                        {metodoPago === "TARJETA" && (
 
                             <div className="pos-bancos-selector">
 
@@ -1680,14 +1796,14 @@ function Ventas() {
                             BANCO / BILLETERA
                         ================================================= */}
 
-                        {(metodoPago === "tarjeta" ||
-                            metodoPago === "transferencia") && (
+                        {(metodoPago === "TARJETA" ||
+                            metodoPago === "TRANSFERENCIA") && (
 
                             <div className="pos-bancos-selector">
 
                                 <label>
 
-                                    {metodoPago === "tarjeta"
+                                    {metodoPago === "TARJETA"
                                         ? "Banco de la tarjeta"
                                         : "Banco / billetera"}
 
@@ -1803,7 +1919,7 @@ function Ventas() {
                         </>
 
                         )}
-                        
+
                     </button>
 
                 </div>
@@ -1991,6 +2107,7 @@ function Ventas() {
                                                     ).toLocaleString("es-CO", {
                                                         dateStyle: "short",
                                                         timeStyle: "short",
+                                                        timeZone: "America/Bogota",
                                                     })
                                                     : "—"}
 
@@ -2099,6 +2216,80 @@ function Ventas() {
                 </div>
 
             </section>
+
+            {modalCliente && (
+
+                <div
+                    className="pos-modal-overlay"
+                    onMouseDown={(e) => {
+
+                        if (e.target === e.currentTarget) {
+
+                            setModalCliente(false);
+
+                            setDatosCliente(null);
+
+                        }
+
+                    }}
+                >
+
+                    <div className="pos-modal">
+
+                        <div className="pos-modal-header">
+
+                            <div>
+                                <h2>Datos del cliente</h2>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="pos-modal-cerrar"
+                                onClick={() => {
+
+                                    setModalCliente(false);
+
+                                    setDatosCliente(null);
+
+                                }}
+                            >
+                                <i className="fa-solid fa-xmark"></i>
+                            </button>
+
+                        </div>
+
+                        <div className="config-pagos-body">
+
+                            {cargandoCliente ? (
+
+                                <p>Cargando...</p>
+
+                            ) : datosCliente ? (
+
+                                <div className="datos-cliente-detalle">
+
+                                    <p><strong>Nombre:</strong> {datosCliente.nombres} {datosCliente.apellidos}</p>
+                                    <p><strong>Documento:</strong> {datosCliente.tipoDocumento} {datosCliente.documento}</p>
+                                    <p><strong>Teléfono:</strong> {datosCliente.telefono || "—"}</p>
+                                    <p><strong>Correo:</strong> {datosCliente.correo || "—"}</p>
+                                    <p><strong>Dirección:</strong> {datosCliente.direccion || "—"}</p>
+                                    <p><strong>Estado:</strong> {datosCliente.estaActivo ? "Activo" : "Inactivo"}</p>
+
+                                </div>
+
+                            ) : (
+
+                                <p>No fue posible cargar los datos.</p>
+
+                            )}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            )}
             
             {/* =========================================================
                 MODAL CONFIGURACIÓN
@@ -2198,7 +2389,7 @@ function Ventas() {
                                                 }
                                                 onChange={() =>
                                                     toggleMetodoPago(
-                                                        metodo.id
+                                                        metodo
                                                     )
                                                 }
                                             />

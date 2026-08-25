@@ -31,6 +31,37 @@ export async function obtenerVentas() {
 }
 
 /* =====================================================
+   MÉTODOS DE PAGO
+===================================================== */
+
+export async function obtenerMetodosPago() {
+
+    const respuesta = await apiFetch(
+        "/api/ventas/metodos-pago"
+    );
+
+    return respuesta.datos.metodosPago;
+
+}
+
+export async function cambiarEstadoMetodoPago(id, estaActivo) {
+
+    const respuesta = await apiFetch(
+        `/api/ventas/metodos-pago/${id}`,
+        {
+            method: "PATCH",
+
+            body: JSON.stringify({
+                estaActivo: Boolean(estaActivo),
+            }),
+        }
+    );
+
+    return respuesta.datos.metodoPago;
+
+}
+
+/* =====================================================
    HISTORIAL COMPLETO (ADMIN / DUEÑO)
 ===================================================== */
 

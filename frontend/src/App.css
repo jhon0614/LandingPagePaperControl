@@ -859,3 +859,12 @@ a {
     align-items: center;
   }
 }
+
+.app-cargando {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #05788a;
+}

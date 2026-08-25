@@ -4,7 +4,7 @@ import Layout from "../components/Layout";
 
 import "../styles/Dashboard.css";
 import "../styles/Caja.css";
-
+import { formatoFechaHora, formatoHora } from "../utils/fecha";
 import {
     obtenerTurnoActual,
     abrirCaja,
@@ -517,7 +517,7 @@ function Caja() {
 
                     <p className="dashboard-subtitle">
                         Turno abierto por {turno.usuarioNombre} el{" "}
-                        {new Date(turno.abiertoEn).toLocaleString("es-CO")}
+                        {formatoFechaHora(turno.abiertoEn)}
                     </p>
 
                 </div>
@@ -688,9 +688,7 @@ function Caja() {
                                         <td>{gasto.usuarioNombre}</td>
 
                                         <td>
-                                            {new Date(
-                                                gasto.creadoEn
-                                            ).toLocaleTimeString("es-CO")}
+                                            {formatoHora(gasto.creadoEn)}
                                         </td>
 
                                         <td>
@@ -832,9 +830,7 @@ function Caja() {
 
                                     <p>
                                         Cerrado el{" "}
-                                        {new Date(
-                                            cuadreFinal.cerradoEn
-                                        ).toLocaleString("es-CO")}
+                                        {formatoFechaHora(cuadreFinal.cerradoEn)}
                                     </p>
 
                                 </div>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "../components/Layout";
 import "../styles/Inventario.css";
-
+import { formatoFechaHora } from "../utils/fecha";
 import {
     obtenerProductos,
     crearProducto,
@@ -88,6 +88,9 @@ function Inventario() {
     const [proveedorSeleccionado, setProveedorSeleccionado] =
         useState("");
 
+    const [proveedoresParaAsociar, setProveedoresParaAsociar] =
+        useState([]);
+
 
     /*
      * =====================================================
@@ -103,7 +106,7 @@ function Inventario() {
 
             const [listaProductos, listaProveedores] =
                 await Promise.all([
-                    obtenerProductos(),
+                    obtenerProductos({incluirInactivos: true}),
                     obtenerProveedores(),
                 ]);
 
@@ -295,13 +298,7 @@ function Inventario() {
         return `$ ${Number(valor || 0).toLocaleString("es-CO")}`;
     };
 
-    const formatoFecha = (fecha) => {
-
-        if (!fecha) return "—";
-
-        return new Date(fecha).toLocaleString("es-CO");
-
-    };
+    // Se usa formatoFecha de utils/fecha.js para mostrar la fecha de última modificación en la tabla de productos
 
     // =========================================================
     // MODAL PRODUCTO — ABRIR / CERRAR
@@ -312,6 +309,8 @@ function Inventario() {
         setProductoEditar(null);
 
         setProveedoresProducto([]);
+
+        setProveedoresParaAsociar([]);
 
         setProveedorSeleccionado("");
 
@@ -406,6 +405,33 @@ function Inventario() {
 
     }
 
+    function agregarProveedorTemporal() {
+
+        if (!proveedorSeleccionado) return;
+
+        const proveedor = proveedoresDisponibles.find(
+            (p) => String(p.id) === String(proveedorSeleccionado)
+        );
+
+        if (!proveedor) return;
+
+        setProveedoresParaAsociar((actuales) => [
+            ...actuales,
+            proveedor,
+        ]);
+
+        setProveedorSeleccionado("");
+
+    }
+
+    function quitarProveedorTemporal(idProveedor) {
+
+        setProveedoresParaAsociar((actuales) =>
+            actuales.filter((p) => p.id !== idProveedor)
+        );
+
+    }
+
     // =========================================================
     // GUARDAR PRODUCTO
     // =========================================================
@@ -435,7 +461,17 @@ function Inventario() {
 
             } else {
 
-                await crearProducto(datos);
+                const creado = await crearProducto(datos);
+
+                if (proveedoresParaAsociar.length > 0) {
+
+                    await Promise.all(
+                        proveedoresParaAsociar.map((proveedor) =>
+                            asociarProveedor(creado.id, proveedor.id)
+                        )
+                    );
+
+                }
 
             }
 
@@ -443,10 +479,11 @@ function Inventario() {
 
             setProductoEditar(null);
 
+            setProveedoresParaAsociar([]);
+
             await cargarDatos();
 
         } catch (error) {
-
             setError(
                 error.message ||
                 "No fue posible guardar el producto."
@@ -809,7 +846,7 @@ function Inventario() {
 
                                         <td>
                                             <small className="fecha-modificacion">
-                                                {formatoFecha(
+                                                {formatoFechaHora(
                                                     producto.actualizadoEn
                                                 )}
                                             </small>
@@ -1251,6 +1288,7 @@ function Inventario() {
                                         <label>Producto</label>
                                         <input
                                             name="nombre"
+                                            placeholder="Ej: Cuaderno cuadriculado"
                                             defaultValue={
                                                 productoEditar?.nombre || ""
                                             }
@@ -1262,6 +1300,7 @@ function Inventario() {
                                         <label>Marca</label>
                                         <input
                                             name="marca"
+                                            placeholder="Ej: Norma"
                                             defaultValue={
                                                 productoEditar?.marca || ""
                                             }
@@ -1273,6 +1312,7 @@ function Inventario() {
                                         <label>Código</label>
                                         <input
                                             name="codigo"
+                                            placeholder="Ej: CUA-NOR-001"
                                             defaultValue={
                                                 productoEditar?.codigo || ""
                                             }
@@ -1284,6 +1324,7 @@ function Inventario() {
                                         <label>Categoría</label>
                                         <input
                                             name="categoria"
+                                            placeholder="Ej: Papelería"
                                             defaultValue={
                                                 productoEditar?.categoria ||
                                                 ""
@@ -1298,6 +1339,7 @@ function Inventario() {
                                             name="precioMayor"
                                             type="number"
                                             min="0"
+                                            placeholder="Ej: 4000"
                                             defaultValue={
                                                 productoEditar?.precioMayor ||
                                                 ""
@@ -1312,6 +1354,7 @@ function Inventario() {
                                             name="precioDetal"
                                             type="number"
                                             min="0"
+                                            placeholder="Ej: 6500"
                                             defaultValue={
                                                 productoEditar?.precioDetal ||
                                                 ""
@@ -1326,6 +1369,7 @@ function Inventario() {
                                             name="stock"
                                             type="number"
                                             min="0"
+                                            placeholder="Ej: 20"
                                             defaultValue={
                                                 productoEditar?.stock ?? 0
                                             }
@@ -1339,6 +1383,7 @@ function Inventario() {
                                             name="stockMinimo"
                                             type="number"
                                             min="0"
+                                            placeholder="Ej: 5"
                                             defaultValue={
                                                 productoEditar?.stockMinimo ??
                                                 0
@@ -1351,6 +1396,100 @@ function Inventario() {
                                 {/* PROVEEDORES ASOCIADOS — solo al editar
                                     (para crear, primero se guarda el
                                     producto y luego se asocian) */}
+
+                                {!productoEditar && (
+
+                                    <div className="campo campo-completo proveedores-asociados">
+
+                                        <label>
+                                            Proveedores (opcional)
+                                        </label>
+
+                                        <div className="proveedores-asociados-lista">
+
+                                            {proveedoresParaAsociar.length === 0 ? (
+
+                                                <span className="sin-proveedor">
+                                                    Aún no has agregado
+                                                    proveedores.
+                                                </span>
+
+                                            ) : (
+
+                                                proveedoresParaAsociar.map(
+                                                    (proveedor) => (
+
+                                                        <span
+                                                            className="proveedor-chip removible"
+                                                            key={proveedor.id}
+                                                        >
+                                                            {proveedor.nombre}
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    quitarProveedorTemporal(
+                                                                        proveedor.id
+                                                                    )
+                                                                }
+                                                            >
+                                                                <i className="fa-solid fa-xmark"></i>
+                                                            </button>
+                                                        </span>
+
+                                                    )
+                                                )
+
+                                            )}
+
+                                        </div>
+
+                                        <div className="proveedores-agregar">
+
+                                            <select
+                                                value={proveedorSeleccionado}
+                                                onChange={(e) =>
+                                                    setProveedorSeleccionado(
+                                                        e.target.value
+                                                    )
+                                                }
+                                            >
+                                                <option value="">
+                                                    Selecciona un proveedor...
+                                                </option>
+
+                                                {proveedoresDisponibles
+                                                    .filter(
+                                                        (p) =>
+                                                            !proveedoresParaAsociar.some(
+                                                                (pp) =>
+                                                                    pp.id === p.id
+                                                            )
+                                                    )
+                                                    .map((proveedor) => (
+                                                        <option
+                                                            key={proveedor.id}
+                                                            value={proveedor.id}
+                                                        >
+                                                            {proveedor.nombre}
+                                                        </option>
+                                                    ))}
+                                            </select>
+
+                                            <button
+                                                type="button"
+                                                className="btn-agregar-proveedor"
+                                                onClick={agregarProveedorTemporal}
+                                                disabled={!proveedorSeleccionado}
+                                            >
+                                                <i className="fa-solid fa-plus"></i>
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                )}
 
                                 {productoEditar && (
 
@@ -1593,7 +1732,7 @@ function Inventario() {
                                                         {mov.usuarioNombre}
                                                     </td>
                                                     <td>
-                                                        {formatoFecha(
+                                                        {formatoFechaHora(
                                                             mov.creadoEn
                                                         )}
                                                     </td>

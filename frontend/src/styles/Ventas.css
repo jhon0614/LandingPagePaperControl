@@ -1660,3 +1660,40 @@
     }
 
 }
+
+.pos-cantidad-input {
+    width: 44px;
+    height: 30px;
+    border-top: 1px solid #dbe3eb;
+    border-bottom: 1px solid #dbe3eb;
+    border-left: none;
+    border-right: none;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    outline: none;
+}
+
+.btn-ver-cliente {
+    border: none;
+    background: transparent;
+    color: #05788a;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-ver-cliente:hover {
+    text-decoration: underline;
+}
+
+.datos-cliente-detalle p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #1e293b;
+}

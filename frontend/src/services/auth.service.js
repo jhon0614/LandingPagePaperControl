@@ -158,21 +158,28 @@ CERRAR SESIÓN
 =========================================================
 */
 
-export function cerrarSesion() {
+export async function cerrarSesion() {
 
-    /*
-     * El token solamente existe en memoria.
-     */
+    try {
 
-    limpiarToken();
+        await apiFetch(
+            "/api/auth/logout",
+            {
+                method: "POST",
+            }
+        );
 
+    } catch (error) {
 
-    /*
-     * Eliminamos los datos temporales
-     * del usuario.
-     */
+        // Si el logout en backend falla, igual limpiamos
+        // el estado local para no dejar la sesión "colgada".
 
-    localStorage.removeItem(
-        "usuario"
-    );
+    } finally {
+
+        limpiarToken();
+
+        localStorage.removeItem("usuario");
+
+    }
+
 }

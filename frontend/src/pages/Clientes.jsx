@@ -1,9 +1,18 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 import Layout from "../components/Layout";
 
 import "../styles/Dashboard.css";
 import "../styles/Clientes.css";
+import "../styles/Caja.css";
+
+import {
+    obtenerClientes,
+    crearCliente,
+    actualizarCliente,
+    cambiarEstadoCliente,
+    eliminarCliente as eliminarClienteApi,
+} from "../services/clientes.service";
 
 function Clientes() {
     const usuarioActual = JSON.parse(
@@ -12,69 +21,43 @@ function Clientes() {
 
     const rolActual = usuarioActual?.rol || "";
 
-    /*
-     * DATOS TEMPORALES
-     *
-     * TODO: cuando el backend de clientes esté disponible,
-     * reemplazar por useEffect + obtenerClientes() de
-     * clientes.service.js, y las funciones guardarNuevoCliente,
-     * guardarCambiosCliente, cambiarEstadoCliente y
-     * eliminarClienteConfirmado por sus equivalentes de
-     * crearCliente, actualizarCliente, cambiarEstadoCliente
-     * y eliminarCliente del service.
-     */
-    const [clientes, setClientes] = useState([
-        {
-            id: 1,
-            nombres: "Laura",
-            apellidos: "Gómez",
-            documento: "1001234567",
-            telefono: "3001234567",
-            correo: "laura@gmail.com",
-            estaActivo: true,
-            esFrecuente: true,
-        },
-        {
-            id: 2,
-            nombres: "Carlos",
-            apellidos: "Martínez",
-            documento: "1002345678",
-            telefono: "3012345678",
-            correo: "carlos@gmail.com",
-            estaActivo: true,
-            esFrecuente: false,
-        },
-        {
-            id: 3,
-            nombres: "María",
-            apellidos: "Rodríguez",
-            documento: "1003456789",
-            telefono: "3023456789",
-            correo: "maria@gmail.com",
-            estaActivo: true,
-            esFrecuente: true,
-        },
-        {
-            id: 4,
-            nombres: "Andrés",
-            apellidos: "López",
-            documento: "1004567890",
-            telefono: "3034567890",
-            correo: "andres@gmail.com",
-            estaActivo: false,
-            esFrecuente: false,
-        },
-        {
-            id: 5,
-            nombres: "Sofía",
-            apellidos: "Hernández",
-            documento: "1005678901",
-            telefono: "3045678901",
-            correo: "sofia@gmail.com",
-            estaActivo: false,
-            esFrecuente: true,
-        },
-    ]);
+    const [clientes, setClientes] = useState([]);
+
+    const [cargandoClientes, setCargandoClientes] = useState(true);
+
+    const [errorClientes, setErrorClientes] = useState("");
+
+
+    async function cargarClientes() {
+
+        try {
+
+            setErrorClientes("");
+
+            const lista = await obtenerClientes();
+
+            setClientes(lista);
+
+        } catch (error) {
+
+            setErrorClientes(
+                error.message ||
+                "No fue posible cargar los clientes."
+            );
+
+        } finally {
+
+            setCargandoClientes(false);
+
+        }
+
+    }
+
+    useEffect(() => {
+
+        cargarClientes();
+
+    }, []);
 
     const [busqueda, setBusqueda] = useState("");
 
@@ -350,49 +333,18 @@ function Clientes() {
         try {
             setGuardando(true);
 
-            /*
-             * TODO: reemplazar por
-             * await crearCliente(formulario)
-             * y usar el cliente que devuelva la API
-             * en lugar de armarlo local.
-             */
+            await crearCliente({
+                nombres: formulario.nombres.trim(),
+                apellidos: formulario.apellidos.trim(),
+                documento: formulario.documento.trim(),
+                telefono: formulario.telefono.trim(),
+                correo: formulario.correo.trim(),
+            });
 
-            const nuevoId =
-                clientes.length > 0
-                    ? Math.max(
-                        ...clientes.map(
-                            (c) => c.id
-                        )
-                    ) + 1
-                    : 1;
-
-            const clienteCreado = {
-                id: nuevoId,
-                nombres:
-                    formulario.nombres.trim(),
-                apellidos:
-                    formulario.apellidos.trim(),
-                documento:
-                    formulario.documento.trim(),
-                telefono:
-                    formulario.telefono.trim(),
-                correo:
-                    formulario.correo.trim(),
-                estaActivo: true,
-                esFrecuente: false,
-            };
-
-            setClientes((actuales) => [
-                ...actuales,
-                clienteCreado,
-            ]);
+            await cargarClientes();
 
             setModalNuevoCliente(false);
         } catch (error) {
-            console.error(
-                "Error creando cliente:",
-                error
-            );
 
             setErroresFormulario({
                 general:
@@ -418,32 +370,14 @@ function Clientes() {
         try {
             setGuardando(true);
 
-            /*
-             * TODO: reemplazar por
-             * await actualizarCliente(clienteEditando.id, formulario)
-             * y usar el cliente que devuelva la API.
-             */
+            await actualizarCliente(clienteEditando.id, {
+                nombres: formulario.nombres.trim(),
+                apellidos: formulario.apellidos.trim(),
+                telefono: formulario.telefono.trim(),
+                correo: formulario.correo.trim(),
+            });
 
-            setClientes((actuales) =>
-                actuales.map((cliente) =>
-                    cliente.id ===
-                    clienteEditando.id
-                        ? {
-                            ...cliente,
-                            nombres:
-                                formulario.nombres.trim(),
-                            apellidos:
-                                formulario.apellidos.trim(),
-                            documento:
-                                formulario.documento.trim(),
-                            telefono:
-                                formulario.telefono.trim(),
-                            correo:
-                                formulario.correo.trim(),
-                        }
-                        : cliente
-                )
-            );
+            await cargarClientes();
 
             setClienteEditando(null);
         } catch (error) {
@@ -462,7 +396,7 @@ function Clientes() {
         }
     }
 
-    function desactivarCliente(id) {
+    async function desactivarCliente(id) {
         if (!puedeAdministrar()) {
             return;
         }
@@ -475,40 +409,44 @@ function Clientes() {
             return;
         }
 
-        /* TODO: reemplazar por await cambiarEstadoCliente(id, false) */
+        try {
 
-        setClientes((clientesActuales) =>
-            clientesActuales.map((cliente) =>
-                cliente.id === id
-                    ? {
-                        ...cliente,
-                        estaActivo: false,
-                    }
-                    : cliente
-            )
-        );
+            await cambiarEstadoCliente(id, false);
+
+            await cargarClientes();
+
+        } catch (error) {
+
+            alert(
+                error.message ||
+                "No fue posible desactivar el cliente."
+            );
+
+        }
     }
 
-    function activarCliente(id) {
+    async function activarCliente(id) {
         if (!puedeAdministrar()) {
             return;
         }
 
-        /* TODO: reemplazar por await cambiarEstadoCliente(id, true) */
+        try {
 
-        setClientes((clientesActuales) =>
-            clientesActuales.map((cliente) =>
-                cliente.id === id
-                    ? {
-                        ...cliente,
-                        estaActivo: true,
-                    }
-                    : cliente
-            )
-        );
+            await cambiarEstadoCliente(id, true);
+
+            await cargarClientes();
+
+        } catch (error) {
+
+            alert(
+                error.message ||
+                "No fue posible activar el cliente."
+            );
+
+        }
     }
 
-    function eliminarCliente(id) {
+    async function eliminarCliente(id) {
         if (!puedeAdministrar()) {
             return;
         }
@@ -521,14 +459,20 @@ function Clientes() {
             return;
         }
 
-        /* TODO: reemplazar por await eliminarCliente(id) */
+        try {
 
-        setClientes((clientesActuales) =>
-            clientesActuales.filter(
-                (cliente) =>
-                    cliente.id !== id
-            )
-        );
+            await eliminarClienteApi(id);
+
+            await cargarClientes();
+
+        } catch (error) {
+
+            alert(
+                error.message ||
+                "No fue posible eliminar el cliente."
+            );
+
+        }
     }
 
     function renderTablaClientes(
@@ -721,8 +665,25 @@ function Clientes() {
         modalNuevoCliente ||
         clienteEditando;
 
+    if (cargandoClientes) {
+
+        return (
+            <Layout>
+                <div className="caja-cargando">
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <p>Cargando clientes...</p>
+                </div>
+            </Layout>
+        );
+
+    }
+
     return (
         <Layout>
+
+            {errorClientes && (
+                <div className="caja-error">{errorClientes}</div>
+            )}
             <div className="clientes-header">
                 <div>
                     <h1>

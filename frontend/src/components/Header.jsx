@@ -1,16 +1,17 @@
 import { useNavigate } from "react-router-dom";
 import "../styles/Dashboard.css";
 
+import { cerrarSesion } from "../services/auth.service";
+
 function Header() {
 
     const navigate = useNavigate();
 
     const usuario = JSON.parse(localStorage.getItem("usuario"));
 
-    const cerrarSesion = () => {
+    const manejarCerrarSesion = async () => {
 
-        localStorage.removeItem("token");
-        localStorage.removeItem("usuario");
+        await cerrarSesion();
 
         navigate("/login");
 
@@ -24,13 +25,13 @@ function Header() {
 
             <h2>Panel de Control</h2>
 
-            <p>Bienvenido, {usuario.nombres}</p>
+            <p>Bienvenido, {usuario?.nombres}</p>
 
         </div>
 
         <button
             className="logout-button"
-            onClick={cerrarSesion}
+            onClick={manejarCerrarSesion}
         >
             Cerrar sesión
         </button>

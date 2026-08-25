@@ -1,8 +1,12 @@
 import { apiFetch } from "./api";
 
-export async function obtenerProductos() {
+export async function obtenerProductos({ incluirInactivos = false } = {}) {
 
-    const respuesta = await apiFetch("/api/productos");
+    const query = incluirInactivos
+        ? "?incluirInactivos=true"
+        : "";
+
+    const respuesta = await apiFetch(`/api/productos${query}`);
 
     return respuesta.datos.productos;
 

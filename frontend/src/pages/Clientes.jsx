@@ -34,7 +34,7 @@ function Clientes() {
 
             setErrorClientes("");
 
-            const lista = await obtenerClientes();
+            const lista = await obtenerClientes({ incluirInactivos: true });
 
             setClientes(lista);
 

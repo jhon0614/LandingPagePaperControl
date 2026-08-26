@@ -1,9 +1,13 @@
 import { apiFetch } from "./api";
 
 
-export async function obtenerClientes() {
+export async function obtenerClientes({ incluirInactivos = false } = {}) {
 
-    const respuesta = await apiFetch("/api/clientes");
+    const query = incluirInactivos
+        ? "?incluirInactivos=true"
+        : "";
+
+    const respuesta = await apiFetch(`/api/clientes${query}`);
 
     return respuesta.datos.clientes;
 

@@ -586,14 +586,14 @@ function Ventas() {
         const texto =
             normalizarTexto(busqueda);
 
+        const listaProductos = productos || [];
 
         if (!texto) {
 
             return productos;
 
         }
-
-
+        
         return productos.filter((producto) => {
 
             const nombre =
@@ -627,7 +627,7 @@ function Ventas() {
     const metodosPagoActivos =
         useMemo(() => {
 
-            return metodosPago.filter(
+            return (metodosPago || []).filter(
                 (metodo) =>
                     metodo.activo
             );
@@ -644,7 +644,7 @@ function Ventas() {
     const tiposTarjetaActivos =
         useMemo(() => {
 
-            return tiposTarjeta.filter(
+            return (tiposTarjeta || []).filter(
                 (tipo) =>
                     tipo.activo
             );
@@ -661,7 +661,7 @@ function Ventas() {
     const bancosActivos =
         useMemo(() => {
 
-            return bancos.filter(
+            return (bancos || []).filter(
                 (banco) =>
                     banco.activo
             );

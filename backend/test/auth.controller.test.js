@@ -126,7 +126,7 @@ test("logout revoca la sesión, elimina la cookie y responde 204", async () => {
   assert.equal(respuesta.cookiesEliminadas[0].nombre, "tokenRenovacion");
 });
 
-test("refresh elimina una cookie inválida antes de responder el error", async () => {
+test("refresh fallido no borra una cookie rotada por otra solicitud", async () => {
   const errorSesion = new Error("sesión inválida");
   const servicio = {
     renovarSesion: async () => {
@@ -146,5 +146,28 @@ test("refresh elimina una cookie inválida antes de responder el error", async (
   );
 
   assert.equal(errorRecibido, errorSesion);
+  assert.equal(respuesta.cookiesEliminadas.length, 0);
+});
+
+test("logout elimina la cookie aunque falle la revocación", async () => {
+  const errorBaseDatos = new Error("base de datos no disponible");
+  const servicio = {
+    cerrarSesion: async () => {
+      throw errorBaseDatos;
+    },
+  };
+  const controlador = new ControladorAutenticacion(servicio, configuracion);
+  const respuesta = crearRespuestaSimulada();
+  let errorRecibido;
+
+  await controlador.cerrarSesion(
+    crearSolicitud({ cookie: "tokenRenovacion=refresh-a-cerrar" }),
+    respuesta,
+    (error) => {
+      errorRecibido = error;
+    },
+  );
+
+  assert.equal(errorRecibido, errorBaseDatos);
   assert.equal(respuesta.cookiesEliminadas[0].nombre, "tokenRenovacion");
 });

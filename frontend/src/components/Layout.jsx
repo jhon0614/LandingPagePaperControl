@@ -1,5 +1,6 @@
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import InactividadAviso from "./InactividadAviso";
 import "../styles/Dashboard.css";
 
 function Layout({ children }) {
@@ -18,6 +19,8 @@ function Layout({ children }) {
 
         </div>
 
+        <InactividadAviso />
+        
         </div>
     );
 }

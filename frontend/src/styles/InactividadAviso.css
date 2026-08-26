@@ -1,0 +1,97 @@
+.inactividad-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 47, 61, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.inactividad-modal {
+    background: white;
+    border-radius: 18px;
+    padding: 32px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, .3);
+    animation: inactividadEntrada .2s ease-out;
+}
+
+@keyframes inactividadEntrada {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.inactividad-icono {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fff7ed;
+    color: #d97706;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 16px;
+}
+
+.inactividad-modal h2 {
+    margin: 0 0 10px;
+    color: #062f3d;
+}
+
+.inactividad-modal p {
+    color: #64748b;
+    font-size: 14px;
+    margin: 0 0 16px;
+}
+
+.inactividad-contador {
+    font-size: 36px;
+    font-weight: 700;
+    color: #d97706;
+    margin-bottom: 24px;
+    font-variant-numeric: tabular-nums;
+}
+
+.inactividad-acciones {
+    display: flex;
+    gap: 10px;
+}
+
+.inactividad-acciones button {
+    flex: 1;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.inactividad-btn-seguir {
+    background: #05788a;
+    color: white;
+}
+
+.inactividad-btn-seguir:hover {
+    background: #046273;
+}
+
+.inactividad-btn-cerrar {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.inactividad-btn-cerrar:hover {
+    background: #e2e8f0;
+}

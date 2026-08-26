@@ -69,8 +69,8 @@ export class ControladorAutenticacion {
         },
       });
     } catch (error) {
-      // Una cookie inválida también se elimina para no repetir el mismo error.
-      this.#eliminarCookieRenovacion(respuesta);
+      // No se elimina aquí: otra renovación simultánea puede haber rotado el
+      // token y guardado una cookie nueva mientras esta solicitud fallaba.
       siguiente(error);
     }
   };
@@ -80,10 +80,12 @@ export class ControladorAutenticacion {
       await this.servicioAutenticacion.cerrarSesion(
         obtenerCookie(solicitud, "tokenRenovacion"), // lee la cookie tokenRenovación
       );
-      this.#eliminarCookieRenovacion(respuesta); //invalida el token
       respuesta.status(204).send();
     } catch (error) {
       siguiente(error);
+    } finally {
+      // El navegador no debe conservar la cookie aunque falle la revocación.
+      this.#eliminarCookieRenovacion(respuesta);
     }
   };
 

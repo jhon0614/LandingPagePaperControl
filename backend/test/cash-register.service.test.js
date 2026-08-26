@@ -31,10 +31,9 @@ test("calcula el efectivo esperado con ventas en efectivo menos gastos", async (
   assert.equal(resultado.montoEsperadoEfectivo, 135000);
 });
 
-test("responde 404 cuando no existe caja abierta", async () => {
+test("devuelve null cuando no existe caja abierta", async () => {
   const servicio = new ServicioTurnoCaja({ buscarAbierto: async () => null });
-  await assert.rejects(servicio.actual(),
-    (error) => error.estadoHttp === 404 && error.codigo === "TURNO_CAJA_NO_ABIERTO");
+  assert.equal(await servicio.actual(), null);
 });
 
 test("presenta el nombre del usuario que abrió el turno", async () => {

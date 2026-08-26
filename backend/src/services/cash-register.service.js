@@ -94,7 +94,11 @@ export class ServicioTurnoCaja {
   }
 
   async actual() {
-    return presentarTurno(await this.obtenerAbierto());
+    // Consultar el estado de caja no es una operación fallida cuando no existe
+    // un turno abierto. Se devuelve null para que la interfaz muestre la apertura
+    // sin generar un 404 esperado después de cerrar la caja.
+    const turno = await this.modelo.buscarAbierto();
+    return turno ? presentarTurno(turno) : null;
   }
 
   async resumen() {

@@ -9,6 +9,8 @@ Todas las rutas requieren `Authorization: Bearer <token>`.
 Devuelve el catálogo completo para que la interfaz pueda mostrar únicamente
 los métodos activos al registrar una venta.
 
+Respuesta `200`: `{ "exito": true, "datos": { "metodosPago": [ ... ] } }`.
+
 `PATCH /api/ventas/metodos-pago/:id`
 
 Solo `ADMINISTRADOR` y `DUENO`.
@@ -20,6 +22,8 @@ Solo `ADMINISTRADOR` y `DUENO`.
 ```
 
 El cambio queda persistido y se comparte entre todas las cajas.
+
+Respuesta `200`: `{ "exito": true, "datos": { "metodoPago": { ... } } }`.
 
 ## Crear venta
 

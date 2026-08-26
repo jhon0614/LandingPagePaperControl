@@ -8,8 +8,9 @@ export class ControladorVenta {
   // Expone la configuración vigente para construir las opciones de cobro.
   metodosPago = async (_requerimiento, respuesta, siguiente) => {
     try {
-      const metodos = await this.servicio.metodosPago();
-      return respuesta.status(200).json({ exito: true, datos: { metodos } });
+      const metodosPago = await this.servicio.metodosPago();
+      // El nombre coincide con el contrato consumido por ventas.service.js.
+      return respuesta.status(200).json({ exito: true, datos: { metodosPago } });
     } catch (error) {
       return siguiente(error);
     }
@@ -18,11 +19,11 @@ export class ControladorVenta {
   // Solo los responsables autorizados llegan aquí desde la ruta administrativa.
   actualizarMetodoPago = async (requerimiento, respuesta, siguiente) => {
     try {
-      const metodo = await this.servicio.actualizarMetodoPago(
+      const metodoPago = await this.servicio.actualizarMetodoPago(
         requerimiento.params.id,
         requerimiento.body.estaActivo,
       );
-      return respuesta.status(200).json({ exito: true, datos: { metodo } });
+      return respuesta.status(200).json({ exito: true, datos: { metodoPago } });
     } catch (error) {
       return siguiente(error);
     }

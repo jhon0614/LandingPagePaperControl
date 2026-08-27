@@ -42,3 +42,29 @@ test("rechaza movimientos sin cambio de stock", async () => {
     (error) => error.codigo === "MOVIMIENTO_SIN_CAMBIO" && error.estadoHttp === 409,
   );
 });
+
+test("entrega el usuario responsable al eliminar un producto", async () => {
+  let datosRecibidos;
+  const servicio = new ServicioProducto({
+    eliminar: async (productoId, usuarioId) => {
+      datosRecibidos = { productoId, usuarioId };
+      return { eliminadoLogicamente: true };
+    },
+  });
+
+  await servicio.eliminar("5", "2");
+
+  assert.deepEqual(datosRecibidos, { productoId: 5, usuarioId: 2 });
+});
+
+test("responde conflicto al eliminar un producto con ventas", async () => {
+  const servicio = new ServicioProducto({
+    eliminar: async () => ({ tieneVentas: true }),
+  });
+
+  await assert.rejects(
+    servicio.eliminar("5", "2"),
+    (error) =>
+      error.estadoHttp === 409 && error.codigo === "PRODUCTO_CON_VENTAS",
+  );
+});

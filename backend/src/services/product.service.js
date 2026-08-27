@@ -94,11 +94,20 @@ export class ServicioProducto {
     return this.obtener(productoId);
   }
 
-  async eliminar(id) {
+  async eliminar(id, usuarioId) {
     // El modelo decide entre eliminación física y desactivación según exista
     // historial que deba conservarse.
-    const resultado = await this.modelo.eliminar(this.#id(id));
+    const resultado = await this.modelo.eliminar(
+      this.#id(id),
+      this.#id(usuarioId, "usuario"),
+    );
     if (resultado.noExiste) this.#noEncontrado();
+    if (resultado.tieneVentas)
+      throw new ErrorAplicacion(
+        "No se puede eliminar un producto con ventas registradas. Puede desactivarlo para impedir nuevas ventas.",
+        409,
+        "PRODUCTO_CON_VENTAS",
+      );
     return resultado;
   }
 

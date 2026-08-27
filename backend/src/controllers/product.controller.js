@@ -58,7 +58,10 @@ export class ControladorProducto {
   };
   eliminar = async (requerimiento, respuesta, siguiente) => {
     try {
-      const resultado = await this.servicio.eliminar(requerimiento.params.id);
+      const resultado = await this.servicio.eliminar(
+        requerimiento.params.id,
+        requerimiento.usuario.id,
+      );
       return respuesta.json({ exito: true, datos: resultado });
     } catch (error) {
       return siguiente(error);

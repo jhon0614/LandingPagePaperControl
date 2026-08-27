@@ -183,7 +183,7 @@ export class ModeloProducto {
     return resultado.affectedRows > 0;
   }
 
-  async eliminar(id) {
+  async eliminar(id, usuarioId) {
     const conexion = await this.conexiones.getConnection();
     try {
       await conexion.beginTransaction();
@@ -197,18 +197,37 @@ export class ModeloProducto {
       }
       const [usos] = await conexion.execute(
         `SELECT EXISTS(SELECT 1 FROM detalles_venta WHERE producto_id = ?) AS tiene_ventas,
-                EXISTS(SELECT 1 FROM movimientos_inventario WHERE producto_id = ?) AS tiene_movimientos`,
-        [id, id],
+                EXISTS(SELECT 1 FROM movimientos_inventario WHERE producto_id = ?) AS tiene_movimientos,
+                EXISTS(SELECT 1 FROM alertas_inventario WHERE producto_id = ?) AS tiene_alertas`,
+        [id, id, id],
       );
-      if (usos[0].tiene_ventas || usos[0].tiene_movimientos) {
-        // Se conserva el producto cuando forma parte del historial contable o
-        // de inventario y solamente se oculta del catálogo activo.
+      if (
+        usos[0].tiene_ventas ||
+        usos[0].tiene_movimientos ||
+        usos[0].tiene_alertas
+      ) {
+        // Se conserva el producto para mantener sus referencias históricas,
+        // pero se marca como eliminado para retirarlo de todos los catálogos.
         await conexion.execute(
-          `UPDATE productos SET esta_activo = FALSE, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
+          `UPDATE productos
+              SET esta_activo = FALSE,
+                  eliminado_en = CURRENT_TIMESTAMP,
+                  actualizado_en = CURRENT_TIMESTAMP
+            WHERE id = ?`,
           [id],
         );
+        // Una alerta de un producto retirado deja de requerir reposición. Se
+        // resuelve en la misma transacción y conserva quién realizó la acción.
+        await conexion.execute(
+          `UPDATE alertas_inventario
+              SET estado = 'RESUELTA',
+                  resuelto_en = CURRENT_TIMESTAMP,
+                  resuelto_por = ?
+            WHERE producto_id = ? AND estado = 'ACTIVA'`,
+          [usuarioId, id],
+        );
         await conexion.commit();
-        return { desactivado: true };
+        return { eliminadoLogicamente: true };
       }
       await conexion.execute(`DELETE FROM productos WHERE id = ?`, [id]);
       await conexion.commit();

@@ -201,8 +201,13 @@ export class ModeloProducto {
                 EXISTS(SELECT 1 FROM alertas_inventario WHERE producto_id = ?) AS tiene_alertas`,
         [id, id, id],
       );
+      // HU-13: una venta confirmada forma parte del historial y bloquea por
+      // completo la eliminación del producto, incluso la eliminación lógica.
+      if (usos[0].tiene_ventas) {
+        await conexion.rollback();
+        return { tieneVentas: true };
+      }
       if (
-        usos[0].tiene_ventas ||
         usos[0].tiene_movimientos ||
         usos[0].tiene_alertas
       ) {

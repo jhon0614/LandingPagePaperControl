@@ -102,6 +102,12 @@ export class ServicioProducto {
       this.#id(usuarioId, "usuario"),
     );
     if (resultado.noExiste) this.#noEncontrado();
+    if (resultado.tieneVentas)
+      throw new ErrorAplicacion(
+        "No se puede eliminar un producto con ventas registradas. Puede desactivarlo para impedir nuevas ventas.",
+        409,
+        "PRODUCTO_CON_VENTAS",
+      );
     return resultado;
   }
 

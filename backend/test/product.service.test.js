@@ -56,3 +56,15 @@ test("entrega el usuario responsable al eliminar un producto", async () => {
 
   assert.deepEqual(datosRecibidos, { productoId: 5, usuarioId: 2 });
 });
+
+test("responde conflicto al eliminar un producto con ventas", async () => {
+  const servicio = new ServicioProducto({
+    eliminar: async () => ({ tieneVentas: true }),
+  });
+
+  await assert.rejects(
+    servicio.eliminar("5", "2"),
+    (error) =>
+      error.estadoHttp === 409 && error.codigo === "PRODUCTO_CON_VENTAS",
+  );
+});

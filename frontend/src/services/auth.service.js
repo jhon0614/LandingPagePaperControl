@@ -169,7 +169,7 @@ export async function cerrarSesion() {
             }
         );
 
-    } catch (error) {
+    } catch {
 
         // Si el logout en backend falla, igual limpiamos
         // el estado local para no dejar la sesión "colgada".

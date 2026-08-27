@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Layout from "../components/Layout";
 
@@ -18,6 +19,8 @@ import "../styles/Usuarios.css";
 
 
 function Usuarios() {
+
+    const navigate = useNavigate();
 
     /*
      * USUARIO EN SESIÓN
@@ -69,13 +72,6 @@ function Usuarios() {
      * CARGAR DATOS
      */
 
-    useEffect(() => {
-
-        cargarDatos();
-
-    }, []);
-
-
     async function cargarDatos() {
 
         try {
@@ -116,6 +112,12 @@ function Usuarios() {
 
     }
 
+    useEffect(() => {
+
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        cargarDatos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     /*
      * MANEJO DE ERRORES
@@ -128,7 +130,7 @@ function Usuarios() {
             localStorage.removeItem("token");
             localStorage.removeItem("usuario");
 
-            window.location.hash = "#/login";
+            navigate("/login", { replace: true });
 
             return;
 

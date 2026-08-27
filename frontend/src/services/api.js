@@ -107,7 +107,7 @@ export async function restaurarSesion() {
 
         return true;
 
-    } catch (error) {
+    } catch {
 
         limpiarToken();
 
@@ -199,7 +199,7 @@ export async function apiFetch(
     }
 
 
-    let datos = null;
+    let datos;
 
     try {
 

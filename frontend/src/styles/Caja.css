@@ -404,3 +404,10 @@
 .caja-cuadre-diferencia.positiva strong {
     color: #16a34a;
 }
+
+.caja-historial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}

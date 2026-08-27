@@ -20,7 +20,7 @@ function AlertaStockBajo() {
 
                 setAlertas(datos);
 
-            } catch (error) {
+            } catch {
 
                 setError(
                     "No fue posible cargar las alertas de stock."

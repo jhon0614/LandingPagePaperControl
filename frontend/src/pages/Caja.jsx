@@ -13,7 +13,7 @@ import {
     registrarGasto,
     eliminarGasto,
     cerrarCaja,
-    obtenerHistorialTurnos,
+   obtenerHistorialTurnos,
 } from "../services/caja.service";
 
 
@@ -59,6 +59,24 @@ function Caja() {
 
     const [error, setError] = useState("");
 
+        const usuarioActual = JSON.parse(
+        localStorage.getItem("usuario")
+    );
+
+    const puedeVerHistorial =
+        usuarioActual?.rol === "ADMINISTRADOR" ||
+        usuarioActual?.rol === "DUENO";
+
+
+    const [mostrarHistorial, setMostrarHistorial] = useState(false);
+
+    const [historialTurnos, setHistorialTurnos] = useState([]);
+
+    const [cargandoHistorial, setCargandoHistorial] = useState(false);
+
+    const [fechaDesdeHistorial, setFechaDesdeHistorial] = useState("");
+
+    const [fechaHastaHistorial, setFechaHastaHistorial] = useState("");
 
     /*
      * =====================================================
@@ -155,6 +173,7 @@ function Caja() {
 
     useEffect(() => {
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         cargarCajaActual();
 
     }, [cargarCajaActual]);
@@ -377,6 +396,41 @@ function Caja() {
 
     }
 
+    async function cargarHistorialTurnos() {
+
+        try {
+
+            setCargandoHistorial(true);
+
+            const lista = await obtenerHistorialTurnos({
+                desde: fechaDesdeHistorial || undefined,
+                hasta: fechaHastaHistorial || undefined,
+            });
+
+            setHistorialTurnos(lista);
+
+        } catch {
+
+            setHistorialTurnos([]);
+
+        } finally {
+
+            setCargandoHistorial(false);
+
+        }
+
+    }
+
+    useEffect(() => {
+
+        if (mostrarHistorial) {
+
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            cargarHistorialTurnos();
+
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mostrarHistorial, fechaDesdeHistorial, fechaHastaHistorial]);
 
     /*
      * =====================================================
@@ -721,6 +775,131 @@ function Caja() {
                 </div>
 
             </section>
+
+                        {/* =================================================
+                HISTORIAL DE TURNOS (SOLO ADMIN / DUEÑO)
+            ================================================= */}
+
+            {puedeVerHistorial && (
+
+                <section className="caja-gastos-panel">
+
+                    <div
+                        className="caja-historial-header"
+                        onClick={() =>
+                            setMostrarHistorial(!mostrarHistorial)
+                        }
+                    >
+
+                        <h2>Historial de turnos de caja</h2>
+
+                        <i
+                            className={
+                                mostrarHistorial
+                                    ? "fa-solid fa-chevron-up"
+                                    : "fa-solid fa-chevron-down"
+                            }
+                        ></i>
+
+                    </div>
+
+                    {mostrarHistorial && (
+
+                        <>
+
+                            <div className="caja-gasto-form">
+
+                                <input
+                                    type="date"
+                                    value={fechaDesdeHistorial}
+                                    onChange={(e) =>
+                                        setFechaDesdeHistorial(e.target.value)
+                                    }
+                                />
+
+                                <input
+                                    type="date"
+                                    value={fechaHastaHistorial}
+                                    onChange={(e) =>
+                                        setFechaHastaHistorial(e.target.value)
+                                    }
+                                />
+
+                            </div>
+
+                            <div className="caja-gastos-tabla">
+
+                                {cargandoHistorial ? (
+
+                                    <p className="caja-gastos-vacio">
+                                        Cargando historial...
+                                    </p>
+
+                                ) : historialTurnos.length === 0 ? (
+
+                                    <p className="caja-gastos-vacio">
+                                        No hay turnos registrados en este rango.
+                                    </p>
+
+                                ) : (
+
+                                    <table>
+
+                                        <thead>
+                                            <tr>
+                                                <th>Usuario</th>
+                                                <th>Apertura</th>
+                                                <th>Cierre</th>
+                                                <th>Esperado</th>
+                                                <th>Contado</th>
+                                                <th>Diferencia</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            {historialTurnos.map((turno) => (
+                                                <tr key={turno.id}>
+                                                    <td>{turno.usuarioNombre}</td>
+                                                    <td>
+                                                        {formatoFechaHora(turno.abiertoEn)}
+                                                    </td>
+                                                    <td>
+                                                        {formatoFechaHora(turno.cerradoEn)}
+                                                    </td>
+                                                    <td>
+                                                        {formatoMoneda(turno.montoEsperado)}
+                                                    </td>
+                                                    <td>
+                                                        {formatoMoneda(turno.montoContado)}
+                                                    </td>
+                                                    <td>
+                                                        <span
+                                                            className={
+                                                                Number(turno.diferencia) < 0
+                                                                    ? "caja-resumen-negativo"
+                                                                    : ""
+                                                            }
+                                                        >
+                                                            {formatoMoneda(turno.diferencia)}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+
+                                    </table>
+
+                                )}
+
+                            </div>
+
+                        </>
+
+                    )}
+
+                </section>
+
+            )}
 
             {/* =================================================
                 MODAL DE CIERRE

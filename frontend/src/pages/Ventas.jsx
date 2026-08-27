@@ -198,7 +198,7 @@ function Ventas() {
 
                 setTurnoActivo(turno);
 
-            } catch (error) {
+            } catch {
 
                 setTurnoActivo(null);
 
@@ -248,7 +248,7 @@ function Ventas() {
 
             setProductos(lista);
 
-        } catch (error) {
+        } catch {
 
             setProductos([]);
 
@@ -262,6 +262,7 @@ function Ventas() {
 
     useEffect(() => {
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         cargarProductos();
 
     }, []);
@@ -279,7 +280,7 @@ function Ventas() {
 
                 setClientes(lista);
 
-            } catch (error) {
+            } catch {
 
                 setClientes([]);
 
@@ -310,7 +311,7 @@ function Ventas() {
 
                 setMetodosPago(lista);
 
-            } catch (error) {
+            } catch {
 
                 setMetodosPago([]);
 
@@ -427,6 +428,15 @@ function Ventas() {
 
     const [modalConfigPagos, setModalConfigPagos] =
         useState(false);
+    
+    const [montoRecibido, setMontoRecibido] = 
+        useState("");
+
+    const [modalVentaExitosa, setModalVentaExitosa] = 
+        useState(false);
+
+    const [ventaExitosaInfo, setVentaExitosaInfo] = 
+        useState(null);
 
     const [modalCliente, setModalCliente] = 
         useState(false);
@@ -485,7 +495,10 @@ function Ventas() {
         useState("");
 
     const [orden, setOrden] =
-    useState("fecha");
+        useState("fecha");
+
+     const [filtroVendedor, setFiltroVendedor] =
+      useState("Todos");
 
     /* =========================================================
     CARGAR HISTORIAL
@@ -539,12 +552,14 @@ function Ventas() {
 
     // Carga el historial de ventas
     useEffect(() => {
-        if (!verificandoCaja && turnoActivo) {
+        
+        if (!verificandoCaja) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             cargarVentas();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         verificandoCaja,
-        turnoActivo,
         fechaInicio,
         fechaFin,
         orden,
@@ -590,11 +605,11 @@ function Ventas() {
 
         if (!texto) {
 
-            return productos;
+            return listaProductos;
 
         }
         
-        return productos.filter((producto) => {
+        return listaProductos.filter((producto) => {
 
             const nombre =
                 normalizarTexto(
@@ -616,6 +631,37 @@ function Ventas() {
         });
 
     }, [productos, busqueda]);
+
+    /* =========================================================
+     * VENDEDORES DISPONIBLES
+     ========================================================= */
+
+     const vendedoresDisponibles = useMemo(() => {
+
+        return [
+            "Todos",
+            ...new Set(
+                ventas
+                    .map((v) => v.vendedor)
+                    .filter(Boolean)
+            ),
+        ];
+
+    }, [ventas]);
+
+    const ventasFiltradas = useMemo(() => {
+
+        if (filtroVendedor === "Todos") {
+
+            return ventas;
+
+        }
+
+        return ventas.filter(
+            (v) => v.vendedor === filtroVendedor
+        );
+
+    }, [ventas, filtroVendedor]);
 
 
     /*
@@ -1127,6 +1173,41 @@ function Ventas() {
 
         }
 
+        /*
+         * Validación específica de pago en efectivo:
+         * el monto recibido debe existir y ser mayor
+         * o igual al total.
+         */
+
+        if (metodoPago === "EFECTIVO") {
+
+            const recibido = Number(montoRecibido);
+
+            if (!montoRecibido || !Number.isFinite(recibido)) {
+
+                alert(
+                    "Ingresa el monto recibido en efectivo."
+                );
+
+                return;
+
+            }
+
+            if (recibido < total) {
+
+                alert(
+                    `El monto recibido ($${recibido.toLocaleString(
+                        "es-CO"
+                    )}) es menor al total de la venta ($${total.toLocaleString(
+                        "es-CO"
+                    )}).`
+                );
+
+                return;
+
+            }
+
+        }
 
         /*
          * Verificación final de stock antes de enviar,
@@ -1166,7 +1247,7 @@ function Ventas() {
             setRegistrandoVenta(true);
 
 
-            await crearVentaApi({
+            const venta = await crearVentaApi({
 
                 turnoCajaId: turnoActivo.id,
 
@@ -1178,6 +1259,11 @@ function Ventas() {
 
                 banco: bancoSeleccionado || null,
 
+                montoRecibido:
+                    metodoPago === "EFECTIVO"
+                        ? Number(montoRecibido)
+                        : null,
+
                 items: carrito.map((item) => ({
                     productoId: item.id,
                     cantidad: item.cantidad,
@@ -1187,7 +1273,17 @@ function Ventas() {
             });
 
 
-            alert("Venta registrada correctamente.");
+            setVentaExitosaInfo({
+                total,
+                metodoPago,
+                montoRecibido:
+                    metodoPago === "EFECTIVO"
+                        ? Number(montoRecibido)
+                        : null,
+                cambio: venta?.cambio ?? null,
+            });
+
+            setModalVentaExitosa(true);
 
 
             setCarrito([]);
@@ -1199,11 +1295,15 @@ function Ventas() {
             setTipoTarjetaSeleccionado("");
 
             setBancoSeleccionado("");
+            
+            setMontoRecibido("");
 
 
             // Refresca el stock mostrado en el catálogo.
 
             await cargarProductos();
+
+            await cargarVentas();
 
 
         } catch (error) {
@@ -1291,29 +1391,6 @@ function Ventas() {
 
     }
 
-    if (!turnoActivo) {
-
-        return (
-            <Layout>
-                <div className="caja-apertura-card">
-                    <i className="fa-solid fa-lock"></i>
-                    <h2>Caja cerrada</h2>
-                    <p>
-                        Debes abrir la caja antes de poder
-                        registrar ventas.
-                    </p>
-                    <button
-                        type="button"
-                        className="auth-button"
-                        onClick={() => navigate("/caja")}
-                    >
-                        Ir a Caja
-                    </button>
-                </div>
-            </Layout>
-        );
-
-    }
 
     return (
 
@@ -1335,6 +1412,26 @@ function Ventas() {
 
             </div>
 
+            {!turnoActivo ? (
+
+                <div className="caja-apertura-card">
+                    <i className="fa-solid fa-lock"></i>
+                    <h2>Caja cerrada</h2>
+                    <p>
+                        Debes abrir la caja antes de poder
+                        registrar nuevas ventas. Puedes seguir
+                        consultando el historial más abajo.
+                    </p>
+                    <button
+                        type="button"
+                        className="auth-button"
+                        onClick={() => navigate("/caja")}
+                    >
+                        Ir a Caja
+                    </button>
+                </div>
+
+            ) : (
 
             <div className="pos-container">
 
@@ -1721,6 +1818,45 @@ function Ventas() {
                             className="pos-dropdown-pago"
                         />
 
+                        {/* =================================================
+                            MONTO RECIBIDO (EFECTIVO)
+                        ================================================= */}
+
+                        {metodoPago === "EFECTIVO" && (
+
+                            <div className="pos-bancos-selector">
+
+                                <label>
+                                    Monto recibido
+                                </label>
+
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="100"
+                                    placeholder={`Mínimo $${total.toLocaleString("es-CO")}`}
+                                    value={montoRecibido}
+                                    onChange={(e) =>
+                                        setMontoRecibido(e.target.value)
+                                    }
+                                    className="pos-monto-recibido-input"
+                                />
+
+                                {montoRecibido &&
+                                    Number(montoRecibido) >= total && (
+
+                                        <small className="pos-cambio-estimado">
+                                            Cambio estimado: $
+                                            {(
+                                                Number(montoRecibido) - total
+                                            ).toLocaleString("es-CO")}
+                                        </small>
+
+                                    )}
+
+                            </div>
+
+                        )}
 
                         {/* =================================================
                             TIPO DE TARJETA
@@ -1926,6 +2062,8 @@ function Ventas() {
 
             </div>
 
+            )}
+
             {/* =========================================================
                 HISTORIAL DE VENTAS
             ========================================================= */}
@@ -2019,6 +2157,34 @@ function Ventas() {
 
                     </div>
 
+                    {puedeAdministrar() && (
+
+                        <div className="historial-filtro">
+
+                            <label htmlFor="filtroVendedor">
+                                Vendedor
+                            </label>
+
+                            <select
+                                id="filtroVendedor"
+                                value={filtroVendedor}
+                                onChange={(e) =>
+                                    setFiltroVendedor(e.target.value)
+                                }
+                            >
+
+                                {vendedoresDisponibles.map((nombre) => (
+                                    <option key={nombre} value={nombre}>
+                                        {nombre}
+                                    </option>
+                                ))}
+
+                            </select>
+
+                        </div>
+
+                    )}
+
                 </div>
 
 
@@ -2040,7 +2206,7 @@ function Ventas() {
 
                         </div>
 
-                    ) : ventas.length === 0 ? (
+                    ) : ventasFiltradas.length === 0 ? (
 
                         <div className="historial-ventas-vacio">
 
@@ -2082,7 +2248,7 @@ function Ventas() {
 
                                 <tbody>
 
-                                    {ventas.map((venta) => (
+                                    {ventasFiltradas.map((venta) => (
 
                                         <tr key={venta.id}>
 
@@ -2216,6 +2382,92 @@ function Ventas() {
                 </div>
 
             </section>
+
+             {modalVentaExitosa && ventaExitosaInfo && (
+
+                <div
+                    className="pos-modal-overlay"
+                    onMouseDown={(e) => {
+
+                        if (e.target === e.currentTarget) {
+
+                            setModalVentaExitosa(false);
+
+                        }
+
+                    }}
+                >
+
+                    <div className="pos-modal">
+
+                        <div className="pos-modal-header">
+
+                            <div>
+                                <h2>Venta registrada</h2>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="pos-modal-cerrar"
+                                onClick={() => setModalVentaExitosa(false)}
+                            >
+                                <i className="fa-solid fa-xmark"></i>
+                            </button>
+
+                        </div>
+
+                        <div className="config-pagos-body">
+
+                            <div className="datos-cliente-detalle">
+
+                                <p>
+                                    <strong>Total:</strong> $
+                                    {ventaExitosaInfo.total.toLocaleString("es-CO")}
+                                </p>
+
+                                {ventaExitosaInfo.metodoPago === "EFECTIVO" && (
+
+                                    <>
+
+                                        <p>
+                                            <strong>Monto recibido:</strong> $
+                                            {ventaExitosaInfo.montoRecibido?.toLocaleString("es-CO")}
+                                        </p>
+
+                                        <p className="pos-cambio-destacado">
+                                            <strong>Cambio a entregar:</strong> $
+                                            {(
+                                                ventaExitosaInfo.cambio ??
+                                                ventaExitosaInfo.montoRecibido - ventaExitosaInfo.total
+                                            ).toLocaleString("es-CO")}
+                                        </p>
+
+                                    </>
+
+                                )}
+
+                            </div>
+
+                        </div>
+
+                        <div className="pos-modal-footer">
+
+                            <button
+                                type="button"
+                                className="btn-cerrar-pos-modal"
+                                onClick={() => setModalVentaExitosa(false)}
+                            >
+                                Entendido
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            )}
+
 
             {modalCliente && (
 

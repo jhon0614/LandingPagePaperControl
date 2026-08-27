@@ -19,638 +19,11 @@ import {
     quitarProveedor,
 } from "../services/proveedores.service";
 
-
-function Inventario() {
-
-    const [busqueda, setBusqueda] = useState("");
-
-    const [filtroCategoria, setFiltroCategoria] =
-        useState("Todas las categorías");
-
-    const [filtroProveedor, setFiltroProveedor] =
-        useState("Todos los proveedores");
-
-    const [filtroEstado, setFiltroEstado] =
-        useState("Todos los estados");
-
-    const [mostrarDesactivados, setMostrarDesactivados] =
-        useState(true);
-
-    const [modalAbierto, setModalAbierto] =
-        useState(false);
-
-    const [productoEditar, setProductoEditar] =
-        useState(null);
-
-    const [menuAbierto, setMenuAbierto] =
-        useState(null);
-
-    const [productos, setProductos] = useState([]);
-
-    const [proveedoresDisponibles, setProveedoresDisponibles] =
-        useState([]);
-
-    const [cargando, setCargando] = useState(true);
-
-    const [error, setError] = useState("");
-
-    /*
-     * =====================================================
-     * MODAL DE HISTORIAL DE MOVIMIENTOS
-     * =====================================================
-     */
-
-    const [modalHistorial, setModalHistorial] = useState(false);
-
-    const [productoHistorial, setProductoHistorial] = useState(null);
-
-    const [movimientos, setMovimientos] = useState([]);
-
-    const [cargandoMovimientos, setCargandoMovimientos] =
-        useState(false);
-
-    const [nuevoMovimiento, setNuevoMovimiento] = useState({
-        tipo: "ENTRADA",
-        cantidad: "",
-        nota: "",
-    });
-
-
-    /*
-     * =====================================================
-     * PROVEEDORES ASOCIADOS AL PRODUCTO EN EDICIÓN
-     * =====================================================
-     */
-
-    const [proveedoresProducto, setProveedoresProducto] =
-        useState([]);
-
-    const [proveedorSeleccionado, setProveedorSeleccionado] =
-        useState("");
-
-    const [proveedoresParaAsociar, setProveedoresParaAsociar] =
-        useState([]);
-
-
-    /*
-     * =====================================================
-     * CARGA INICIAL
-     * =====================================================
-     */
-
-    async function cargarDatos() {
-
-        try {
-
-            setError("");
-
-            const [listaProductos, listaProveedores] =
-                await Promise.all([
-                    obtenerProductos({incluirInactivos: true}),
-                    obtenerProveedores(),
-                ]);
-
-            setProductos(listaProductos);
-
-            setProveedoresDisponibles(listaProveedores);
-
-        } catch (error) {
-
-            setError(
-                error.message ||
-                "No fue posible cargar el inventario."
-            );
-
-        } finally {
-
-            setCargando(false);
-
-        }
-
-    }
-
-    useEffect(() => {
-
-        cargarDatos();
-
-    }, []);
-
-
-    // =========================================================
-    // NORMALIZAR TEXTO
-    // =========================================================
-
-    const normalizarTexto = (texto = "") => {
-        return String(texto)
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase()
-            .trim();
-    };
-
-    // =========================================================
-    // LISTAS PARA LOS FILTROS
-    // =========================================================
-
-    const categorias = useMemo(() => {
-        return [
-            ...new Set(
-                productos.map(
-                    (producto) => producto.categoria
-                )
-            ),
-        ];
-    }, [productos]);
-
-    const nombresProveedores = useMemo(() => {
-        return [
-            ...new Set(
-                proveedoresDisponibles.map(
-                    (proveedor) => proveedor.nombre
-                )
-            ),
-        ];
-    }, [proveedoresDisponibles]);
-
-    // =========================================================
-    // FILTRAR PRODUCTOS
-    // =========================================================
-
-    const productosFiltrados = useMemo(() => {
-        const texto = normalizarTexto(busqueda);
-
-        return productos.filter((producto) => {
-
-            const nombresProveedoresProducto =
-                (producto.proveedores || [])
-                    .map((p) => p.nombre)
-                    .join(" ");
-
-            const coincideBusqueda =
-                !texto ||
-                normalizarTexto(producto.nombre).includes(texto) ||
-                normalizarTexto(producto.marca || "").includes(texto) ||
-                normalizarTexto(producto.codigo || "").includes(texto) ||
-                normalizarTexto(producto.categoria || "").includes(texto) ||
-                normalizarTexto(nombresProveedoresProducto).includes(texto);
-
-            const coincideCategoria =
-                filtroCategoria === "Todas las categorías" ||
-                producto.categoria === filtroCategoria;
-
-            const coincideProveedor =
-                filtroProveedor === "Todos los proveedores" ||
-                (producto.proveedores || []).some(
-                    (p) => p.nombre === filtroProveedor
-                );
-
-            let coincideEstado = true;
-
-            if (filtroEstado === "Activos") {
-                coincideEstado = producto.estaActivo;
-            }
-
-            if (filtroEstado === "Desactivados") {
-                coincideEstado = !producto.estaActivo;
-            }
-
-            if (filtroEstado === "Agotados") {
-                coincideEstado =
-                    producto.estaActivo &&
-                    Number(producto.stock) === 0;
-            }
-
-            if (filtroEstado === "Stock bajo") {
-                coincideEstado =
-                    producto.estaActivo &&
-                    Number(producto.stock) > 0 &&
-                    Number(producto.stock) <=
-                        Number(producto.stockMinimo);
-            }
-
-            return (
-                coincideBusqueda &&
-                coincideCategoria &&
-                coincideProveedor &&
-                coincideEstado
-            );
-        });
-    }, [
-        productos,
-        busqueda,
-        filtroCategoria,
-        filtroProveedor,
-        filtroEstado,
-    ]);
-
-    const productosActivos = productosFiltrados.filter(
-        (p) => p.estaActivo && Number(p.stock) > 0
-    );
-
-    const productosAgotados = productosFiltrados.filter(
-        (p) => p.estaActivo && Number(p.stock) === 0
-    );
-
-    const productosDesactivados = productosFiltrados.filter(
-        (p) => !p.estaActivo
-    );
-
-    // =========================================================
-    // ESTADÍSTICAS
-    // =========================================================
-
-    const productosActivosTotal = productos.filter(
-        (p) => p.estaActivo
-    );
-
-    const unidadesTotal = productos
-        .filter((p) => p.estaActivo)
-        .reduce((total, p) => total + Number(p.stock || 0), 0);
-
-    const stockBajoTotal = productos.filter(
-        (p) =>
-            p.estaActivo &&
-            Number(p.stock) > 0 &&
-            Number(p.stock) <= Number(p.stockMinimo)
-    ).length;
-
-    const agotadosTotal = productos.filter(
-        (p) => p.estaActivo && Number(p.stock) === 0
-    ).length;
-
-    const valorMayoristaTotal = productos
-        .filter((p) => p.estaActivo)
-        .reduce(
-            (total, p) =>
-                total + Number(p.stock || 0) * Number(p.precioMayor || 0),
-            0
-        );
-
-    const valorDetalTotal = productos
-        .filter((p) => p.estaActivo)
-        .reduce(
-            (total, p) =>
-                total + Number(p.stock || 0) * Number(p.precioDetal || 0),
-            0
-        );
-
-    const formatoPrecio = (valor) => {
-        return `$ ${Number(valor || 0).toLocaleString("es-CO")}`;
-    };
-
-    // Se usa formatoFecha de utils/fecha.js para mostrar la fecha de última modificación en la tabla de productos
-
-    // =========================================================
-    // MODAL PRODUCTO — ABRIR / CERRAR
-    // =========================================================
-
-    const abrirNuevoProducto = () => {
-
-        setProductoEditar(null);
-
-        setProveedoresProducto([]);
-
-        setProveedoresParaAsociar([]);
-
-        setProveedorSeleccionado("");
-
-        setModalAbierto(true);
-
-    };
-
-    const abrirEditarProducto = async (producto) => {
-
-        setProductoEditar(producto);
-
-        setModalAbierto(true);
-
-        setMenuAbierto(null);
-
-        try {
-
-            const listaProveedores =
-                await obtenerProveedoresDeProducto(producto.id);
-
-            setProveedoresProducto(listaProveedores);
-
-        } catch (error) {
-
-            setProveedoresProducto(producto.proveedores || []);
-
-        }
-
-    };
-
-    // =========================================================
-    // ASOCIAR / QUITAR PROVEEDOR EN EL MODAL
-    // =========================================================
-
-    async function manejarAsociarProveedor() {
-
-        if (!proveedorSeleccionado || !productoEditar) return;
-
-        try {
-
-            await asociarProveedor(
-                productoEditar.id,
-                proveedorSeleccionado
-            );
-
-            const proveedor = proveedoresDisponibles.find(
-                (p) => String(p.id) === String(proveedorSeleccionado)
-            );
-
-            if (proveedor) {
-
-                setProveedoresProducto((actuales) => [
-                    ...actuales,
-                    proveedor,
-                ]);
-
-            }
-
-            setProveedorSeleccionado("");
-
-        } catch (error) {
-
-            setError(
-                error.message ||
-                "No fue posible asociar el proveedor."
-            );
-
-        }
-
-    }
-
-    async function manejarQuitarProveedor(idProveedor) {
-
-        if (!productoEditar) return;
-
-        try {
-
-            await quitarProveedor(productoEditar.id, idProveedor);
-
-            setProveedoresProducto((actuales) =>
-                actuales.filter((p) => p.id !== idProveedor)
-            );
-
-        } catch (error) {
-
-            setError(
-                error.message ||
-                "No fue posible quitar el proveedor."
-            );
-
-        }
-
-    }
-
-    function agregarProveedorTemporal() {
-
-        if (!proveedorSeleccionado) return;
-
-        const proveedor = proveedoresDisponibles.find(
-            (p) => String(p.id) === String(proveedorSeleccionado)
-        );
-
-        if (!proveedor) return;
-
-        setProveedoresParaAsociar((actuales) => [
-            ...actuales,
-            proveedor,
-        ]);
-
-        setProveedorSeleccionado("");
-
-    }
-
-    function quitarProveedorTemporal(idProveedor) {
-
-        setProveedoresParaAsociar((actuales) =>
-            actuales.filter((p) => p.id !== idProveedor)
-        );
-
-    }
-
-    // =========================================================
-    // GUARDAR PRODUCTO
-    // =========================================================
-
-    const guardarProducto = async (evento) => {
-
-        evento.preventDefault();
-
-        const formulario = new FormData(evento.currentTarget);
-
-        const datos = {
-            nombre: formulario.get("nombre").trim(),
-            marca: formulario.get("marca").trim(),
-            codigo: formulario.get("codigo").trim(),
-            categoria: formulario.get("categoria").trim(),
-            precioMayor: Number(formulario.get("precioMayor")),
-            precioDetal: Number(formulario.get("precioDetal")),
-            stock: Number(formulario.get("stock")),
-            stockMinimo: Number(formulario.get("stockMinimo")),
-        };
-
-        try {
-
-            if (productoEditar) {
-
-                await actualizarProducto(productoEditar.id, datos);
-
-            } else {
-
-                const creado = await crearProducto(datos);
-
-                if (proveedoresParaAsociar.length > 0) {
-
-                    await Promise.all(
-                        proveedoresParaAsociar.map((proveedor) =>
-                            asociarProveedor(creado.id, proveedor.id)
-                        )
-                    );
-
-                }
-
-            }
-
-            setModalAbierto(false);
-
-            setProductoEditar(null);
-
-            setProveedoresParaAsociar([]);
-
-            await cargarDatos();
-
-        } catch (error) {
-            setError(
-                error.message ||
-                "No fue posible guardar el producto."
-            );
-
-        }
-
-    };
-
-    // =========================================================
-    // ACTIVAR / DESACTIVAR
-    // =========================================================
-
-    const manejarCambiarEstado = async (producto) => {
-
-        try {
-
-            await cambiarEstadoProducto(
-                producto.id,
-                !producto.estaActivo
-            );
-
-            await cargarDatos();
-
-        } catch (error) {
-
-            setError(
-                error.message ||
-                "No fue posible cambiar el estado del producto."
-            );
-
-        }
-
-        setMenuAbierto(null);
-
-    };
-
-    // =========================================================
-    // ELIMINAR (PROTEGIDO)
-    // =========================================================
-
-    const manejarEliminarProducto = async (producto) => {
-
-        const confirmar = window.confirm(
-            `¿Deseas eliminar "${producto.nombre}"? Si tiene ventas registradas, en su lugar se desactivará.`
-        );
-
-        if (!confirmar) return;
-
-        try {
-
-            await eliminarProducto(producto.id);
-
-            await cargarDatos();
-
-        } catch (error) {
-
-            // El backend responde con un mensaje claro cuando el
-            // producto tiene ventas asociadas y no puede borrarse.
-            setError(
-                error.message ||
-                "No fue posible eliminar el producto."
-            );
-
-        }
-
-        setMenuAbierto(null);
-
-    };
-
-    // =========================================================
-    // HISTORIAL DE MOVIMIENTOS
-    // =========================================================
-
-    async function abrirHistorial(producto) {
-
-        setProductoHistorial(producto);
-
-        setModalHistorial(true);
-
-        setMenuAbierto(null);
-
-        setCargandoMovimientos(true);
-
-        try {
-
-            const lista = await obtenerMovimientosProducto(
-                producto.id
-            );
-
-            setMovimientos(lista);
-
-        } catch (error) {
-
-            setMovimientos([]);
-
-        } finally {
-
-            setCargandoMovimientos(false);
-
-        }
-
-    }
-
-    async function manejarRegistrarMovimiento(evento) {
-
-        evento.preventDefault();
-
-        if (
-            !nuevoMovimiento.cantidad ||
-            Number(nuevoMovimiento.cantidad) <= 0
-        ) {
-
-            setError("Ingresa una cantidad válida.");
-
-            return;
-
-        }
-
-        try {
-
-            await registrarMovimiento(
-                productoHistorial.id,
-                nuevoMovimiento
-            );
-
-            setNuevoMovimiento({
-                tipo: "ENTRADA",
-                cantidad: "",
-                nota: "",
-            });
-
-            const lista = await obtenerMovimientosProducto(
-                productoHistorial.id
-            );
-
-            setMovimientos(lista);
-
-            await cargarDatos();
-
-        } catch (error) {
-
-            setError(
-                error.message ||
-                "No fue posible registrar el movimiento."
-            );
-
-        }
-
-    }
-
-    // =========================================================
-    // LIMPIAR FILTROS
-    // =========================================================
-
-    const limpiarFiltros = () => {
-        setBusqueda("");
-        setFiltroCategoria("Todas las categorías");
-        setFiltroProveedor("Todos los proveedores");
-        setFiltroEstado("Todos los estados");
-    };
-
-    // =========================================================
+// =========================================================
     // COMPONENTE DROPDOWN
     // =========================================================
 
-    const Dropdown = ({ id, valor, opciones, cambiar }) => {
+    const Dropdown = ({ id, valor, opciones, cambiar, menuAbierto, setMenuAbierto }) => {
 
         const abierto = menuAbierto === id;
 
@@ -707,7 +80,7 @@ function Inventario() {
     // TABLA DE PRODUCTOS
     // =========================================================
 
-    const TablaProductos = ({ lista, tipo }) => {
+    const TablaProductos = ({ lista, tipo, formatoPrecio, formatoFechaHora, abrirHistorial, manejarCambiarEstado, abrirEditarProducto, manejarEliminarProducto }) => {
 
         return (
             <div className="inventario-tabla-wrapper">
@@ -959,6 +332,633 @@ function Inventario() {
 
     };
 
+function Inventario() {
+
+    const [busqueda, setBusqueda] = useState("");
+
+    const [filtroCategoria, setFiltroCategoria] =
+        useState("Todas las categorías");
+
+    const [filtroProveedor, setFiltroProveedor] =
+        useState("Todos los proveedores");
+
+    const [filtroEstado, setFiltroEstado] =
+        useState("Todos los estados");
+
+    const [mostrarDesactivados, setMostrarDesactivados] =
+        useState(true);
+
+    const [modalAbierto, setModalAbierto] =
+        useState(false);
+
+    const [productoEditar, setProductoEditar] =
+        useState(null);
+
+    const [menuAbierto, setMenuAbierto] =
+        useState(null);
+
+    const [productos, setProductos] = useState([]);
+
+    const [proveedoresDisponibles, setProveedoresDisponibles] =
+        useState([]);
+
+    const [cargando, setCargando] = useState(true);
+
+    const [error, setError] = useState("");
+
+    /*
+     * =====================================================
+     * MODAL DE HISTORIAL DE MOVIMIENTOS
+     * =====================================================
+     */
+
+    const [modalHistorial, setModalHistorial] = useState(false);
+
+    const [productoHistorial, setProductoHistorial] = useState(null);
+
+    const [movimientos, setMovimientos] = useState([]);
+
+    const [cargandoMovimientos, setCargandoMovimientos] =
+        useState(false);
+
+    const [nuevoMovimiento, setNuevoMovimiento] = useState({
+        tipo: "ENTRADA",
+        cantidad: "",
+        nota: "",
+    });
+
+
+    /*
+     * =====================================================
+     * PROVEEDORES ASOCIADOS AL PRODUCTO EN EDICIÓN
+     * =====================================================
+     */
+
+    const [proveedoresProducto, setProveedoresProducto] =
+        useState([]);
+
+    const [proveedorSeleccionado, setProveedorSeleccionado] =
+        useState("");
+
+    const [proveedoresParaAsociar, setProveedoresParaAsociar] =
+        useState([]);
+
+
+    /*
+     * =====================================================
+     * CARGA INICIAL
+     * =====================================================
+     */
+
+    async function cargarDatos() {
+
+        try {
+
+            setError("");
+
+            const [listaProductos, listaProveedores] =
+                await Promise.all([
+                    obtenerProductos({incluirInactivos: true}),
+                    obtenerProveedores(),
+                ]);
+
+            setProductos(listaProductos);
+
+            setProveedoresDisponibles(listaProveedores);
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible cargar el inventario."
+            );
+
+        } finally {
+
+            setCargando(false);
+
+        }
+
+    }
+
+    useEffect(() => {
+
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        cargarDatos();
+
+    }, []);
+
+
+    // =========================================================
+    // NORMALIZAR TEXTO
+    // =========================================================
+
+    const normalizarTexto = (texto = "") => {
+        return String(texto)
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+    };
+
+    // =========================================================
+    // LISTAS PARA LOS FILTROS
+    // =========================================================
+
+    const categorias = useMemo(() => {
+        return [
+            ...new Set(
+                productos.map(
+                    (producto) => producto.categoria
+                )
+            ),
+        ];
+    }, [productos]);
+
+    const nombresProveedores = useMemo(() => {
+        return [
+            ...new Set(
+                proveedoresDisponibles.map(
+                    (proveedor) => proveedor.nombre
+                )
+            ),
+        ];
+    }, [proveedoresDisponibles]);
+
+    // =========================================================
+    // FILTRAR PRODUCTOS
+    // =========================================================
+
+    const productosFiltrados = useMemo(() => {
+        const texto = normalizarTexto(busqueda);
+
+        return productos.filter((producto) => {
+
+            const nombresProveedoresProducto =
+                (producto.proveedores || [])
+                    .map((p) => p.nombre)
+                    .join(" ");
+
+            const coincideBusqueda =
+                !texto ||
+                normalizarTexto(producto.nombre).includes(texto) ||
+                normalizarTexto(producto.marca || "").includes(texto) ||
+                normalizarTexto(producto.codigo || "").includes(texto) ||
+                normalizarTexto(producto.categoria || "").includes(texto) ||
+                normalizarTexto(nombresProveedoresProducto).includes(texto);
+
+            const coincideCategoria =
+                filtroCategoria === "Todas las categorías" ||
+                producto.categoria === filtroCategoria;
+
+            const coincideProveedor =
+                filtroProveedor === "Todos los proveedores" ||
+                (producto.proveedores || []).some(
+                    (p) => p.nombre === filtroProveedor
+                );
+
+            let coincideEstado = true;
+
+            if (filtroEstado === "Activos") {
+                coincideEstado = producto.estaActivo;
+            }
+
+            if (filtroEstado === "Desactivados") {
+                coincideEstado = !producto.estaActivo;
+            }
+
+            if (filtroEstado === "Agotados") {
+                coincideEstado =
+                    producto.estaActivo &&
+                    Number(producto.stock) === 0;
+            }
+
+            if (filtroEstado === "Stock bajo") {
+                coincideEstado =
+                    producto.estaActivo &&
+                    Number(producto.stock) > 0 &&
+                    Number(producto.stock) <=
+                        Number(producto.stockMinimo);
+            }
+
+            return (
+                coincideBusqueda &&
+                coincideCategoria &&
+                coincideProveedor &&
+                coincideEstado
+            );
+        });
+    }, [
+        productos,
+        busqueda,
+        filtroCategoria,
+        filtroProveedor,
+        filtroEstado,
+    ]);
+
+    const productosActivos = productosFiltrados.filter(
+        (p) => p.estaActivo && Number(p.stock) > 0
+    );
+
+    const productosAgotados = productosFiltrados.filter(
+        (p) => p.estaActivo && Number(p.stock) === 0
+    );
+
+    const productosDesactivados = productosFiltrados.filter(
+        (p) => !p.estaActivo
+    );
+
+    // =========================================================
+    // ESTADÍSTICAS
+    // =========================================================
+
+    const productosActivosTotal = productos.filter(
+        (p) => p.estaActivo
+    );
+
+    const unidadesTotal = productos
+        .filter((p) => p.estaActivo)
+        .reduce((total, p) => total + Number(p.stock || 0), 0);
+
+    const stockBajoTotal = productos.filter(
+        (p) =>
+            p.estaActivo &&
+            Number(p.stock) > 0 &&
+            Number(p.stock) <= Number(p.stockMinimo)
+    ).length;
+
+    const agotadosTotal = productos.filter(
+        (p) => p.estaActivo && Number(p.stock) === 0
+    ).length;
+
+    const valorMayoristaTotal = productos
+        .filter((p) => p.estaActivo)
+        .reduce(
+            (total, p) =>
+                total + Number(p.stock || 0) * Number(p.precioMayor || 0),
+            0
+        );
+
+    const valorDetalTotal = productos
+        .filter((p) => p.estaActivo)
+        .reduce(
+            (total, p) =>
+                total + Number(p.stock || 0) * Number(p.precioDetal || 0),
+            0
+        );
+
+    const formatoPrecio = (valor) => {
+        return `$ ${Number(valor || 0).toLocaleString("es-CO")}`;
+    };
+
+    // Se usa formatoFecha de utils/fecha.js para mostrar la fecha de última modificación en la tabla de productos
+
+    // =========================================================
+    // MODAL PRODUCTO — ABRIR / CERRAR
+    // =========================================================
+
+    const abrirNuevoProducto = () => {
+
+        setProductoEditar(null);
+
+        setProveedoresProducto([]);
+
+        setProveedoresParaAsociar([]);
+
+        setProveedorSeleccionado("");
+
+        setModalAbierto(true);
+
+    };
+
+    const abrirEditarProducto = async (producto) => {
+
+        setProductoEditar(producto);
+
+        setModalAbierto(true);
+
+        setMenuAbierto(null);
+
+        try {
+
+            const listaProveedores =
+                await obtenerProveedoresDeProducto(producto.id);
+
+            setProveedoresProducto(listaProveedores);
+
+        } catch {
+
+            setProveedoresProducto(producto.proveedores || []);
+
+        }
+
+    };
+
+    // =========================================================
+    // ASOCIAR / QUITAR PROVEEDOR EN EL MODAL
+    // =========================================================
+
+    async function manejarAsociarProveedor() {
+
+        if (!proveedorSeleccionado || !productoEditar) return;
+
+        try {
+
+            await asociarProveedor(
+                productoEditar.id,
+                proveedorSeleccionado
+            );
+
+            const proveedor = proveedoresDisponibles.find(
+                (p) => String(p.id) === String(proveedorSeleccionado)
+            );
+
+            if (proveedor) {
+
+                setProveedoresProducto((actuales) => [
+                    ...actuales,
+                    proveedor,
+                ]);
+
+            }
+
+            setProveedorSeleccionado("");
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible asociar el proveedor."
+            );
+
+        }
+
+    }
+
+    async function manejarQuitarProveedor(idProveedor) {
+
+        if (!productoEditar) return;
+
+        try {
+
+            await quitarProveedor(productoEditar.id, idProveedor);
+
+            setProveedoresProducto((actuales) =>
+                actuales.filter((p) => p.id !== idProveedor)
+            );
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible quitar el proveedor."
+            );
+
+        }
+
+    }
+
+    function agregarProveedorTemporal() {
+
+        if (!proveedorSeleccionado) return;
+
+        const proveedor = proveedoresDisponibles.find(
+            (p) => String(p.id) === String(proveedorSeleccionado)
+        );
+
+        if (!proveedor) return;
+
+        setProveedoresParaAsociar((actuales) => [
+            ...actuales,
+            proveedor,
+        ]);
+
+        setProveedorSeleccionado("");
+
+    }
+
+    function quitarProveedorTemporal(idProveedor) {
+
+        setProveedoresParaAsociar((actuales) =>
+            actuales.filter((p) => p.id !== idProveedor)
+        );
+
+    }
+
+    // =========================================================
+    // GUARDAR PRODUCTO
+    // =========================================================
+
+    const guardarProducto = async (evento) => {
+
+        evento.preventDefault();
+
+        const formulario = new FormData(evento.currentTarget);
+
+        const datos = {
+            nombre: formulario.get("nombre").trim(),
+            marca: formulario.get("marca").trim(),
+            codigo: formulario.get("codigo").trim(),
+            categoria: formulario.get("categoria").trim(),
+            precioMayor: Number(formulario.get("precioMayor")),
+            precioDetal: Number(formulario.get("precioDetal")),
+            stock: Number(formulario.get("stock")),
+            stockMinimo: Number(formulario.get("stockMinimo")),
+        };
+
+        try {
+
+            if (productoEditar) {
+
+                await actualizarProducto(productoEditar.id, datos);
+
+            } else {
+
+                const creado = await crearProducto(datos);
+
+                if (proveedoresParaAsociar.length > 0) {
+
+                    await Promise.all(
+                        proveedoresParaAsociar.map((proveedor) =>
+                            asociarProveedor(creado.id, proveedor.id)
+                        )
+                    );
+
+                }
+
+            }
+
+            setModalAbierto(false);
+
+            setProductoEditar(null);
+
+            setProveedoresParaAsociar([]);
+
+            await cargarDatos();
+
+        } catch (error) {
+            setError(
+                error.message ||
+                "No fue posible guardar el producto."
+            );
+
+        }
+
+    };
+
+    // =========================================================
+    // ACTIVAR / DESACTIVAR
+    // =========================================================
+
+    const manejarCambiarEstado = async (producto) => {
+
+        try {
+
+            await cambiarEstadoProducto(
+                producto.id,
+                !producto.estaActivo
+            );
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible cambiar el estado del producto."
+            );
+
+        }
+
+        setMenuAbierto(null);
+
+    };
+
+    // =========================================================
+    // ELIMINAR (PROTEGIDO)
+    // =========================================================
+
+    const manejarEliminarProducto = async (producto) => {
+
+        const confirmar = window.confirm(
+            `¿Deseas eliminar "${producto.nombre}"? Si tiene ventas registradas, en su lugar se desactivará.`
+        );
+
+        if (!confirmar) return;
+
+        try {
+
+            await eliminarProducto(producto.id);
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            // El backend responde con un mensaje claro cuando el
+            // producto tiene ventas asociadas y no puede borrarse.
+            setError(
+                error.message ||
+                "No fue posible eliminar el producto."
+            );
+
+        }
+
+        setMenuAbierto(null);
+
+    };
+
+    // =========================================================
+    // HISTORIAL DE MOVIMIENTOS
+    // =========================================================
+
+    async function abrirHistorial(producto) {
+
+        setProductoHistorial(producto);
+
+        setModalHistorial(true);
+
+        setMenuAbierto(null);
+
+        setCargandoMovimientos(true);
+
+        try {
+
+            const lista = await obtenerMovimientosProducto(
+                producto.id
+            );
+
+            setMovimientos(lista);
+
+        } catch {
+
+            setMovimientos([]);
+
+        } finally {
+
+            setCargandoMovimientos(false);
+
+        }
+
+    }
+
+    async function manejarRegistrarMovimiento(evento) {
+
+        evento.preventDefault();
+
+        if (
+            !nuevoMovimiento.cantidad ||
+            Number(nuevoMovimiento.cantidad) <= 0
+        ) {
+
+            setError("Ingresa una cantidad válida.");
+
+            return;
+
+        }
+
+        try {
+
+            await registrarMovimiento(
+                productoHistorial.id,
+                nuevoMovimiento
+            );
+
+            setNuevoMovimiento({
+                tipo: "ENTRADA",
+                cantidad: "",
+                nota: "",
+            });
+
+            const lista = await obtenerMovimientosProducto(
+                productoHistorial.id
+            );
+
+            setMovimientos(lista);
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible registrar el movimiento."
+            );
+
+        }
+
+    }
+
+    // =========================================================
+    // LIMPIAR FILTROS
+    // =========================================================
+
+    const limpiarFiltros = () => {
+        setBusqueda("");
+        setFiltroCategoria("Todas las categorías");
+        setFiltroProveedor("Todos los proveedores");
+        setFiltroEstado("Todos los estados");
+    };
+
     // =========================================================
     // RENDER — CARGANDO
     // =========================================================
@@ -1112,6 +1112,8 @@ function Inventario() {
                             "Todas las categorías",
                             ...categorias,
                         ]}
+                        menuAbierto={menuAbierto}
+                        setMenuAbierto={setMenuAbierto}
                     />
 
                     <Dropdown
@@ -1122,6 +1124,8 @@ function Inventario() {
                             "Todos los proveedores",
                             ...nombresProveedores,
                         ]}
+                        menuAbierto={menuAbierto}
+                        setMenuAbierto={setMenuAbierto}
                     />
 
                     <Dropdown
@@ -1135,6 +1139,8 @@ function Inventario() {
                             "Agotados",
                             "Stock bajo",
                         ]}
+                        menuAbierto={menuAbierto}
+                        setMenuAbierto={setMenuAbierto}
                     />
 
                     <button
@@ -1190,7 +1196,15 @@ function Inventario() {
                         </span>
                     </div>
 
-                    <TablaProductos lista={productosActivos} tipo="activos" />
+                    <TablaProductos 
+                    lista={productosActivos} 
+                    tipo="activos"
+                    formatoPrecio={formatoPrecio}
+                    formatoFechaHora={formatoFechaHora}
+                    abrirHistorial={abrirHistorial}
+                    manejarCambiarEstado={manejarCambiarEstado}
+                    abrirEditarProducto={abrirEditarProducto}
+                    manejarEliminarProducto={manejarEliminarProducto} />
                 </section>
 
                 {/* TABLA AGOTADOS */}
@@ -1217,6 +1231,12 @@ function Inventario() {
                     <TablaProductos
                         lista={productosAgotados}
                         tipo="agotados"
+                        formatoPrecio={formatoPrecio}
+                        formatoFechaHora={formatoFechaHora}
+                        abrirHistorial={abrirHistorial}
+                        manejarCambiarEstado={manejarCambiarEstado}
+                        abrirEditarProducto={abrirEditarProducto}
+                        manejarEliminarProducto={manejarEliminarProducto}
                     />
                 </section>
 
@@ -1245,6 +1265,12 @@ function Inventario() {
                         <TablaProductos
                             lista={productosDesactivados}
                             tipo="desactivados"
+                            formatoPrecio={formatoPrecio}
+                            formatoFechaHora={formatoFechaHora}
+                            abrirHistorial={abrirHistorial}
+                            manejarCambiarEstado={manejarCambiarEstado}
+                            abrirEditarProducto={abrirEditarProducto}
+                            manejarEliminarProducto={manejarEliminarProducto}
                         />
                     </section>
                 )}

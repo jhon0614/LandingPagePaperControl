@@ -63,11 +63,10 @@ function ProductosMasVendidos() {
             return;
 
         }
-
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         cargar();
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-
     }, [periodo, desde, hasta]);
 
 

@@ -1697,3 +1697,23 @@
     font-size: 14px;
     color: #1e293b;
 }
+
+.pos-monto-recibido-input {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 9px 12px;
+    font-size: 14px;
+    outline: none;
+}
+
+.pos-cambio-estimado {
+    color: #16a34a;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.pos-cambio-destacado {
+    font-size: 18px;
+    color: #05788a;
+}

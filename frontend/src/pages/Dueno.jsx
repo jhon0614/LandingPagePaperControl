@@ -36,7 +36,7 @@ function Dueno() {
                     stockBajo,
                 });
 
-            } catch (error) {
+            } catch {
 
                 // Si falla, se dejan los valores en 0 por defecto.
 

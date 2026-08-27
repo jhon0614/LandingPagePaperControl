@@ -8,18 +8,6 @@ import {
     solicitarRestablecimiento,
 } from "../services/auth.service";
 
-function irAContacto() {
-    navigate("/");
-
-    setTimeout(() => {
-        document
-            .getElementById("contacto")
-            ?.scrollIntoView({
-                behavior: "smooth",
-            });
-    }, 150);
-}
-
 function OlvideContrasena() {
 
     const navigate = useNavigate();

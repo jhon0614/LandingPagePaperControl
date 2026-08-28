@@ -21,7 +21,10 @@ export class BaseDatos {
       connectionLimit: configuracion.limiteConexiones,
       queueLimit: 0,
       charset: "utf8mb4",
-      timezone: "Z",
+      // Indica a mysql2 la zona real de los DATETIME de MySQL. Así los Date
+      // enviados al API representan el instante correcto y el frontend puede
+      // formatearlos en America/Bogota sin aplicar dos veces el desfase.
+      timezone: configuracion.zonaHoraria,
       decimalNumbers: true,
     });
   }

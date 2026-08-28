@@ -35,6 +35,8 @@ export function cargarConfiguracion() {
       usuario: obligatoria("DB_USER"),
       contrasena: obligatoria("DB_PASSWORD"),
       limiteConexiones: enteroPositivo("DB_CONNECTION_LIMIT", 10),
+      // La base actual almacena y entrega sus DATETIME en hora de Colombia.
+      zonaHoraria: process.env.DB_TIMEZONE ?? "-05:00",
     }),
     autenticacion: Object.freeze({
       secretoAcceso: obligatoria("JWT_ACCESS_SECRET"),

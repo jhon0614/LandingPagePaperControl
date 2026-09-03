@@ -21,6 +21,9 @@ if (!/^\S+@\S+\.\S+$/.test(correo)) { //formato de correo indica que hay texto, 
 if (contrasena.length < 12) {
   throw new Error("ADMIN_PASSWORD debe tener al menos 12 caracteres.");
 }
+if (Buffer.byteLength(contrasena, "utf8") > 72) {
+  throw new Error("ADMIN_PASSWORD no puede superar 72 bytes UTF-8.");
+}
 
 const baseDatos = BaseDatos.obtenerInstancia(configuracion.baseDatos);
 

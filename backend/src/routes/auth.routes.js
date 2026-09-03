@@ -1,7 +1,6 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
+import { crearLimite } from "../middleware/security.js";
 import { z } from "zod";
-import { ErrorAplicacion } from "../errors/app-error.js";
 import { validar } from "../middleware/validate.js";
 
 // Estas reglas se comparten entre el cambio y el restablecimiento para que
@@ -12,7 +11,8 @@ const esquemaContrasenaSegura = z
   .max(200, "La contraseña no puede superar 200 caracteres.")
   .regex(/[A-Z]/, "Debe contener una letra mayúscula.")
   .regex(/[a-z]/, "Debe contener una letra minúscula.")
-  .regex(/[0-9]/, "Debe contener un número.");
+  .regex(/[0-9]/, "Debe contener un número.")
+  .refine((valor) => Buffer.byteLength(valor, "utf8") <= 72, "La contraseña no puede superar 72 bytes UTF-8.");
 
 const esquemaInicioSesion = z.object({
   correo: z.string().trim().email().max(191),
@@ -40,23 +40,6 @@ const esquemaRestablecerContrasena = z.object({
   contrasenaNueva: esquemaContrasenaSegura,
 });
 
-// Reduce el envío abusivo de correos y los intentos repetidos con tokens.
-const limitarRecuperacion = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 5,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  handler: (_solicitud, _respuesta, siguiente) => {
-    siguiente(
-      new ErrorAplicacion(
-        "Has realizado demasiadas solicitudes. Intenta nuevamente más tarde.",
-        429,
-        "DEMASIADAS_SOLICITUDES",
-      ),
-    );
-  },
-});
-
 export function crearRutasAutenticacion({
   controladorAutenticacion,
   controladorContrasena,
@@ -65,16 +48,22 @@ export function crearRutasAutenticacion({
   // Las rutas públicas validan sus datos, pero no requieren un token de acceso.
   // Cambiar la contraseña sí exige conocer la sesión y la contraseña actual.
   const rutas = Router();
+  const limitarRecuperacion = crearLimite(5, 15 * 60 * 1000);
+  const limitarLogin = crearLimite(20, 15 * 60 * 1000);
+  const limitarRenovacion = crearLimite(60, 15 * 60 * 1000);
+  const limitarCambio = crearLimite(5, 15 * 60 * 1000);
 
   rutas.post(
     "/login",
+    limitarLogin,
     validar(esquemaInicioSesion),
     controladorAutenticacion.iniciarSesion,
   );
-  rutas.post("/refresh", controladorAutenticacion.renovarSesion);
+  rutas.post("/refresh", limitarRenovacion, controladorAutenticacion.renovarSesion);
   rutas.post("/logout", controladorAutenticacion.cerrarSesion);
   rutas.patch(
     "/contrasena",
+    limitarCambio,
     autenticar,
     validar(esquemaCambiarContrasena),
     controladorContrasena.cambiarContrasena,

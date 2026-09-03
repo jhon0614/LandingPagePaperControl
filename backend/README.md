@@ -87,6 +87,11 @@ Las propiedades exigidas por librerías externas, como `process.env`, `user-agen
 
 ## Pruebas
 
+El alcance y contrato del sprint de inventario y caja están en
+[`docs/sprint-inventario-caja.md`](docs/sprint-inventario-caja.md).
+Los límites de solicitudes, controles de seguridad y consideraciones de despliegue
+están en [`docs/seguridad-backend.md`](docs/seguridad-backend.md).
+
 ```bash
 npm test
 ```

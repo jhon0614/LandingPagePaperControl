@@ -8,8 +8,17 @@ export class ControladorProducto {
     try {
       const productos = await this.servicio.listar(
         requerimiento.query.incluirInactivos,
+        requerimiento.query.categoriaId,
       );
       return respuesta.json({ exito: true, datos: { productos } });
+    } catch (error) {
+      return siguiente(error);
+    }
+  };
+  categorias = async (_requerimiento, respuesta, siguiente) => {
+    try {
+      const categorias = await this.servicio.categorias();
+      return respuesta.json({ exito: true, datos: { categorias } });
     } catch (error) {
       return siguiente(error);
     }

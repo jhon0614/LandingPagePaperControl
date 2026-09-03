@@ -42,6 +42,13 @@ export class ModeloVenta {
     montoRecibido,
     turnoCajaId,
   }) {
+    // Protege también a los consumidores internos que no pasan por la ruta HTTP.
+    if (!Array.isArray(productos) || productos.length === 0 ||
+        productos.some((p) => !Number.isSafeInteger(p.productoId) || p.productoId <= 0 ||
+          !Number.isSafeInteger(p.cantidad) || p.cantidad <= 0) ||
+        new Set(productos.map((p) => p.productoId)).size !== productos.length) {
+      return { error: "PRODUCTO_INVALIDO" };
+    }
     const conexion = await this.conexiones.getConnection();
     try {
       // La venta completa se confirma únicamente si caja, stock y pago son válidos.
@@ -71,7 +78,7 @@ export class ModeloVenta {
       const [filasProductos] = await conexion.execute(
         `SELECT id, nombre, sku, precio_venta, stock_actual, stock_minimo,
                 alerta_stock_habilitada, esta_activo
-           FROM productos WHERE id IN (${marcadores})
+           FROM productos WHERE id IN (${marcadores}) AND eliminado_en IS NULL
            ORDER BY id FOR UPDATE`,
         ids,
       );

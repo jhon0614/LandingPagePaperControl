@@ -52,6 +52,11 @@ import { ModeloReporte } from "./models/report.model.js";
 import { ServicioReporte } from "./services/report.service.js";
 import { ControladorReporte } from "./controllers/report.controller.js";
 import { crearRutasReportes } from "./routes/report.routes.js";
+import { ModeloCategoria } from "./models/category.model.js";
+import { ServicioCategoria } from "./services/category.service.js";
+import { ControladorCategoria } from "./controllers/category.controller.js";
+import { crearRutasCategorias } from "./routes/category.routes.js";
+import { crearLimite, validarOrigen, validarConsultaSimple } from "./middleware/security.js";
 
 // Construye la aplicación Express y conecta las piezas del patrón MVC.
 // Recibir las conexiones y la configuración como parámetros facilita las pruebas.
@@ -59,10 +64,14 @@ export function crearAplicacion({ conexiones, configuracion }) {
   const aplicacion = express();
 
   aplicacion.disable("x-powered-by"); //desactiva la cabecera x-powered-by
-  aplicacion.set("trust proxy", 1);
+  aplicacion.set("trust proxy", configuracion.proxyConfiable ?? false);
 
   // Protecciones y reglas comunes para todas las solicitudes.
   aplicacion.use(helmet());
+  aplicacion.use("/api", crearLimite(300, 60 * 1000));
+  aplicacion.use(validarOrigen(configuracion.origenFrontend));
+  aplicacion.use(validarConsultaSimple);
+  aplicacion.use("/api", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
   aplicacion.use(
     cors({
       //permite comunicación con el frontend
@@ -195,6 +204,9 @@ export function crearAplicacion({ conexiones, configuracion }) {
     "/api/productos",
     crearRutasProductos({ autenticar, controlador: controladorProducto }),
   );
+  aplicacion.use("/api/categorias", crearRutasCategorias({
+    autenticar, controlador: new ControladorCategoria(new ServicioCategoria(new ModeloCategoria(conexiones))),
+  }));
   aplicacion.use(
     "/api/proveedores",
     crearRutasProveedores({ autenticar, controlador: controladorProveedor }),

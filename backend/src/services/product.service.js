@@ -15,6 +15,7 @@ function presentarProducto(fila) {
     marca: fila.descripcion ?? "",
     codigo: fila.sku,
     categoria: fila.categoria,
+    categoriaId: fila.categoria_id,
     precioMayor: numero(fila.precio_compra),
     precioDetal: numero(fila.precio_venta),
     // Ventas.jsx utiliza precio como alias del precio al detal.
@@ -48,8 +49,13 @@ export class ServicioProducto {
     this.modelo = modelo;
   }
 
-  async listar(incluirInactivos) {
-    return (await this.modelo.listar(incluirInactivos === "true")).map(
+  async categorias() {
+    return this.modelo.categorias();
+  }
+
+  async listar(incluirInactivos, categoriaId) {
+    const categoria = categoriaId == null ? undefined : this.#id(categoriaId, "categoria");
+    return (await this.modelo.listar(incluirInactivos === "true", categoria)).map(
       presentarProducto,
     );
   }

@@ -13,7 +13,8 @@ const esquemaCrearUsuario = z.object({
     .max(200)
     .regex(/[A-Z]/)
     .regex(/[a-z]/)
-    .regex(/[0-9]/),
+    .regex(/[0-9]/)
+    .refine((valor) => Buffer.byteLength(valor, "utf8") <= 72, "La contraseña no puede superar 72 bytes UTF-8."),
   rolId: z.number().int().positive(),
 });
 

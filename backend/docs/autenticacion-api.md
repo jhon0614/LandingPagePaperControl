@@ -164,7 +164,7 @@ Content-Type: application/json
 }
 ```
 
-La contraseña nueva debe tener entre 12 y 200 caracteres e incluir mayúscula,
+La contraseña nueva debe tener entre 12 y 200 caracteres, no superar 72 bytes UTF-8 (límite de bcrypt) e incluir mayúscula,
 minúscula y número. No puede ser igual a la actual.
 
 Después de una respuesta `200`, todas las sesiones renovables quedan revocadas.

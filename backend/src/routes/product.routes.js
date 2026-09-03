@@ -31,6 +31,7 @@ export function crearRutasProductos({ autenticar, controlador }) {
   router.use(autenticar, todos);
   // Las rutas literales se declaran antes de /:id para evitar ambigüedades.
   router.get("/alertas-stock", controlador.alertas);
+  router.get("/categorias", controlador.categorias);
   router.get("/:id/movimientos", controlador.movimientos);
   router.post(
     "/:id/movimientos",

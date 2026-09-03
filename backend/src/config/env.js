@@ -23,11 +23,21 @@ function enteroPositivo(nombre, valorDefecto) {
 // entre el servidor, la base de datos y el módulo de autenticación.
 export function cargarConfiguracion() {
   const entorno = process.env.NODE_ENV ?? "development";
+  const secretoAcceso = obligatoria("JWT_ACCESS_SECRET");
+  if (Buffer.byteLength(secretoAcceso, "utf8") < 32 || secretoAcceso.startsWith("replace_with"))
+    throw new Error("JWT_ACCESS_SECRET debe contener al menos 32 bytes y no ser el valor de ejemplo.");
+  const origenFrontend = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
+  const origen = new URL(origenFrontend);
+  if (origen.origin !== origenFrontend || !["http:", "https:"].includes(origen.protocol) ||
+      (entorno === "production" && origen.protocol !== "https:"))
+    throw new Error("FRONTEND_ORIGIN debe ser un origen válido, con HTTPS en producción.");
 
   return Object.freeze({ //freeze para que no se pueda modificar
     entorno,
     puerto: enteroPositivo("PORT", 3000),
-    origenFrontend: process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
+    origenFrontend,
+    // IP o CIDR de proxies controlados; por defecto se ignora X-Forwarded-For.
+    proxyConfiable: process.env.TRUST_PROXY?.split(",").map((ip) => ip.trim()).filter(Boolean) ?? false,
     baseDatos: Object.freeze({
       servidor: obligatoria("DB_HOST"),
       puerto: enteroPositivo("DB_PORT", 3306),
@@ -39,7 +49,7 @@ export function cargarConfiguracion() {
       zonaHoraria: process.env.DB_TIMEZONE ?? "-05:00",
     }),
     autenticacion: Object.freeze({
-      secretoAcceso: obligatoria("JWT_ACCESS_SECRET"),
+      secretoAcceso,
       minutosAcceso: enteroPositivo("JWT_ACCESS_MINUTES", 15),
       diasRenovacion: enteroPositivo("REFRESH_TOKEN_DAYS", 7),
     }),

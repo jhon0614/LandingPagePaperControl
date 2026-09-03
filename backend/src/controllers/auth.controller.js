@@ -80,13 +80,13 @@ export class ControladorAutenticacion {
       await this.servicioAutenticacion.cerrarSesion(
         obtenerCookie(solicitud, "tokenRenovacion"), // lee la cookie tokenRenovación
       );
-      respuesta.status(204).send();
     } catch (error) {
-      siguiente(error);
-    } finally {
-      // El navegador no debe conservar la cookie aunque falle la revocación.
       this.#eliminarCookieRenovacion(respuesta);
+      return siguiente(error);
     }
+    // La respuesta se envía después de limpiar la cookie, nunca antes.
+    this.#eliminarCookieRenovacion(respuesta);
+    return respuesta.status(204).send();
   };
 
   #opcionesCookie() {

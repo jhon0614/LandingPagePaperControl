@@ -7,6 +7,10 @@ export function manejarNoEncontrado(solicitud, _respuesta, siguiente) {
 
 // Convierte todos los errores de la API en respuestas JSON con el mismo formato.
 export function manejarError(error, _solicitud, respuesta, _siguiente) { //_solicitud y _siguiente no se usan pero son requeridos por Express.
+  if (error.type === "entity.parse.failed")
+    error = new ErrorAplicacion("El cuerpo no contiene JSON válido.", 400, "JSON_INVALIDO");
+  if (error.type === "entity.too.large")
+    error = new ErrorAplicacion("La solicitud supera el tamaño permitido.", 413, "CUERPO_DEMASIADO_GRANDE");
   const esControlado = error instanceof ErrorAplicacion;
   const estadoHttp = esControlado ? error.estadoHttp : 500;
 

@@ -6,12 +6,21 @@ export class ModeloProducto {
     this.conexiones = conexiones;
   }
 
-  async listar(incluirInactivos = false) {
+  async categorias() {
+    const [filas] = await this.conexiones.execute(
+      `SELECT id, nombre FROM categorias WHERE esta_activo = TRUE ORDER BY nombre`,
+    );
+    return filas;
+  }
+
+  async listar(incluirInactivos = false, categoriaId) {
     const [filas] = await this.conexiones.execute(
       `SELECT p.*, c.nombre AS categoria
          FROM productos p JOIN categorias c ON c.id = p.categoria_id
         WHERE p.eliminado_en IS NULL ${incluirInactivos ? "" : "AND p.esta_activo = TRUE"}
+          ${categoriaId == null ? "" : "AND p.categoria_id = ?"}
         ORDER BY p.nombre`,
+      categoriaId == null ? [] : [categoriaId],
     );
     return this.#adjuntarProveedores(filas);
   }

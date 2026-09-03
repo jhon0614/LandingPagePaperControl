@@ -44,7 +44,7 @@ export function crearMiddlewareAutenticacion({ modeloUsuario, secretoAcceso }) {
       }
 
       // 3. Validar y decodificar el token.
-      const contenidoToken = jwt.verify(token, secretoAcceso);
+      const contenidoToken = jwt.verify(token, secretoAcceso, { algorithms: ["HS256"] });
 
       // obtener el ID desde contenidoToken.sub.
       const id = Number(contenidoToken.sub);

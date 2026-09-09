@@ -24,24 +24,44 @@ import CambiarContrasena from "./pages/CambiarContrasena";
 
 function App() {
 
-    const [verificandoSesion, setVerificandoSesion] =
-        useState(true);
+    const [estadoSesion, setEstadoSesion] = useState("verificando");
 
-    useEffect(() => {
+    const [mensajeSesion, setMensajeSesion] = useState("");
 
-        async function verificar() {
+    const [esperaSesion, setEsperaSesion] = useState(null);
 
-            await restaurarSesion();
 
-            setVerificandoSesion(false);
+    async function verificarSesion() {
+
+        setEstadoSesion("verificando");
+
+        const resultado = await restaurarSesion();
+
+        if (resultado.estado === "temporal") {
+
+            setEstadoSesion("temporal");
+
+            setMensajeSesion(resultado.mensaje);
+
+            setEsperaSesion(resultado.retryAfter);
+
+            return;
 
         }
 
-        verificar();
+        setEstadoSesion("listo");
 
+    }
+
+    useEffect(() => {
+
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        verificarSesion();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    if (verificandoSesion) {
+    if (estadoSesion === "verificando") {
 
         return (
 
@@ -53,6 +73,44 @@ function App() {
 
     }
 
+    if (estadoSesion === "temporal") {
+
+        return (
+
+            <div className="app-cargando app-cargando-temporal">
+
+                <i className="fa-solid fa-triangle-exclamation"></i>
+
+                <p>
+
+                    {mensajeSesion ||
+                        "No fue posible confirmar tu sesión en este momento."}
+
+                </p>
+
+                {esperaSesion && (
+
+                    <p>
+                        Intenta de nuevo en aproximadamente{" "}
+                        {esperaSesion} segundos.
+                    </p>
+
+                )}
+
+                <button
+                    type="button"
+                    className="auth-button"
+                    onClick={verificarSesion}
+                >
+                    Reintentar
+                </button>
+
+            </div>
+
+        );
+
+    }
+    
     return (
 
         <Routes>

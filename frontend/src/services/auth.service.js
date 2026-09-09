@@ -12,7 +12,8 @@ LOGIN
 
 export async function login(
     correo,
-    contrasena
+    contrasena,
+    recordarme =false
 ) {
 
     /*
@@ -27,6 +28,7 @@ export async function login(
             body: JSON.stringify({
                 correo,
                 contrasena,
+                recordarme: Boolean(recordarme),
             }),
         }
     );

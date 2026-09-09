@@ -5,6 +5,7 @@ import Logo from "../components/Logo";
 import "../styles/RestablecerContrasena.css";
 
 import { restablecerContrasena } from "../services/auth.service";
+import { excedeLimiteBytesUtf8 } from "../utils/contrasena";
 
 function RestablecerContrasena() {
 
@@ -66,6 +67,10 @@ function RestablecerContrasena() {
 
         if (!/[0-9]/.test(contrasena)) {
             return "La contraseña debe contener al menos un número.";
+        }
+
+        if (excedeLimiteBytesUtf8(contrasena)) {
+            return "La contraseña es demasiado larga en bytes (algunos caracteres especiales o emojis ocupan más de 1 byte). Máximo 72 bytes.";
         }
 
         return "";

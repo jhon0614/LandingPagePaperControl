@@ -868,3 +868,21 @@ a {
     font-size: 28px;
     color: #05788a;
 }
+
+.app-cargando-temporal {
+    flex-direction: column;
+    gap: 14px;
+    font-size: 15px;
+    color: #334155;
+    text-align: center;
+    padding: 20px;
+}
+
+.app-cargando-temporal i {
+    font-size: 32px;
+    color: #d97706;
+}
+
+.app-cargando-temporal .auth-button {
+    max-width: 220px;
+}

@@ -128,9 +128,10 @@ export async function obtenerComprobante(id) {
    ELIMINAR / ANULAR VENTA
 ===================================================== */
 
-export async function eliminarVenta(id) {
+export async function eliminarVenta(id, motivo) {
   const respuesta = await apiFetch(`/api/ventas/${id}`, {
     method: "DELETE",
+    body: motivo ? JSON.stringify({ motivo }) : undefined,
   });
 
   return respuesta;

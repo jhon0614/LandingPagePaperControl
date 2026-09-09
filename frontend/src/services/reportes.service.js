@@ -17,3 +17,24 @@ export async function obtenerProductosMasVendidos({ periodo, desde, hasta } = {}
     return respuesta.datos.productos;
 
 }
+
+export async function obtenerReporteCaja({ desde, hasta, vendedorId } = {}) {
+
+    const parametros = new URLSearchParams();
+
+    parametros.append("desde", desde);
+    parametros.append("hasta", hasta);
+
+    if (vendedorId) {
+
+        parametros.append("vendedorId", vendedorId);
+
+    }
+
+    const respuesta = await apiFetch(
+        `/api/reportes/caja?${parametros.toString()}`
+    );
+
+    return respuesta.datos.reporte;
+
+}

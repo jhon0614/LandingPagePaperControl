@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Layout from "../components/Layout";
 import "../styles/Inventario.css";
 import { formatoFechaHora } from "../utils/fecha";
@@ -18,6 +18,13 @@ import {
     asociarProveedor,
     quitarProveedor,
 } from "../services/proveedores.service";
+
+import {
+    obtenerCategorias,
+    crearCategoria,
+    actualizarCategoria,
+    eliminarCategoria,
+} from "../services/categorias.service";
 
 // =========================================================
     // COMPONENTE DROPDOWN
@@ -336,8 +343,22 @@ function Inventario() {
 
     const [busqueda, setBusqueda] = useState("");
 
-    const [filtroCategoria, setFiltroCategoria] =
-        useState("Todas las categorías");
+    const [filtroCategoriaId, setFiltroCategoriaId] =
+        useState("todas");
+
+    const [categoriasBackend, setCategoriasBackend] = useState([]);
+
+    const [modalCategorias, setModalCategorias] = useState(false);
+
+    const [nuevaCategoriaNombre, setNuevaCategoriaNombre] = useState("");
+
+    const [guardandoCategoria, setGuardandoCategoria] = useState(false);
+
+    const [categoriaEditandoId, setCategoriaEditandoId] = useState(null);
+
+    const [categoriaEditandoNombre, setCategoriaEditandoNombre] = useState("");
+
+    const [errorCategorias, setErrorCategorias] = useState("");
 
     const [filtroProveedor, setFiltroProveedor] =
         useState("Todos los proveedores");
@@ -403,6 +424,17 @@ function Inventario() {
     const [proveedoresParaAsociar, setProveedoresParaAsociar] =
         useState([]);
 
+    const usuarioActual = JSON.parse(
+        localStorage.getItem("usuario")
+    );
+
+    const rolActual = usuarioActual?.rol || "";
+
+    const puedeGestionarCategorias =
+        rolActual === "ADMINISTRADOR" ||
+        rolActual === "DUENO";
+
+    const primerCargaCategoria = useRef(true);
 
     /*
      * =====================================================
@@ -416,15 +448,24 @@ function Inventario() {
 
             setError("");
 
-            const [listaProductos, listaProveedores] =
+            const [listaProductos, listaProveedores, listaCategorias] =
                 await Promise.all([
-                    obtenerProductos({incluirInactivos: true}),
+                    obtenerProductos({
+                        incluirInactivos: true,
+                    categoriaId:
+                        filtroCategoriaId !== "todas"
+                        ? undefined
+                        : filtroCategoriaId,
+                    }),
                     obtenerProveedores(),
+                    obtenerCategorias(),
                 ]);
 
             setProductos(listaProductos);
 
             setProveedoresDisponibles(listaProveedores);
+
+            setCategoriasBackend(listaCategorias);
 
         } catch (error) {
 
@@ -441,12 +482,56 @@ function Inventario() {
 
     }
 
+    async function recargarProductosPorCategoria() {
+
+        try {
+
+            setError("");
+
+            const listaProductos = await obtenerProductos({
+                incluirInactivos: true,
+                categoriaId:
+                    filtroCategoriaId === "todas"
+                        ? undefined
+                        : filtroCategoriaId,
+            });
+
+            setProductos(listaProductos);
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible filtrar por categoría."
+            );
+
+        }
+
+    }
+
     useEffect(() => {
 
         // eslint-disable-next-line react-hooks/set-state-in-effect
         cargarDatos();
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+
+        if (primerCargaCategoria.current) {
+
+            primerCargaCategoria.current = false;
+
+            return;
+
+        }
+
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        recargarProductosPorCategoria();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filtroCategoriaId]);
 
 
     // =========================================================
@@ -464,16 +549,6 @@ function Inventario() {
     // =========================================================
     // LISTAS PARA LOS FILTROS
     // =========================================================
-
-    const categorias = useMemo(() => {
-        return [
-            ...new Set(
-                productos.map(
-                    (producto) => producto.categoria
-                )
-            ),
-        ];
-    }, [productos]);
 
     const nombresProveedores = useMemo(() => {
         return [
@@ -507,10 +582,6 @@ function Inventario() {
                 normalizarTexto(producto.categoria || "").includes(texto) ||
                 normalizarTexto(nombresProveedoresProducto).includes(texto);
 
-            const coincideCategoria =
-                filtroCategoria === "Todas las categorías" ||
-                producto.categoria === filtroCategoria;
-
             const coincideProveedor =
                 filtroProveedor === "Todos los proveedores" ||
                 (producto.proveedores || []).some(
@@ -543,7 +614,6 @@ function Inventario() {
 
             return (
                 coincideBusqueda &&
-                coincideCategoria &&
                 coincideProveedor &&
                 coincideEstado
             );
@@ -551,7 +621,6 @@ function Inventario() {
     }, [
         productos,
         busqueda,
-        filtroCategoria,
         filtroProveedor,
         filtroEstado,
     ]);
@@ -900,6 +969,7 @@ function Inventario() {
         }
 
     }
+    
 
     async function manejarRegistrarMovimiento(evento) {
 
@@ -948,13 +1018,218 @@ function Inventario() {
 
     }
 
+        // =========================================================
+    // GESTIÓN DE CATEGORÍAS
+    // =========================================================
+
+    function abrirModalCategorias() {
+
+        setErrorCategorias("");
+
+        setNuevaCategoriaNombre("");
+
+        setCategoriaEditandoId(null);
+
+        setCategoriaEditandoNombre("");
+
+        setModalCategorias(true);
+
+    }
+
+    function manejarErrorCategoria(error) {
+
+        if (error?.codigo === "CATEGORIA_EXISTENTE") {
+
+            setErrorCategorias(
+                "Ya existe una categoría con ese nombre."
+            );
+
+            return;
+
+        }
+
+        if (error?.codigo === "CATEGORIA_CON_PRODUCTOS") {
+
+            setErrorCategorias(
+                "Debes reasignar los productos antes de eliminar esta categoría."
+            );
+
+            return;
+
+        }
+
+        if (error?.codigo === "CATEGORIA_NO_ENCONTRADA") {
+
+            setErrorCategorias(
+                "Esa categoría ya no existe. Se actualizó el listado."
+            );
+
+            cargarDatos();
+
+            return;
+
+        }
+
+        setErrorCategorias(
+            error?.message ||
+            "No fue posible completar la operación."
+        );
+
+    }
+
+    async function manejarCrearCategoria(e) {
+
+        e.preventDefault();
+
+        const nombre = nuevaCategoriaNombre.trim();
+
+        if (!nombre) {
+
+            setErrorCategorias("Ingresa un nombre para la categoría.");
+
+            return;
+
+        }
+
+        if (nombre.length > 100) {
+
+            setErrorCategorias(
+                "El nombre no puede superar los 100 caracteres."
+            );
+
+            return;
+
+        }
+
+        try {
+
+            setGuardandoCategoria(true);
+
+            setErrorCategorias("");
+
+            await crearCategoria(nombre);
+
+            setNuevaCategoriaNombre("");
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            manejarErrorCategoria(error);
+
+        } finally {
+
+            setGuardandoCategoria(false);
+
+        }
+
+    }
+
+    function abrirEditarCategoria(categoria) {
+
+        setErrorCategorias("");
+
+        setCategoriaEditandoId(categoria.id);
+
+        setCategoriaEditandoNombre(categoria.nombre);
+
+    }
+
+    function cancelarEditarCategoria() {
+
+        setCategoriaEditandoId(null);
+
+        setCategoriaEditandoNombre("");
+
+    }
+
+    async function manejarRenombrarCategoria(e) {
+
+        e.preventDefault();
+
+        const nombre = categoriaEditandoNombre.trim();
+
+        if (!nombre) {
+
+            setErrorCategorias("Ingresa un nombre para la categoría.");
+
+            return;
+
+        }
+
+        if (nombre.length > 100) {
+
+            setErrorCategorias(
+                "El nombre no puede superar los 100 caracteres."
+            );
+
+            return;
+
+        }
+
+        try {
+
+            setGuardandoCategoria(true);
+
+            setErrorCategorias("");
+
+            await actualizarCategoria(categoriaEditandoId, nombre);
+
+            setCategoriaEditandoId(null);
+
+            setCategoriaEditandoNombre("");
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            manejarErrorCategoria(error);
+
+        } finally {
+
+            setGuardandoCategoria(false);
+
+        }
+
+    }
+
+    async function manejarEliminarCategoria(categoria) {
+
+        const confirmar = window.confirm(
+            `¿Deseas eliminar la categoría "${categoria.nombre}"?`
+        );
+
+        if (!confirmar) return;
+
+        try {
+
+            setErrorCategorias("");
+
+            await eliminarCategoria(categoria.id);
+
+            if (filtroCategoriaId === String(categoria.id)) {
+
+                setFiltroCategoriaId("todas");
+
+            }
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            manejarErrorCategoria(error);
+
+        }
+
+    }
+
     // =========================================================
     // LIMPIAR FILTROS
     // =========================================================
 
     const limpiarFiltros = () => {
         setBusqueda("");
-        setFiltroCategoria("Todas las categorías");
+        setFiltroCategoriaId("todas");
         setFiltroProveedor("Todos los proveedores");
         setFiltroEstado("Todos los estados");
     };
@@ -997,14 +1272,26 @@ function Inventario() {
                         </p>
                     </div>
 
-                    <button
-                        type="button"
-                        className="btn-nuevo-producto"
-                        onClick={abrirNuevoProducto}
-                    >
-                        <i className="fa-solid fa-plus"></i>
-                        Nuevo producto
-                    </button>
+                    <div className="inventario-header-acciones">
+
+                        <button
+                            type="button"
+                            className="btn-desactivados"
+                            onClick={abrirModalCategorias}
+                        >
+                            <i className="fa-solid fa-tags"></i>
+                            Gestionar categorías
+                        </button>
+
+                        <button
+                            type="button"
+                            className="btn-nuevo-producto"
+                            onClick={abrirNuevoProducto}
+                        >
+                            <i className="fa-solid fa-plus"></i>
+                            Nuevo producto
+                        </button>
+                    </div>
                 </div>
 
                 {error && (
@@ -1104,17 +1391,90 @@ function Inventario() {
                         )}
                     </div>
 
-                    <Dropdown
-                        id="categorias"
-                        valor={filtroCategoria}
-                        cambiar={setFiltroCategoria}
-                        opciones={[
-                            "Todas las categorías",
-                            ...categorias,
-                        ]}
-                        menuAbierto={menuAbierto}
-                        setMenuAbierto={setMenuAbierto}
-                    />
+                    <div
+                        className="inventario-dropdown"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            className={`inventario-dropdown-btn ${
+                                menuAbierto === "categoriaFiltro"
+                                    ? "abierto"
+                                    : ""
+                            }`}
+                            onClick={() =>
+                                setMenuAbierto(
+                                    menuAbierto === "categoriaFiltro"
+                                        ? null
+                                        : "categoriaFiltro"
+                                )
+                            }
+                        >
+                            <span>
+                                {filtroCategoriaId === "todas"
+                                    ? "Todas las categorías"
+                                    : categoriasBackend.find(
+                                        (c) =>
+                                            String(c.id) ===
+                                            String(filtroCategoriaId)
+                                    )?.nombre || "Todas las categorías"}
+                            </span>
+                            <i
+                                className={`fa-solid fa-chevron-down ${
+                                    menuAbierto === "categoriaFiltro"
+                                        ? "rotado"
+                                        : ""
+                                }`}
+                            ></i>
+                        </button>
+
+                        {menuAbierto === "categoriaFiltro" && (
+                            <div className="inventario-dropdown-menu">
+                                <button
+                                    type="button"
+                                    className={
+                                        filtroCategoriaId === "todas"
+                                            ? "seleccionado"
+                                            : ""
+                                    }
+                                    onClick={() => {
+                                        setFiltroCategoriaId("todas");
+                                        setMenuAbierto(null);
+                                    }}
+                                >
+                                    <span>Todas las categorías</span>
+                                    {filtroCategoriaId === "todas" && (
+                                        <i className="fa-solid fa-check"></i>
+                                    )}
+                                </button>
+
+                                {categoriasBackend.map((categoria) => (
+                                    <button
+                                        type="button"
+                                        key={categoria.id}
+                                        className={
+                                            String(categoria.id) ===
+                                            String(filtroCategoriaId)
+                                                ? "seleccionado"
+                                                : ""
+                                        }
+                                        onClick={() => {
+                                            setFiltroCategoriaId(
+                                                String(categoria.id)
+                                            );
+                                            setMenuAbierto(null);
+                                        }}
+                                    >
+                                        <span>{categoria.nombre}</span>
+                                        {String(categoria.id) ===
+                                            String(filtroCategoriaId) && (
+                                            <i className="fa-solid fa-check"></i>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     <Dropdown
                         id="proveedores"
@@ -1164,7 +1524,7 @@ function Inventario() {
                 </div>
 
                 {(busqueda ||
-                    filtroCategoria !== "Todas las categorías" ||
+                    filtroCategoriaId !== "todas" ||
                     filtroProveedor !== "Todos los proveedores" ||
                     filtroEstado !== "Todos los estados") && (
                     <div className="filtros-activos">
@@ -1348,7 +1708,7 @@ function Inventario() {
 
                                     <div className="campo">
                                         <label>Categoría</label>
-                                        <input
+                                        <select
                                             name="categoria"
                                             placeholder="Ej: Papelería"
                                             defaultValue={
@@ -1356,7 +1716,22 @@ function Inventario() {
                                                 ""
                                             }
                                             required
-                                        />
+                                        >
+                                            <option value="" disabled>
+                                                Selecciona una categoría
+                                            </option>
+
+                                            {categoriasBackend.map(
+                                                (categoria) => (
+                                                    <option
+                                                        key={categoria.id}
+                                                        value={categoria.nombre}
+                                                    >
+                                                        {categoria.nombre}
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
                                     </div>
 
                                     <div className="campo">
@@ -1765,6 +2140,213 @@ function Inventario() {
                                                     <td>{mov.nota || "—"}</td>
                                                 </tr>
                                             ))}
+                                        </tbody>
+                                    </table>
+
+                                )}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                )}
+                
+                {/* =====================================================
+                    MODAL GESTIONAR CATEGORÍAS
+                ===================================================== */}
+
+                {modalCategorias && (
+
+                    <div
+                        className="modal-overlay"
+                        onClick={() => setModalCategorias(false)}
+                    >
+
+                        <div
+                            className="modal-producto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+
+                            <div className="modal-header">
+                                <div>
+                                    <h2>Gestionar categorías</h2>
+                                    <p>
+                                        {puedeGestionarCategorias
+                                            ? "Crea, renombra o elimina categorías de productos."
+                                            : "Categorías disponibles para tus productos."}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setModalCategorias(false)}
+                                >
+                                    <i className="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+
+                            {errorCategorias && (
+                                <div
+                                    className="caja-error"
+                                    style={{ margin: "0 26px 16px" }}
+                                >
+                                    {errorCategorias}
+                                </div>
+                            )}
+
+                            {puedeGestionarCategorias && (
+
+                                <form
+                                    className="movimiento-form"
+                                    onSubmit={manejarCrearCategoria}
+                                >
+
+                                    <input
+                                        type="text"
+                                        placeholder="Nueva categoría"
+                                        value={nuevaCategoriaNombre}
+                                        onChange={(e) =>
+                                            setNuevaCategoriaNombre(
+                                                e.target.value
+                                            )
+                                        }
+                                        maxLength={100}
+                                        disabled={guardandoCategoria}
+                                    />
+
+                                    <button
+                                        type="submit"
+                                        disabled={guardandoCategoria}
+                                    >
+                                        <i className="fa-solid fa-plus"></i>
+                                        Agregar
+                                    </button>
+
+                                </form>
+
+                            )}
+
+                            <div className="movimientos-tabla-wrapper">
+
+                                {categoriasBackend.length === 0 ? (
+
+                                    <p className="alerta-stock-vacio">
+                                        No hay categorías registradas.
+                                    </p>
+
+                                ) : (
+
+                                    <table className="inventario-tabla">
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre</th>
+                                                {puedeGestionarCategorias && (
+                                                    <th>Acciones</th>
+                                                )}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {categoriasBackend.map(
+                                                (categoria) => (
+                                                    <tr key={categoria.id}>
+                                                        <td>
+                                                            {categoriaEditandoId ===
+                                                            categoria.id ? (
+
+                                                                <form
+                                                                    className="movimiento-form"
+                                                                    onSubmit={
+                                                                        manejarRenombrarCategoria
+                                                                    }
+                                                                >
+                                                                    <input
+                                                                        type="text"
+                                                                        value={
+                                                                            categoriaEditandoNombre
+                                                                        }
+                                                                        onChange={(e) =>
+                                                                            setCategoriaEditandoNombre(
+                                                                                e.target.value
+                                                                            )
+                                                                        }
+                                                                        maxLength={100}
+                                                                        disabled={
+                                                                            guardandoCategoria
+                                                                        }
+                                                                        autoFocus
+                                                                    />
+                                                                    <button
+                                                                        type="submit"
+                                                                        disabled={
+                                                                            guardandoCategoria
+                                                                        }
+                                                                    >
+                                                                        <i className="fa-solid fa-check"></i>
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={
+                                                                            cancelarEditarCategoria
+                                                                        }
+                                                                        disabled={
+                                                                            guardandoCategoria
+                                                                        }
+                                                                    >
+                                                                        <i className="fa-solid fa-xmark"></i>
+                                                                    </button>
+                                                                </form>
+
+                                                            ) : (
+
+                                                                categoria.nombre
+
+                                                            )}
+                                                        </td>
+
+                                                        {puedeGestionarCategorias &&
+                                                            categoriaEditandoId !==
+                                                                categoria.id && (
+
+                                                                <td>
+                                                                    <div className="acciones-producto">
+                                                                        <button
+                                                                            type="button"
+                                                                            className="accion editar"
+                                                                            title="Renombrar"
+                                                                            onClick={() =>
+                                                                                abrirEditarCategoria(
+                                                                                    categoria
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <i className="fa-solid fa-pen"></i>
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="accion eliminar"
+                                                                            title="Eliminar"
+                                                                            onClick={() =>
+                                                                                manejarEliminarCategoria(
+                                                                                    categoria
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <i className="fa-solid fa-trash"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+
+                                                            )}
+
+                                                        {puedeGestionarCategorias &&
+                                                            categoriaEditandoId ===
+                                                                categoria.id && (
+                                                                <td></td>
+                                                            )}
+                                                    </tr>
+                                                )
+                                            )}
                                         </tbody>
                                     </table>
 

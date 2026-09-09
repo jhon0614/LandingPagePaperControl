@@ -14,6 +14,8 @@ import {
     eliminarUsuario as eliminarUsuarioApi,
 } from "../services/usuarios.service";
 
+import { excedeLimiteBytesUtf8 } from "../utils/contrasena";
+
 import "../styles/Dashboard.css";
 import "../styles/Usuarios.css";
 
@@ -359,6 +361,15 @@ function Usuarios() {
 
         }
 
+        if (excedeLimiteBytesUtf8(formulario.contrasenaTemporal)) {
+
+            setError(
+                "La contraseña temporal es demasiado larga en bytes (algunos caracteres especiales o emojis ocupan más de 1 byte). Máximo 72 bytes."
+            );
+
+            return;
+
+        }
 
         if (!formulario.rolId) {
 

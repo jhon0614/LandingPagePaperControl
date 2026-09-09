@@ -8,7 +8,12 @@ import "../styles/Ventas.css";
 import "../styles/Caja.css";
 
 import { obtenerTurnoActual } from "../services/caja.service";
-import {obtenerVentas, obtenerHistorialVentas, registrarVenta as crearVentaApi,} from "../services/ventas.service";
+import {
+    obtenerVentas, 
+    obtenerHistorialVentas, 
+    registrarVenta as crearVentaApi,
+    eliminarVenta,
+} from "../services/ventas.service";
 import { obtenerProductos } from "../services/productos.service";
 import { obtenerMetodosPago, cambiarEstadoMetodoPago } from "../services/ventas.service";
 import { obtenerClientes, obtenerCliente } from "../services/clientes.service";
@@ -437,6 +442,16 @@ function Ventas() {
 
     const [ventaExitosaInfo, setVentaExitosaInfo] = 
         useState(null);
+    
+    const [modalAnular, setModalAnular] = useState(false);
+
+    const [ventaAAnular, setVentaAAnular] = useState(null);
+
+    const [motivoAnulacion, setMotivoAnulacion] = useState("");
+
+    const [anulandoVenta, setAnulandoVenta] = useState(false);
+
+    const [errorAnulacion, setErrorAnulacion] = useState("");
 
     const [modalCliente, setModalCliente] = 
         useState(false);
@@ -545,6 +560,116 @@ function Ventas() {
         } finally {
 
             setCargandoVentas(false);
+
+        }
+
+    }
+
+    /* =========================================================
+    ANULAR VENTA
+    ========================================================= */
+
+    function puedeAnular(venta) {
+
+        if (puedeAdministrar()) return true;
+
+        return venta.vendedorId === usuarioActual?.id;
+
+    }
+
+    function abrirModalAnular(venta) {
+
+        setVentaAAnular(venta);
+
+        setMotivoAnulacion("");
+
+        setErrorAnulacion("");
+
+        setModalAnular(true);
+
+    }
+
+    function cerrarModalAnular() {
+
+        if (anulandoVenta) return;
+
+        setModalAnular(false);
+
+        setVentaAAnular(null);
+
+        setMotivoAnulacion("");
+
+        setErrorAnulacion("");
+
+    }
+
+    async function confirmarAnulacion(e) {
+
+        e.preventDefault();
+
+        const motivo = motivoAnulacion.trim();
+
+        if (motivo && (motivo.length < 3 || motivo.length > 500)) {
+
+            setErrorAnulacion(
+                "El motivo debe tener entre 3 y 500 caracteres."
+            );
+
+            return;
+
+        }
+
+        try {
+
+            setAnulandoVenta(true);
+
+            setErrorAnulacion("");
+
+            await eliminarVenta(
+                ventaAAnular.id,
+                motivo || undefined
+            );
+
+            setModalAnular(false);
+
+            setVentaAAnular(null);
+
+            setMotivoAnulacion("");
+
+            await cargarProductos();
+
+            await cargarVentas();
+
+        } catch (error) {
+
+            if (error?.codigo === "VENTA_YA_ANULADA") {
+
+                setErrorAnulacion("Esta venta ya fue anulada.");
+
+            } else if (error?.codigo === "TURNO_CAJA_CERRADO") {
+
+                setErrorAnulacion(
+                    "No se puede anular: el turno de caja de esa venta ya está cerrado."
+                );
+
+            } else if (error?.codigo === "ACCESO_DENEGADO") {
+
+                setErrorAnulacion(
+                    "No tienes permisos para anular esta venta."
+                );
+
+            } else {
+
+                setErrorAnulacion(
+                    error?.message ||
+                    "No fue posible anular la venta."
+                );
+
+            }
+
+        } finally {
+
+            setAnulandoVenta(false);
 
         }
 
@@ -1272,15 +1397,18 @@ function Ventas() {
 
             });
 
+            const pagoEfectivo = (venta?.pagos || []).find(
+                (pago) => pago.metodo === "EFECTIVO"
+            );
 
             setVentaExitosaInfo({
-                total,
+                total: venta?.total ?? total,
                 metodoPago,
                 montoRecibido:
                     metodoPago === "EFECTIVO"
                         ? Number(montoRecibido)
                         : null,
-                cambio: venta?.cambio ?? null,
+                cambio: pagoEfectivo?.cambio ?? null,
             });
 
             setModalVentaExitosa(true);
@@ -1298,20 +1426,60 @@ function Ventas() {
             
             setMontoRecibido("");
 
+            /*
+             * La venta ya se registró (201). Un fallo aquí es solo
+             * de refresco de listas, no de la venta en sí — no debe
+             * mostrarse como error de registro.
+             */
+            
+            try{
 
-            // Refresca el stock mostrado en el catálogo.
+                await cargarProductos();
 
-            await cargarProductos();
-
-            await cargarVentas();
+                await cargarVentas();
 
 
+        } catch {
+
+                // El catálogo/historial podría quedar desactualizado
+                // hasta la próxima recarga manual, pero la venta
+                // ya quedó registrada correctamente.
+
+            }
+        
         } catch (error) {
 
-            alert(
-                error.message ||
-                "No fue posible registrar la venta."
-            );
+                if (
+                    error?.status === 409 &&
+                    error?.codigo === "STOCK_INSUFICIENTE"
+                ) {
+
+                    const detalles = error?.detalles || {};
+
+                    const producto = productos.find(
+                        (p) => p.id === detalles.productoId
+                    );
+
+                    alert(
+                        `No hay stock suficiente de "${
+                            producto?.nombre || "un producto"
+                        }". Disponible: ${detalles.disponible ?? "desconocido"}. Ajusta la cantidad e intenta de nuevo.`
+                    );
+
+                    // El carrito se conserva a propósito para que el
+                    // usuario pueda corregir la cantidad sin perder
+                    // el resto de la selección.
+
+                    await cargarProductos();
+
+                } else {
+
+                alert(
+                    error.message ||
+                    "No fue posible registrar la venta."
+                );
+
+            }
 
         } finally {
 
@@ -2241,6 +2409,7 @@ function Ventas() {
                                         <th>Descuento</th>
                                         <th>Total</th>
                                         <th>Estado</th>
+                                        <th></th>
                                     </tr>
 
                                 </thead>
@@ -2367,6 +2536,33 @@ function Ventas() {
 
                                             </td>
 
+                                            {/* ANULAR */}
+
+                                            <td>
+
+                                                {String(
+                                                    venta.estado || ""
+                                                ).toUpperCase() !==
+                                                    "ANULADA" &&
+                                                    puedeAnular(venta) && (
+
+                                                        <button
+                                                            type="button"
+                                                            className="caja-gasto-eliminar"
+                                                            title="Anular venta"
+                                                            onClick={() =>
+                                                                abrirModalAnular(
+                                                                    venta
+                                                                )
+                                                            }
+                                                        >
+                                                            <i className="fa-solid fa-ban"></i>
+                                                        </button>
+
+                                                    )}
+
+                                            </td>
+
                                         </tr>
 
                                     ))}
@@ -2383,7 +2579,108 @@ function Ventas() {
 
             </section>
 
-             {modalVentaExitosa && ventaExitosaInfo && (
+                        {modalAnular && ventaAAnular && (
+
+                <div
+                    className="pos-modal-overlay"
+                    onMouseDown={(e) => {
+
+                        if (e.target === e.currentTarget) {
+
+                            cerrarModalAnular();
+
+                        }
+
+                    }}
+                >
+
+                    <div className="pos-modal">
+
+                        <div className="pos-modal-header">
+
+                            <div>
+                                <h2>Anular venta</h2>
+                                <p>
+                                    Venta {ventaAAnular.numero_venta}
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="pos-modal-cerrar"
+                                onClick={cerrarModalAnular}
+                                disabled={anulandoVenta}
+                            >
+                                <i className="fa-solid fa-xmark"></i>
+                            </button>
+
+                        </div>
+
+                        <form onSubmit={confirmarAnulacion}>
+
+                            <div className="config-pagos-body">
+
+                                {errorAnulacion && (
+                                    <div
+                                        className="caja-error"
+                                        style={{ marginBottom: "14px" }}
+                                    >
+                                        {errorAnulacion}
+                                    </div>
+                                )}
+
+                                <label style={{ fontSize: "13px", fontWeight: 600 }}>
+                                    Motivo (opcional)
+                                </label>
+
+                                <textarea
+                                    className="pos-monto-recibido-input"
+                                    style={{ minHeight: "80px", marginTop: "6px" }}
+                                    value={motivoAnulacion}
+                                    onChange={(e) =>
+                                        setMotivoAnulacion(e.target.value)
+                                    }
+                                    maxLength={500}
+                                    placeholder="Ej: Producto equivocado, cliente se arrepintió, etc."
+                                    disabled={anulandoVenta}
+                                />
+
+                            </div>
+
+                            <div className="pos-modal-footer">
+
+                                <button
+                                    type="button"
+                                    className="btn-cancelar-cierre"
+                                    onClick={cerrarModalAnular}
+                                    disabled={anulandoVenta}
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    className="btn-cerrar-pos-modal"
+                                    disabled={anulandoVenta}
+                                >
+
+                                    {anulandoVenta
+                                        ? "Anulando..."
+                                        : "Confirmar anulación"}
+
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            )}
+
+            {modalVentaExitosa && ventaExitosaInfo && (
 
                 <div
                     className="pos-modal-overlay"

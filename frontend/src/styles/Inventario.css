@@ -1318,3 +1318,8 @@ RESPONSIVE
     max-height: 300px;
     overflow-y: auto;
 }
+
+.inventario-header-acciones {
+    display: flex;
+    gap: 10px;
+}

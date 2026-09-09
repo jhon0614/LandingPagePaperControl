@@ -11,6 +11,8 @@ import {
   cerrarSesion,
 } from "../services/auth.service";
 
+import { excedeLimiteBytesUtf8 } from "../utils/contrasena";
+
 function CambiarContrasena() {
 
   const navigate = useNavigate();
@@ -63,6 +65,9 @@ function CambiarContrasena() {
     } else if (!regex.test(formulario.contrasenaNueva)) {
       nuevosErrores.contrasenaNueva =
         "Debe tener entre 12 y 200 caracteres, una mayúscula, una minúscula y un número.";
+    } else if (excedeLimiteBytesUtf8(formulario.contrasenaNueva)) {
+      nuevosErrores.contrasenaNueva =
+        "La contraseña es demasiado larga en bytes (algunos caracteres especiales o emojis ocupan más de 1 byte). Máximo 72 bytes.";
     }
 
     if (!formulario.confirmarContrasena) {

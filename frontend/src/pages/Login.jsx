@@ -88,7 +88,8 @@ function Login() {
             const datos =
                 await login(
                     correo.trim(),
-                    contrasena
+                    contrasena,
+                    recordarme
                 );
 
 
@@ -358,10 +359,18 @@ function Login() {
                 );
 
 
-                setError(
+                let mensajeBloqueo =
                     error.message ||
-                    "Tu cuenta está bloqueada temporalmente. Intenta nuevamente más tarde o contacta al administrador."
-                );
+                    "Tu cuenta está bloqueada temporalmente. Intenta nuevamente más tarde o contacta al administrador.";
+
+                if (error?.retryAfter) {
+
+                    mensajeBloqueo +=
+                        ` Intenta de nuevo en aproximadamente ${error.retryAfter} segundos.`;
+
+                }
+
+                setError(mensajeBloqueo);
 
 
                 return;

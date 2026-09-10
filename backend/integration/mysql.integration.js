@@ -212,6 +212,29 @@ test("gastos y cierre concurrentes dejan el cuadre consistente", async () => {
   await assert.rejects(modelo.crearGasto({ turnoId: creado.id, usuarioId: 1, descripcion: "Tarde", monto: 1 }), { codigo: "GASTO_TURNO_CERRADO" });
 });
 
+test("un retiro no puede superar el efectivo disponible de la caja", async () => {
+  const modelo = new ModeloTurnoCaja(pool);
+  const { creado } = await modelo.abrir({ usuarioId: 1, montoInicial: 10 });
+
+  await modelo.crearGasto({
+    turnoId: creado.id, usuarioId: 1, descripcion: "Retiro válido", monto: 10,
+  });
+  await assert.rejects(
+    modelo.crearGasto({
+      turnoId: creado.id, usuarioId: 1, descripcion: "Excede caja", monto: 0.01,
+    }),
+    (error) =>
+      error.codigo === "RETIRO_SUPERA_DISPONIBLE" &&
+      error.estadoHttp === 422 &&
+      error.detalles.disponible === "0.00",
+  );
+  const [[gastos]] = await pool.execute(
+    "SELECT COALESCE(SUM(monto), 0) AS total FROM gastos_caja WHERE turno_caja_id = ?",
+    [creado.id],
+  );
+  assert.equal(Number(gastos.total), 10);
+});
+
 test("eliminar gastos y cerrar se serializan y conservan auditoría", async () => {
   const modelo = new ModeloTurnoCaja(pool);
   const { creado } = await modelo.abrir({ usuarioId: 1, montoInicial: 10 });

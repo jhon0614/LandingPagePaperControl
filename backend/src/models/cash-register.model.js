@@ -112,10 +112,26 @@ export class ModeloTurnoCaja {
     try {
       await conexion.beginTransaction();
       await this.#bloquearTurnoAbierto(conexion, turnoId);
+      // El turno está bloqueado también por las ventas, los gastos y el cierre.
+      // Así se verifica contra el efectivo realmente disponible, sin que dos
+      // retiros concurrentes puedan excederlo entre sí.
+      const resumen = await this.obtenerResumen(turnoId, conexion);
+      const disponible =
+        centavos(resumen.monto_apertura) +
+        centavos(resumen.efectivo) -
+        centavos(resumen.total_gastos);
+      const retiro = centavos(monto);
+      if (retiro > disponible)
+        throw new ErrorAplicacion(
+          "El retiro supera el efectivo disponible en caja.",
+          422,
+          "RETIRO_SUPERA_DISPONIBLE",
+          { disponible: importeSql(disponible) },
+        );
       const [resultado] = await conexion.execute(
         `INSERT INTO gastos_caja (turno_caja_id, registrado_por, descripcion, monto)
           VALUES (?, ?, ?, ?)`,
-        [turnoId, usuarioId, descripcion, importeSql(centavos(monto))],
+        [turnoId, usuarioId, descripcion, importeSql(retiro)],
       );
       await new ModeloAuditoria(conexion).registrar({
         usuarioId,

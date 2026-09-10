@@ -56,7 +56,11 @@ import { ModeloCategoria } from "./models/category.model.js";
 import { ServicioCategoria } from "./services/category.service.js";
 import { ControladorCategoria } from "./controllers/category.controller.js";
 import { crearRutasCategorias } from "./routes/category.routes.js";
-import { crearLimite, validarOrigen, validarConsultaSimple } from "./middleware/security.js";
+import {
+  crearLimite,
+  validarOrigen,
+  validarConsultaSimple,
+} from "./middleware/security.js";
 
 // Construye la aplicación Express y conecta las piezas del patrón MVC.
 // Recibir las conexiones y la configuración como parámetros facilita las pruebas.
@@ -73,19 +77,32 @@ export function crearAplicacion({ conexiones, configuracion }) {
   // Protecciones y reglas comunes para todas las solicitudes.
   aplicacion.use(helmet());
   let numeroLimite = 0;
-  const limitar = (cantidad, ventana, opciones = {}) => crearLimite(cantidad, ventana, {
-    ...opciones,
-    ...(configuracion.limitesCompartidos ? { store: new AlmacenLimitesMySQL(conexiones, `api-${numeroLimite++}`) } : {}),
-  });
+  const limitar = (cantidad, ventana, opciones = {}) =>
+    crearLimite(cantidad, ventana, {
+      ...opciones,
+      ...(configuracion.limitesCompartidos
+        ? {
+            store: new AlmacenLimitesMySQL(conexiones, `api-${numeroLimite++}`),
+          }
+        : {}),
+    });
   aplicacion.use(validarOrigen(configuracion.origenFrontend));
   aplicacion.use(validarConsultaSimple);
-  aplicacion.use("/api", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
+  aplicacion.use("/api", (_req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    next();
+  });
   aplicacion.use(
     cors({
       //permite comunicación con el frontend
       origin: configuracion.origenFrontend,
       credentials: true,
-      exposedHeaders: ["Retry-After", "RateLimit", "RateLimit-Policy"],
+      exposedHeaders: [
+        "Retry-After",
+        "RateLimit",
+        "RateLimit-Policy",
+        "Content-Disposition",
+      ],
     }),
   );
   aplicacion.use("/api", limitar(300, 60 * 1000));
@@ -157,7 +174,8 @@ export function crearAplicacion({ conexiones, configuracion }) {
     configuracion: configuracion.restablecimientoContrasena,
   });
   const controladorContrasena = new ControladorContrasena(servicioContrasena);
-  aplicacion.locals.iniciarTrabajadorCorreo = () => iniciarTrabajadorCorreo(servicioContrasena, modeloColaCorreo);
+  aplicacion.locals.iniciarTrabajadorCorreo = () =>
+    iniciarTrabajadorCorreo(servicioContrasena, modeloColaCorreo);
 
   const autenticar = crearMiddlewareAutenticacion({
     modeloUsuario,
@@ -200,6 +218,7 @@ export function crearAplicacion({ conexiones, configuracion }) {
     crearRutasClientes({
       autenticar,
       controladorCliente,
+      controladorVenta,
     }),
   );
 
@@ -219,9 +238,15 @@ export function crearAplicacion({ conexiones, configuracion }) {
     "/api/productos",
     crearRutasProductos({ autenticar, controlador: controladorProducto }),
   );
-  aplicacion.use("/api/categorias", crearRutasCategorias({
-    autenticar, controlador: new ControladorCategoria(new ServicioCategoria(new ModeloCategoria(conexiones))),
-  }));
+  aplicacion.use(
+    "/api/categorias",
+    crearRutasCategorias({
+      autenticar,
+      controlador: new ControladorCategoria(
+        new ServicioCategoria(new ModeloCategoria(conexiones)),
+      ),
+    }),
+  );
   aplicacion.use(
     "/api/proveedores",
     crearRutasProveedores({ autenticar, controlador: controladorProveedor }),

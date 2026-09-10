@@ -94,7 +94,9 @@ export class ControladorTurnoCaja {
   historial = async (requerimiento, respuesta, siguiente) => {
     try {
       const turnos = await this.servicio.historial(requerimiento.query);
-      return respuesta.status(200).json(listaPaginada("turnos", turnos, requerimiento.query));
+      return respuesta
+        .status(200)
+        .json(listaPaginada("turnos", turnos, requerimiento.query));
     } catch (error) {
       return siguiente(error);
     }

@@ -7,7 +7,9 @@ export class ControladorProveedor {
   listar = async (_requerimiento, respuesta, siguiente) => {
     try {
       const proveedores = await this.servicio.listar(_requerimiento.query);
-      return respuesta.json(listaPaginada("proveedores", proveedores, _requerimiento.query));
+      return respuesta.json(
+        listaPaginada("proveedores", proveedores, _requerimiento.query),
+      );
     } catch (error) {
       return siguiente(error);
     }

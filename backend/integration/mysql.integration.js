@@ -76,7 +76,7 @@ beforeEach(async () => {
     for (const tabla of ["solicitudes_venta", "limites_solicitudes", "cola_recuperacion", "registros_auditoria",
       "intentos_acceso", "sesiones_usuario", "tokens_recuperacion_contrasena", "alertas_inventario",
       "movimientos_inventario", "pagos_venta", "detalles_venta", "ventas", "gastos_caja", "turnos_caja",
-      "productos_proveedores", "productos", "categorias", "usuarios"])
+      "productos_proveedores", "productos", "categorias", "usuarios", "clientes"])
       await conexion.query(`TRUNCATE TABLE ${tabla}`);
   } finally {
     await conexion.query("SET FOREIGN_KEY_CHECKS = 1");
@@ -350,4 +350,69 @@ test("migración sobre esquema anterior agrega tablas y revoca fechas antiguas",
   assert.equal((await autenticar(sesion.tokenAcceso)).codigo, "SESION_NO_VALIDA");
   assert.equal(await new ModeloRestablecimientoContrasena(pool).buscarActivoPorHash("d".repeat(64)), null);
   await new ModeloColaCorreo(pool).encolar("uno@example.test");
+});
+
+test("SCRUM-26: descuentos se guardan y cuadran con el comprobante y el pago", async () => {
+  const turno = await prepararVenta();
+  const servicio = new ServicioVenta(new ModeloVenta(pool));
+  for (const [tipoDescuento, valorDescuento, esperado] of [["PORCENTAJE", 10, 0.09],
+    ["VALOR_FIJO", 0.02, 0.08], ["PORCENTAJE", 15, 0.08], [null, 0, 0.10]]) {
+    const venta = await servicio.crear({ ...datosVenta(turno, 1), tipoDescuento, valorDescuento }, 1);
+    assert.equal(venta.total, esperado);
+    assert.equal(venta.pagos[0].monto, esperado);
+    const [[fila]] = await pool.execute("SELECT monto_total, monto_descuento FROM ventas WHERE id = ?", [venta.id]);
+    assert.equal(Number(fila.monto_total), esperado);
+    assert.equal(Number(fila.monto_descuento), venta.descuento.monto);
+  }
+  await assert.rejects(servicio.crear({ ...datosVenta(turno, 1), tipoDescuento: "VALOR_FIJO", valorDescuento: 1 }, 1), { codigo: "DESCUENTO_INVALIDO" });
+  await assert.rejects(servicio.crear({ ...datosVenta(turno, 1), tipoDescuento: "PORCENTAJE", valorDescuento: 100 }, 1), { codigo: "TOTAL_VENTA_INVALIDO" });
+  const [[producto]] = await pool.execute("SELECT stock_actual FROM productos WHERE id = 1");
+  assert.equal(producto.stock_actual, 6);
+});
+
+test("SCRUM-15 y 22: historial por cliente, permisos y descarga HTTP de comprobante", async () => {
+  const turno = await prepararVenta();
+  await pool.execute(`INSERT INTO clientes (id, tipo_documento, numero_documento, nombres)
+    VALUES (1, 'CC', '123456', 'Cliente Uno'), (2, 'CC', '654321', 'Cliente Dos')`);
+  await pool.execute(`INSERT INTO usuarios (id, rol_id, nombres, apellidos, correo, hash_contrasena)
+    VALUES (4, 2, 'Vendedor', 'Cuatro', 'cuatro@example.test', ?), (5, 2, 'Vendedor', 'Cinco', 'cinco@example.test', ?)`, [hash, hash]);
+  await pool.execute("UPDATE productos SET nombre = ? WHERE id = 1", ['Papel <script>alert(1)</script>']);
+  const servicio = new ServicioVenta(new ModeloVenta(pool));
+  const propia = await servicio.crear({ ...datosVenta(turno, 1), clienteId: 1 }, 4);
+  const ajena = await servicio.crear({ ...datosVenta(turno, 1), clienteId: 1 }, 5);
+  await servicio.crear({ ...datosVenta(turno, 1), clienteId: 2 }, 4);
+  const usuario = { id: 4, rol: "VENDEDOR" };
+  const propias = await servicio.comprasCliente("1", {}, usuario);
+  assert.deepEqual(propias.map((v) => v.id), [propia.id]);
+  assert.equal(propias[0].items[0].cantidad, 1);
+  assert.equal((await servicio.comprasCliente("1", {}, { id: 1, rol: "ADMINISTRADOR" })).length, 2);
+  await servicio.anular(ajena.id, { motivo: "Prueba" }, { id: 1, rol: "ADMINISTRADOR" });
+  assert.equal((await servicio.comprasCliente("1", { estado: "ANULADA" }, { id: 1, rol: "ADMINISTRADOR" }))[0].id, ajena.id);
+  const sesion = await servicioAuth().iniciarSesion({ correo: "cuatro@example.test", contrasena: "ActualSegura123" });
+  const app = crearAplicacion({ conexiones: pool, configuracion: { origenFrontend: "http://localhost:5173",
+    entorno: "development", autenticacion: { secretoAcceso: secreto }, correo: {}, restablecimientoContrasena: {} } });
+  const servidor = app.listen(0, "127.0.0.1");
+  await once(servidor, "listening");
+  try {
+    const solicitar = (ruta, autenticado = true) => fetch(`http://127.0.0.1:${servidor.address().port}${ruta}`, {
+      headers: autenticado ? { Authorization: `Bearer ${sesion.tokenAcceso}` } : {},
+    });
+    assert.equal((await solicitar("/api/clientes/1/compras", false)).status, 401);
+    const historial = await solicitar("/api/clientes/1/compras?pagina=1&limite=1");
+    assert.equal(historial.status, 200);
+    const datos = (await historial.json()).datos;
+    assert.equal(datos.compras.length, 1);
+    assert.equal(datos.paginacion.hayMas, false);
+    assert.equal((await solicitar(`/api/ventas/${ajena.id}/comprobante?formato=html`)).status, 403);
+    const descarga = await solicitar(`/api/ventas/${propia.id}/comprobante?formato=html&descargar=true`);
+    assert.equal(descarga.status, 200);
+    assert.match(descarga.headers.get("content-type"), /text\/html/);
+    assert.match(descarga.headers.get("content-disposition"), /attachment.*\.html/);
+    assert.match(descarga.headers.get("content-security-policy"), /default-src 'none'/);
+    const html = await descarga.text();
+    assert.ok(html.includes("&lt;script&gt;"));
+    assert.ok(!html.includes("<script>"));
+    const json = await solicitar(`/api/ventas/${propia.id}/comprobante`);
+    assert.equal((await json.json()).datos.comprobante.id, propia.id);
+  } finally { servidor.closeAllConnections(); await new Promise((resolve) => servidor.close(resolve)); }
 });

@@ -12,23 +12,31 @@ export class ModeloRestablecimientoContrasena {
       await conexion.beginTransaction();
       const [usuarios] = await conexion.execute(
         `SELECT id FROM usuarios WHERE id = ? AND esta_activo = TRUE
-          AND eliminado_en IS NULL FOR UPDATE`, [usuarioId],
+          AND eliminado_en IS NULL FOR UPDATE`,
+        [usuarioId],
       );
-      if (!usuarios[0]) { await conexion.rollback(); return null; }
+      if (!usuarios[0]) {
+        await conexion.rollback();
+        return null;
+      }
       await conexion.execute(
         `UPDATE tokens_recuperacion_contrasena SET usado_en = UTC_TIMESTAMP()
-          WHERE usuario_id = ? AND usado_en IS NULL`, [usuarioId],
+          WHERE usuario_id = ? AND usado_en IS NULL`,
+        [usuarioId],
       );
       const [resultado] = await conexion.execute(
         `INSERT INTO tokens_recuperacion_contrasena (usuario_id, hash_token, expira_en)
-          VALUES (?, ?, ?)`, [usuarioId, hashToken, fechaUtcSql(expiraEn)],
+          VALUES (?, ?, ?)`,
+        [usuarioId, hashToken, fechaUtcSql(expiraEn)],
       );
       await conexion.commit();
       return resultado.insertId;
     } catch (error) {
       await conexion.rollback();
       throw error;
-    } finally { conexion.release(); }
+    } finally {
+      conexion.release();
+    }
   }
 
   async buscarActivoPorHash(hashToken) {
@@ -69,15 +77,23 @@ export class ModeloRestablecimientoContrasena {
       // FOR UPDATE reserva el registro hasta confirmar o deshacer la operación.
       await conexion.beginTransaction();
       const [candidatos] = await conexion.execute(
-        `SELECT usuario_id FROM tokens_recuperacion_contrasena WHERE hash_token = ?`, [hashToken],
+        `SELECT usuario_id FROM tokens_recuperacion_contrasena WHERE hash_token = ?`,
+        [hashToken],
       );
-      if (!candidatos[0]) { await conexion.rollback(); return null; }
+      if (!candidatos[0]) {
+        await conexion.rollback();
+        return null;
+      }
       // Todas las operaciones de contraseña bloquean primero el usuario.
       const [usuarios] = await conexion.execute(
         `SELECT id FROM usuarios WHERE id = ? AND esta_activo = TRUE
-          AND eliminado_en IS NULL FOR UPDATE`, [candidatos[0].usuario_id],
+          AND eliminado_en IS NULL FOR UPDATE`,
+        [candidatos[0].usuario_id],
       );
-      if (!usuarios[0]) { await conexion.rollback(); return null; }
+      if (!usuarios[0]) {
+        await conexion.rollback();
+        return null;
+      }
       const [filas] = await conexion.execute(
         `SELECT t.id, t.usuario_id
            FROM tokens_recuperacion_contrasena t

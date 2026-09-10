@@ -54,10 +54,11 @@ export class ServicioProducto {
   }
 
   async listar(incluirInactivos, categoriaId, filtros = {}) {
-    const categoria = categoriaId == null ? undefined : this.#id(categoriaId, "categoria");
-    return (await this.modelo.listar(incluirInactivos === "true", categoria, filtros)).map(
-      presentarProducto,
-    );
+    const categoria =
+      categoriaId == null ? undefined : this.#id(categoriaId, "categoria");
+    return (
+      await this.modelo.listar(incluirInactivos === "true", categoria, filtros)
+    ).map(presentarProducto);
   }
 
   async obtener(id) {

@@ -37,8 +37,18 @@ const esquemaCambiarEstadoCliente = z.object({
   estaActivo: z.boolean(),
 });
 
-export function crearRutasClientes({ autenticar, controladorCliente }) {
+export function crearRutasClientes({
+  autenticar,
+  controladorCliente,
+  controladorVenta,
+}) {
   const router = Router();
+  router.get(
+    "/:id/compras",
+    autenticar,
+    permitirRoles("VENDEDOR", "ADMINISTRADOR", "DUENO"),
+    controladorVenta.comprasCliente,
+  );
 
   router.post(
     "/",

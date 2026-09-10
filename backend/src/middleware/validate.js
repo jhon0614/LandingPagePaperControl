@@ -7,7 +7,12 @@ export function validar(esquema) {
     if (!resultado.success) {
       // Devuelve todos los problemas de validación en una respuesta uniforme.
       return siguiente(
-        new ErrorAplicacion("Los datos enviados no son válidos.", 400, "ERROR_VALIDACION", resultado.error.flatten()),
+        new ErrorAplicacion(
+          "Los datos enviados no son válidos.",
+          400,
+          "ERROR_VALIDACION",
+          resultado.error.flatten(),
+        ),
       );
     }
     // Conserva únicamente los campos que fueron aceptados por el esquema.

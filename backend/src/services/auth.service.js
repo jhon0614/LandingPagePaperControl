@@ -138,8 +138,6 @@ export class ServicioAutenticacion {
 
     await this.modeloUsuario.registrarAccesoExitoso(usuario.id);
 
-
-
     // El refresh token permite renovar la sesión. En MySQL se guarda solamente
     // su huella digital para que el valor original no quede expuesto.
     const tokenRenovacion = this.#crearTokenRenovacion();
@@ -158,7 +156,12 @@ export class ServicioAutenticacion {
       esPersistente: Boolean(recordarme),
       hashContrasena: usuario.hash_contrasena,
     });
-    if (!sesionId) throw new ErrorAplicacion("Las credenciales cambiaron. Inicia sesión nuevamente.", 401, "SESION_NO_VALIDA");
+    if (!sesionId)
+      throw new ErrorAplicacion(
+        "Las credenciales cambiaron. Inicia sesión nuevamente.",
+        401,
+        "SESION_NO_VALIDA",
+      );
     const tokenAcceso = this.#crearTokenAcceso(usuario, sesionId);
     await this.#registrarIntento(
       usuario.id,
@@ -218,11 +221,14 @@ export class ServicioAutenticacion {
     }
 
     return {
-      tokenAcceso: this.#crearTokenAcceso({
-        id: sesion.usuario_id,
-        correo: sesion.correo,
-        rol: sesion.rol,
-      }, sesion.sesion_id),
+      tokenAcceso: this.#crearTokenAcceso(
+        {
+          id: sesion.usuario_id,
+          correo: sesion.correo,
+          rol: sesion.rol,
+        },
+        sesion.sesion_id,
+      ),
       tokenRenovacion: tokenRenovacionNuevo,
       expiracionTokenRenovacion: expiraEn,
       esPersistente: Boolean(sesion.es_persistente),

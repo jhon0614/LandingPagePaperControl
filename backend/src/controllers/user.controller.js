@@ -10,7 +10,9 @@ export class ControladorUsuario {
       // solicitar los usuarios al servicio.
       const usuarios = await this.servicioUsuario.listar(_solicitud.query);
       // responder con estado 200 y el arreglo de usuarios.
-      return respuesta.status(200).json(listaPaginada("usuarios", usuarios, _solicitud.query));
+      return respuesta
+        .status(200)
+        .json(listaPaginada("usuarios", usuarios, _solicitud.query));
     } catch (error) {
       // enviar el error al manejador general.
       return siguiente(error);

@@ -13,23 +13,38 @@ export class ServicioReporte {
     const valida = (valor) => {
       if (typeof valor !== "string" || !fecha.test(valor)) return false;
       const fechaUTC = new Date(`${valor}T00:00:00Z`);
-      return Number.isFinite(fechaUTC.getTime()) &&
-        fechaUTC.toISOString().slice(0, 10) === valor && valor >= "1000-01-01";
+      return (
+        Number.isFinite(fechaUTC.getTime()) &&
+        fechaUTC.toISOString().slice(0, 10) === valor &&
+        valor >= "1000-01-01"
+      );
     };
     if (!valida(desde) || !valida(hasta) || desde > hasta) {
       throw new ErrorAplicacion(
         "Envía desde y hasta como fechas válidas AAAA-MM-DD en orden cronológico.",
-        400, "RANGO_FECHAS_INVALIDO",
+        400,
+        "RANGO_FECHAS_INVALIDO",
       );
     }
     // Acota el trabajo de una petición y rechaza IDs ambiguos o repetidos.
     if ((Date.parse(hasta) - Date.parse(desde)) / 86400000 > 365)
-      throw new ErrorAplicacion("El rango no puede superar 366 días.", 400, "RANGO_FECHAS_INVALIDO");
+      throw new ErrorAplicacion(
+        "El rango no puede superar 366 días.",
+        400,
+        "RANGO_FECHAS_INVALIDO",
+      );
     let vendedorId;
     if (filtros.vendedorId !== undefined) {
-      if (typeof filtros.vendedorId !== "string" || !/^[1-9]\d*$/.test(filtros.vendedorId) ||
-          !Number.isSafeInteger(Number(filtros.vendedorId)))
-        throw new ErrorAplicacion("El vendedorId no es válido.", 400, "VENDEDOR_ID_INVALIDO");
+      if (
+        typeof filtros.vendedorId !== "string" ||
+        !/^[1-9]\d*$/.test(filtros.vendedorId) ||
+        !Number.isSafeInteger(Number(filtros.vendedorId))
+      )
+        throw new ErrorAplicacion(
+          "El vendedorId no es válido.",
+          400,
+          "VENDEDOR_ID_INVALIDO",
+        );
       vendedorId = Number(filtros.vendedorId);
     }
     const filas = await this.modelo.caja({ desde, hasta, vendedorId });
@@ -37,19 +52,28 @@ export class ServicioReporte {
       fecha: fila.fecha,
       totalVentas: Number(fila.total_ventas),
       ventasPorMetodo: {
-        efectivo: Number(fila.efectivo), tarjeta: Number(fila.tarjeta),
+        efectivo: Number(fila.efectivo),
+        tarjeta: Number(fila.tarjeta),
         transferencia: Number(fila.transferencia),
       },
       totalGastos: Number(fila.total_gastos),
-      flujoNeto: importeNumero(centavos(fila.total_ventas) - centavos(fila.total_gastos)),
+      flujoNeto: importeNumero(
+        centavos(fila.total_ventas) - centavos(fila.total_gastos),
+      ),
     }));
-    const sumar = (obtener) => importeNumero(filas.reduce((total, fila) => total + obtener(fila), 0n));
+    const sumar = (obtener) =>
+      importeNumero(filas.reduce((total, fila) => total + obtener(fila), 0n));
     return {
-      desde, hasta, vendedorId: vendedorId ?? null, dias,
+      desde,
+      hasta,
+      vendedorId: vendedorId ?? null,
+      dias,
       resumen: {
         totalVentas: sumar((d) => centavos(d.total_ventas)),
         totalGastos: sumar((d) => centavos(d.total_gastos)),
-        flujoNeto: sumar((d) => centavos(d.total_ventas) - centavos(d.total_gastos)),
+        flujoNeto: sumar(
+          (d) => centavos(d.total_ventas) - centavos(d.total_gastos),
+        ),
         ventasPorMetodo: {
           efectivo: sumar((d) => centavos(d.efectivo)),
           tarjeta: sumar((d) => centavos(d.tarjeta)),

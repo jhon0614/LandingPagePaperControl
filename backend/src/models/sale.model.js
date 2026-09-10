@@ -1,3 +1,4 @@
+import { calcularDescuento, validarDescuento } from "../utils/discount.js";
 import { limiteSql } from "../utils/query.js";
 import { centavos, importeSql } from "../utils/money.js";
 import { randomUUID } from "node:crypto";
@@ -47,12 +48,21 @@ export class ModeloVenta {
     hashSolicitud,
   }) {
     // Protege también a los consumidores internos que no pasan por la ruta HTTP.
-    if (!Array.isArray(productos) || productos.length === 0 ||
-        productos.some((p) => !Number.isSafeInteger(p.productoId) || p.productoId <= 0 ||
-          !Number.isSafeInteger(p.cantidad) || p.cantidad <= 0) ||
-        new Set(productos.map((p) => p.productoId)).size !== productos.length) {
+    if (
+      !Array.isArray(productos) ||
+      productos.length === 0 ||
+      productos.some(
+        (p) =>
+          !Number.isSafeInteger(p.productoId) ||
+          p.productoId <= 0 ||
+          !Number.isSafeInteger(p.cantidad) ||
+          p.cantidad <= 0,
+      ) ||
+      new Set(productos.map((p) => p.productoId)).size !== productos.length
+    ) {
       return { error: "PRODUCTO_INVALIDO" };
     }
+    validarDescuento(tipoDescuento, valorDescuento);
     const conexion = await this.conexiones.getConnection();
     try {
       // La venta completa se confirma únicamente si caja, stock y pago son válidos.
@@ -65,10 +75,13 @@ export class ModeloVenta {
         );
         const [solicitudes] = await conexion.execute(
           `SELECT hash_solicitud, venta_id FROM solicitudes_venta
-            WHERE usuario_id = ? AND clave = ? FOR UPDATE`, [usuarioId, claveIdempotencia],
+            WHERE usuario_id = ? AND clave = ? FOR UPDATE`,
+          [usuarioId, claveIdempotencia],
         );
         if (solicitudes[0].hash_solicitud !== hashSolicitud)
-          return await this.#cancelar(conexion, { error: "IDEMPOTENCIA_CONFLICTO" });
+          return await this.#cancelar(conexion, {
+            error: "IDEMPOTENCIA_CONFLICTO",
+          });
         if (solicitudes[0].venta_id) {
           await conexion.commit();
           return { id: solicitudes[0].venta_id };
@@ -131,22 +144,33 @@ export class ModeloVenta {
         });
 
       // Los importes se calculan con los precios recuperados de la base de datos.
-      const subtotalCentavos = productos.reduce((total, solicitado) =>
-        total + centavos(porId.get(solicitado.productoId).precio_venta) * BigInt(solicitado.cantidad), 0n);
-      const valor = centavos(valorDescuento ?? 0);
-      const descuentoCentavos = tipoDescuento === "PORCENTAJE"
-        ? (subtotalCentavos * valor + 5000n) / 10000n
-        : tipoDescuento === "VALOR_FIJO" ? valor : 0n;
-      if (descuentoCentavos < 0n || descuentoCentavos > subtotalCentavos)
-        return await this.#cancelar(conexion, { error: "DESCUENTO_INVALIDO" });
+      const subtotalCentavos = productos.reduce(
+        (total, solicitado) =>
+          total +
+          centavos(porId.get(solicitado.productoId).precio_venta) *
+            BigInt(solicitado.cantidad),
+        0n,
+      );
+      const descuentoCentavos = calcularDescuento(
+        subtotalCentavos,
+        tipoDescuento,
+        valorDescuento,
+      );
       const totalCentavos = subtotalCentavos - descuentoCentavos;
       if (totalCentavos <= 0n)
         return await this.#cancelar(conexion, { error: "TOTAL_INVALIDO" });
       const subtotal = importeSql(subtotalCentavos);
       const montoDescuento = importeSql(descuentoCentavos);
       const total = importeSql(totalCentavos);
-      if (metodoPago === "EFECTIVO" && montoRecibido != null && centavos(montoRecibido) < totalCentavos)
-        return await this.#cancelar(conexion, { error: "MONTO_RECIBIDO_INSUFICIENTE", total: Number(total) });
+      if (
+        metodoPago === "EFECTIVO" &&
+        montoRecibido != null &&
+        centavos(montoRecibido) < totalCentavos
+      )
+        return await this.#cancelar(conexion, {
+          error: "MONTO_RECIBIDO_INSUFICIENTE",
+          total: Number(total),
+        });
 
       // El valor temporal satisface la clave única hasta conocer el insertId.
       // numero_venta admite 30 caracteres, por eso se eliminan los guiones del
@@ -274,6 +298,79 @@ export class ModeloVenta {
     // Devuelve un resultado de dominio después de restaurar todos los cambios.
     await conexion.rollback();
     return resultado;
+  }
+
+  async existeCliente(id) {
+    const [filas] = await this.conexiones.execute(
+      "SELECT id FROM clientes WHERE id = ? AND eliminado_en IS NULL LIMIT 1",
+      [id],
+    );
+    return filas.length > 0;
+  }
+
+  async comprasCliente({
+    clienteId,
+    vendedorId,
+    fechaInicio,
+    fechaFin,
+    estado,
+    ...filtros
+  }) {
+    const condiciones = ["v.cliente_id = ?"];
+    const parametros = [clienteId];
+    if (vendedorId !== undefined) {
+      condiciones.push("v.vendido_por = ?");
+      parametros.push(vendedorId);
+    }
+    if (fechaInicio) {
+      condiciones.push("v.confirmado_en >= ?");
+      parametros.push(fechaInicio);
+    }
+    if (fechaFin) {
+      condiciones.push("v.confirmado_en < DATE_ADD(?, INTERVAL 1 DAY)");
+      parametros.push(fechaFin);
+    }
+    if (estado !== "TODAS") {
+      condiciones.push("v.estado = ?");
+      parametros.push(estado);
+    }
+    const [ventas] = await this.conexiones.execute(
+      `SELECT v.*, CONCAT(u.nombres, ' ', u.apellidos) AS vendedor
+        FROM ventas v JOIN usuarios u ON u.id = v.vendido_por
+        WHERE ${condiciones.join(" AND ")} ORDER BY v.confirmado_en DESC, v.id DESC ${limiteSql(filtros)}`,
+      parametros,
+    );
+    if (!ventas.length) return ventas;
+    // Dos consultas por página: no se truncan productos con GROUP_CONCAT ni hay N+1.
+    const ids = ventas.map((venta) => venta.id);
+    const marcadores = ids.map(() => "?").join(",");
+    const [items] = await this.conexiones.execute(
+      `SELECT venta_id, producto_id, nombre_producto, sku, cantidad, precio_unitario, total_linea
+        FROM detalles_venta WHERE venta_id IN (${marcadores}) ORDER BY venta_id, id`,
+      ids,
+    );
+    const [pagos] = await this.conexiones.execute(
+      `SELECT p.venta_id, mp.codigo FROM pagos_venta p JOIN metodos_pago mp ON mp.id = p.metodo_pago_id
+        WHERE p.venta_id IN (${marcadores}) ORDER BY p.id`,
+      ids,
+    );
+    const porVenta = new Map(
+      ventas.map((venta) => [
+        Number(venta.id),
+        { ...venta, items: [], metodos: [] },
+      ]),
+    );
+    for (const item of items)
+      porVenta.get(Number(item.venta_id)).items.push(item);
+    for (const pago of pagos)
+      porVenta.get(Number(pago.venta_id)).metodos.push(pago.codigo);
+    return [...porVenta.values()].map((venta) => ({
+      ...venta,
+      productos: venta.items
+        .map((p) => `${p.nombre_producto} x${p.cantidad}`)
+        .join(" | "),
+      metodos_pago: [...new Set(venta.metodos)].join(","),
+    }));
   }
 
   async buscarPorVendedor(usuarioId, filtros = {}) {

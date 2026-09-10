@@ -1,7 +1,11 @@
 import jwt from "jsonwebtoken";
 import { ErrorAplicacion } from "../errors/app-error.js";
 
-export function crearMiddlewareAutenticacion({ modeloUsuario, modeloSesion, secretoAcceso }) {
+export function crearMiddlewareAutenticacion({
+  modeloUsuario,
+  modeloSesion,
+  secretoAcceso,
+}) {
   return async function autenticar(solicitud, _respuesta, siguiente) {
     try {
       // 1. Obtener el encabezado Authorization.
@@ -44,24 +48,29 @@ export function crearMiddlewareAutenticacion({ modeloUsuario, modeloSesion, secr
       }
 
       // 3. Validar y decodificar el token.
-      const contenidoToken = jwt.verify(token, secretoAcceso, { algorithms: ["HS256"] });
+      const contenidoToken = jwt.verify(token, secretoAcceso, {
+        algorithms: ["HS256"],
+      });
 
       // obtener el ID desde contenidoToken.sub.
       const id = Number(contenidoToken.sub);
 
       // comprobar que sea un número entero mayor que cero.
       if (!Number.isSafeInteger(id) || id <= 0) {
-        throw new ErrorAplicacion(
-          "ID inválido.",
-          401,
-          "TOKEN_INVALIDO",
-        );
+        throw new ErrorAplicacion("ID inválido.", 401, "TOKEN_INVALIDO");
       }
 
       const sesionId = Number(contenidoToken.sid);
-      if (!Number.isSafeInteger(sesionId) || sesionId <= 0 ||
-          !(await modeloSesion.estaActiva(sesionId, id))) {
-        throw new ErrorAplicacion("La sesión fue cerrada o expiró.", 401, "SESION_NO_VALIDA");
+      if (
+        !Number.isSafeInteger(sesionId) ||
+        sesionId <= 0 ||
+        !(await modeloSesion.estaActiva(sesionId, id))
+      ) {
+        throw new ErrorAplicacion(
+          "La sesión fue cerrada o expiró.",
+          401,
+          "SESION_NO_VALIDA",
+        );
       }
 
       // 4. Consultar el usuario actual en MySQL.
@@ -114,7 +123,6 @@ export function crearMiddlewareAutenticacion({ modeloUsuario, modeloSesion, secr
         );
       }
 
-      
       if (error.name === "NotBeforeError") {
         return siguiente(
           new ErrorAplicacion(
@@ -124,7 +132,7 @@ export function crearMiddlewareAutenticacion({ modeloUsuario, modeloSesion, secr
           ),
         );
       }
-      
+
       if (error.name === "JsonWebTokenError") {
         return siguiente(
           new ErrorAplicacion("El token es inválido.", 401, "TOKEN_INVALIDO"),

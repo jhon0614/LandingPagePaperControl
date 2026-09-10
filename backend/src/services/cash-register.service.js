@@ -63,7 +63,11 @@ function presentarResumen(fila) {
       TRANSFERENCIA: numero(fila.transferencia),
     },
     totalGastos,
-    montoEsperadoEfectivo: importeNumero(centavos(fila.monto_apertura) + centavos(fila.efectivo) - centavos(fila.total_gastos)),
+    montoEsperadoEfectivo: importeNumero(
+      centavos(fila.monto_apertura) +
+        centavos(fila.efectivo) -
+        centavos(fila.total_gastos),
+    ),
   };
 }
 
@@ -215,6 +219,8 @@ export class ServicioTurnoCaja {
         "RANGO_FECHAS_INVALIDO",
       );
     }
-    return (await this.modelo.listar({ ...filtros, desde, hasta })).map(presentarTurno);
+    return (await this.modelo.listar({ ...filtros, desde, hasta })).map(
+      presentarTurno,
+    );
   }
 }

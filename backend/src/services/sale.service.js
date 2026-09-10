@@ -1,4 +1,5 @@
-import { rangoFechas } from "../utils/query.js";
+import { validarDescuento } from "../utils/discount.js";
+import { rangoFechas, paginacion } from "../utils/query.js";
 import { createHash } from "node:crypto";
 import { ErrorAplicacion } from "../errors/app-error.js";
 
@@ -46,7 +47,7 @@ function presentarComprobante({ venta, productos, pagos }) {
     cliente: venta.cliente_id
       ? {
           id: venta.cliente_id,
-          nombre: venta.cliente.trim(),
+          nombre: (venta.cliente ?? "").trim(),
           tipoDocumento: venta.tipo_documento,
           documento: venta.numero_documento,
         }
@@ -71,6 +72,7 @@ function presentarComprobante({ venta, productos, pagos }) {
     total: numero(venta.monto_total),
     pagos: pagos.map((pago) => ({
       metodo: pago.codigo,
+      nombre: pago.nombre,
       nombre: pago.nombre,
       monto: numero(pago.monto),
       referencia: pago.referencia,
@@ -119,28 +121,35 @@ export class ServicioVenta {
   }
 
   async crear(datos, usuarioId, claveIdempotencia) {
-    // Esta validación se repite en el servicio para proteger llamadas internas
-    // que no atraviesen el esquema Zod de la ruta.
-    if (datos.tipoDescuento === "PORCENTAJE" && datos.valorDescuento > 100) {
+    validarDescuento(datos.tipoDescuento, datos.valorDescuento ?? 0);
+    if (
+      claveIdempotencia !== undefined &&
+      (typeof claveIdempotencia !== "string" ||
+        !/^[A-Za-z0-9:_-]{16,128}$/.test(claveIdempotencia))
+    )
       throw new ErrorAplicacion(
-        "El descuento porcentual no puede superar el 100%.",
+        "Idempotency-Key debe contener entre 16 y 128 caracteres alfanuméricos, : _ o -.",
         400,
-        "DESCUENTO_INVALIDO",
+        "IDEMPOTENCIA_INVALIDA",
       );
-    }
-    if (claveIdempotencia !== undefined &&
-        (typeof claveIdempotencia !== "string" || !/^[A-Za-z0-9:_-]{16,128}$/.test(claveIdempotencia)))
-      throw new ErrorAplicacion("Idempotency-Key debe contener entre 16 y 128 caracteres alfanuméricos, : _ o -.", 400, "IDEMPOTENCIA_INVALIDA");
     const contenido = {
-      turnoCajaId: datos.turnoCajaId ?? null, clienteId: datos.clienteId ?? null,
-      productos: [...datos.productos].map(({ productoId, cantidad }) => ({ productoId, cantidad })).sort((a, b) => a.productoId - b.productoId),
-      metodoPago: datos.metodoPago, tipoDescuento: datos.tipoDescuento ?? null,
-      valorDescuento: datos.valorDescuento ?? 0, referencia: datos.referencia ?? null,
+      turnoCajaId: datos.turnoCajaId ?? null,
+      clienteId: datos.clienteId ?? null,
+      productos: [...datos.productos]
+        .map(({ productoId, cantidad }) => ({ productoId, cantidad }))
+        .sort((a, b) => a.productoId - b.productoId),
+      metodoPago: datos.metodoPago,
+      tipoDescuento: datos.tipoDescuento ?? null,
+      valorDescuento: datos.valorDescuento ?? 0,
+      referencia: datos.referencia ?? null,
       montoRecibido: datos.montoRecibido ?? null,
     };
-    const hashSolicitud = createHash("sha256").update(JSON.stringify(contenido)).digest("hex");
+    const hashSolicitud = createHash("sha256")
+      .update(JSON.stringify(contenido))
+      .digest("hex");
     const resultado = await this.modelo.crear({
-      claveIdempotencia, hashSolicitud,
+      claveIdempotencia,
+      hashSolicitud,
       ...datos,
       usuarioId,
       clienteId: datos.clienteId ?? null,
@@ -151,7 +160,11 @@ export class ServicioVenta {
     // El modelo devuelve códigos de dominio para poder deshacer la transacción;
     // aquí se traducen al formato uniforme de errores HTTP de la aplicación.
     const errores = {
-      IDEMPOTENCIA_CONFLICTO: ["La clave ya fue usada con otra venta.", 409, "IDEMPOTENCIA_CONFLICTO"],
+      IDEMPOTENCIA_CONFLICTO: [
+        "La clave ya fue usada con otra venta.",
+        409,
+        "IDEMPOTENCIA_CONFLICTO",
+      ],
       SIN_TURNO: [
         "Debes abrir un turno de caja antes de vender.",
         409,
@@ -246,8 +259,73 @@ export class ServicioVenta {
         "ORDEN_INVALIDO",
       );
     return (
-      await this.modelo.historial({ ...filtros, fechaInicio, fechaFin, vendedorId, orden })
+      await this.modelo.historial({
+        ...filtros,
+        fechaInicio,
+        fechaFin,
+        vendedorId,
+        orden,
+      })
     ).map(presentarListado);
+  }
+
+  async comprasCliente(id, filtros = {}, usuario) {
+    const clienteId = Number(id);
+    if (!Number.isSafeInteger(clienteId) || clienteId <= 0)
+      throw new ErrorAplicacion(
+        "El ID del cliente es inválido.",
+        400,
+        "ID_CLIENTE_INVALIDO",
+      );
+    if (!["VENDEDOR", "ADMINISTRADOR", "DUENO"].includes(usuario?.rol))
+      throw new ErrorAplicacion(
+        "No tienes permiso para consultar compras.",
+        403,
+        "ACCESO_DENEGADO",
+      );
+    if (!Number.isSafeInteger(Number(usuario.id)) || Number(usuario.id) <= 0)
+      throw new ErrorAplicacion(
+        "El usuario no es válido.",
+        403,
+        "ACCESO_DENEGADO",
+      );
+    paginacion(filtros);
+    rangoFechas(filtros.fechaInicio, filtros.fechaFin);
+    const estado = filtros.estado ?? "TODAS";
+    if (!["TODAS", "CONFIRMADA", "ANULADA"].includes(estado))
+      throw new ErrorAplicacion(
+        "estado debe ser TODAS, CONFIRMADA o ANULADA.",
+        400,
+        "ESTADO_VENTA_INVALIDO",
+      );
+    if (!(await this.modelo.existeCliente(clienteId)))
+      throw new ErrorAplicacion(
+        "El cliente no fue encontrado.",
+        404,
+        "CLIENTE_NO_ENCONTRADO",
+      );
+    const filas = await this.modelo.comprasCliente({
+      clienteId,
+      vendedorId: usuario.rol === "VENDEDOR" ? Number(usuario.id) : undefined,
+      fechaInicio: filtros.fechaInicio,
+      fechaFin: filtros.fechaFin,
+      estado,
+      pagina: filtros.pagina,
+      limite: filtros.limite,
+    });
+    return filas.map((fila) => ({
+      ...presentarListado(fila),
+      clienteId,
+      items: fila.items.map((item) => ({
+        productoId: item.producto_id,
+        nombre: item.nombre_producto,
+        sku: item.sku,
+        cantidad: Number(item.cantidad),
+        precioUnitario: numero(item.precio_unitario),
+        total: numero(item.total_linea),
+      })),
+      comprobanteUrl: `/api/ventas/${fila.id}/comprobante`,
+    }));
   }
 
   async comprobante(id, usuario) {
@@ -310,7 +388,7 @@ export class ServicioVenta {
   #validarId(id) {
     // Los parámetros de ruta llegan como texto y nunca se entregan sin validar.
     const numeroId = Number(id);
-    if (!Number.isInteger(numeroId) || numeroId <= 0)
+    if (!Number.isSafeInteger(numeroId) || numeroId <= 0)
       throw new ErrorAplicacion(
         "El ID de venta no es válido.",
         400,

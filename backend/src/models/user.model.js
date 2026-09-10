@@ -193,7 +193,11 @@ export class ModeloUsuario {
     return resultado.affectedRows > 0;
   }
 
-  async actualizarContrasenaYRevocarSesiones(usuarioId, hashContrasena, hashAnterior) {
+  async actualizarContrasenaYRevocarSesiones(
+    usuarioId,
+    hashContrasena,
+    hashAnterior,
+  ) {
     // Ambas operaciones se confirman juntas para no conservar sesiones
     // renovables con una contraseña que ya fue reemplazada.
     const conexion = await this.conexiones.getConnection();
@@ -230,7 +234,8 @@ export class ModeloUsuario {
 
       await conexion.execute(
         `UPDATE tokens_recuperacion_contrasena SET usado_en = UTC_TIMESTAMP()
-          WHERE usuario_id = ? AND usado_en IS NULL`, [usuarioId],
+          WHERE usuario_id = ? AND usado_en IS NULL`,
+        [usuarioId],
       );
 
       // Confirma las modificaciones únicamente cuando todas tuvieron éxito.

@@ -9,7 +9,11 @@ export class ModeloReporte {
     // UNION ALL evita multiplicar importes al combinar varios pagos y gastos.
     const filtroVenta = vendedorId == null ? "" : "AND v.vendido_por = ?";
     const filtroGasto = vendedorId == null ? "" : "AND g.registrado_por = ?";
-    const parametros = [desde, hasta, ...(vendedorId == null ? [] : [vendedorId])];
+    const parametros = [
+      desde,
+      hasta,
+      ...(vendedorId == null ? [] : [vendedorId]),
+    ];
     const [filas] = await this.conexiones.execute(
       `SELECT fecha, SUM(total_ventas) AS total_ventas, SUM(efectivo) AS efectivo,
               SUM(tarjeta) AS tarjeta, SUM(transferencia) AS transferencia,

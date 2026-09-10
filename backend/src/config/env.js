@@ -24,27 +24,45 @@ function enteroPositivo(nombre, valorDefecto) {
 export function cargarConfiguracion() {
   const entorno = process.env.NODE_ENV ?? "development";
   const secretoAcceso = obligatoria("JWT_ACCESS_SECRET");
-  if (Buffer.byteLength(secretoAcceso, "utf8") < 32 || secretoAcceso.startsWith("replace_with"))
-    throw new Error("JWT_ACCESS_SECRET debe contener al menos 32 bytes y no ser el valor de ejemplo.");
+  if (
+    Buffer.byteLength(secretoAcceso, "utf8") < 32 ||
+    secretoAcceso.startsWith("replace_with")
+  )
+    throw new Error(
+      "JWT_ACCESS_SECRET debe contener al menos 32 bytes y no ser el valor de ejemplo.",
+    );
   const origenFrontend = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
   const origen = new URL(origenFrontend);
-  if (origen.origin !== origenFrontend || !["http:", "https:"].includes(origen.protocol) ||
-      (entorno === "production" && origen.protocol !== "https:"))
-    throw new Error("FRONTEND_ORIGIN debe ser un origen válido, con HTTPS en producción.");
+  if (
+    origen.origin !== origenFrontend ||
+    !["http:", "https:"].includes(origen.protocol) ||
+    (entorno === "production" && origen.protocol !== "https:")
+  )
+    throw new Error(
+      "FRONTEND_ORIGIN debe ser un origen válido, con HTTPS en producción.",
+    );
   const zonaHoraria = process.env.DB_TIMEZONE ?? "-05:00";
   if (!/^(Z|[+-](0\d|1[0-3]):[0-5]\d|\+14:00)$/.test(zonaHoraria))
-    throw new Error("DB_TIMEZONE debe ser Z o un desplazamiento fijo válido, por ejemplo -05:00.");
+    throw new Error(
+      "DB_TIMEZONE debe ser Z o un desplazamiento fijo válido, por ejemplo -05:00.",
+    );
   const urlRecuperacion = new URL(obligatoria("FRONTEND_RESET_PASSWORD_URL"));
   if (urlRecuperacion.origin !== origenFrontend)
-    throw new Error("FRONTEND_RESET_PASSWORD_URL debe pertenecer a FRONTEND_ORIGIN.");
+    throw new Error(
+      "FRONTEND_RESET_PASSWORD_URL debe pertenecer a FRONTEND_ORIGIN.",
+    );
 
-  return Object.freeze({ //freeze para que no se pueda modificar
+  return Object.freeze({
+    //freeze para que no se pueda modificar
     entorno,
     limitesCompartidos: true,
     puerto: enteroPositivo("PORT", 3000),
     origenFrontend,
     // IP o CIDR de proxies controlados; por defecto se ignora X-Forwarded-For.
-    proxyConfiable: process.env.TRUST_PROXY?.split(",").map((ip) => ip.trim()).filter(Boolean) ?? false,
+    proxyConfiable:
+      process.env.TRUST_PROXY?.split(",")
+        .map((ip) => ip.trim())
+        .filter(Boolean) ?? false,
     baseDatos: Object.freeze({
       servidor: obligatoria("DB_HOST"),
       puerto: enteroPositivo("DB_PORT", 3306),

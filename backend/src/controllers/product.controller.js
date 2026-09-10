@@ -12,7 +12,9 @@ export class ControladorProducto {
         requerimiento.query.categoriaId,
         requerimiento.query,
       );
-      return respuesta.json(listaPaginada("productos", productos, requerimiento.query));
+      return respuesta.json(
+        listaPaginada("productos", productos, requerimiento.query),
+      );
     } catch (error) {
       return siguiente(error);
     }
@@ -95,9 +97,7 @@ export class ControladorProducto {
         requerimiento.body,
         requerimiento.usuario.id,
       );
-      return respuesta
-        .status(201)
-        .json({ exito: true, datos: { movimiento } });
+      return respuesta.status(201).json({ exito: true, datos: { movimiento } });
     } catch (error) {
       return siguiente(error);
     }

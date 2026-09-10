@@ -114,26 +114,42 @@ export class ModeloTurnoCaja {
       await this.#bloquearTurnoAbierto(conexion, turnoId);
       const [resultado] = await conexion.execute(
         `INSERT INTO gastos_caja (turno_caja_id, registrado_por, descripcion, monto)
-          VALUES (?, ?, ?, ?)`, [turnoId, usuarioId, descripcion, importeSql(centavos(monto))],
+          VALUES (?, ?, ?, ?)`,
+        [turnoId, usuarioId, descripcion, importeSql(centavos(monto))],
       );
-      await new ModeloAuditoria(conexion).registrar({ usuarioId, accion: "CREAR_GASTO",
-        tipoEntidad: "GASTO_CAJA", entidadId: resultado.insertId, detalles: { turnoId, descripcion, monto } });
+      await new ModeloAuditoria(conexion).registrar({
+        usuarioId,
+        accion: "CREAR_GASTO",
+        tipoEntidad: "GASTO_CAJA",
+        entidadId: resultado.insertId,
+        detalles: { turnoId, descripcion, monto },
+      });
       const [filas] = await conexion.execute(
         `SELECT id, turno_caja_id, registrado_por, descripcion, monto, ocurrido_en, creado_en
-          FROM gastos_caja WHERE id = ?`, [resultado.insertId],
+          FROM gastos_caja WHERE id = ?`,
+        [resultado.insertId],
       );
       await conexion.commit();
       return filas[0];
-    } catch (error) { await conexion.rollback(); throw error; }
-    finally { conexion.release(); }
+    } catch (error) {
+      await conexion.rollback();
+      throw error;
+    } finally {
+      conexion.release();
+    }
   }
 
   async #bloquearTurnoAbierto(conexion, turnoId) {
     const [turnos] = await conexion.execute(
-      `SELECT id, estado FROM turnos_caja WHERE id = ? FOR UPDATE`, [turnoId],
+      `SELECT id, estado FROM turnos_caja WHERE id = ? FOR UPDATE`,
+      [turnoId],
     );
     if (!turnos[0] || turnos[0].estado !== "ABIERTO")
-      throw new ErrorAplicacion("El turno de caja ya fue cerrado.", 409, "GASTO_TURNO_CERRADO");
+      throw new ErrorAplicacion(
+        "El turno de caja ya fue cerrado.",
+        409,
+        "GASTO_TURNO_CERRADO",
+      );
   }
 
   async buscarGasto(id) {
@@ -152,20 +168,41 @@ export class ModeloTurnoCaja {
       await conexion.beginTransaction();
       await this.#bloquearTurnoAbierto(conexion, turnoId);
       const [gastos] = await conexion.execute(
-        `SELECT id, registrado_por, turno_caja_id, descripcion, monto FROM gastos_caja WHERE id = ? FOR UPDATE`, [id],
+        `SELECT id, registrado_por, turno_caja_id, descripcion, monto FROM gastos_caja WHERE id = ? FOR UPDATE`,
+        [id],
       );
       const gasto = gastos[0];
       if (!gasto || Number(gasto.turno_caja_id) !== Number(turnoId))
-        throw new ErrorAplicacion("El gasto no está disponible en este turno.", 409, "GASTO_TURNO_CERRADO");
-      if (Number(gasto.registrado_por) !== Number(usuario.id) && !["ADMINISTRADOR", "DUENO"].includes(usuario.rol))
-        throw new ErrorAplicacion("No tienes permiso para eliminar este gasto.", 403, "ACCESO_DENEGADO");
-      await new ModeloAuditoria(conexion).registrar({ usuarioId: usuario.id, accion: "ELIMINAR_GASTO",
-        tipoEntidad: "GASTO_CAJA", entidadId: id, detalles: gasto });
+        throw new ErrorAplicacion(
+          "El gasto no está disponible en este turno.",
+          409,
+          "GASTO_TURNO_CERRADO",
+        );
+      if (
+        Number(gasto.registrado_por) !== Number(usuario.id) &&
+        !["ADMINISTRADOR", "DUENO"].includes(usuario.rol)
+      )
+        throw new ErrorAplicacion(
+          "No tienes permiso para eliminar este gasto.",
+          403,
+          "ACCESO_DENEGADO",
+        );
+      await new ModeloAuditoria(conexion).registrar({
+        usuarioId: usuario.id,
+        accion: "ELIMINAR_GASTO",
+        tipoEntidad: "GASTO_CAJA",
+        entidadId: id,
+        detalles: gasto,
+      });
       await conexion.execute(`DELETE FROM gastos_caja WHERE id = ?`, [id]);
       await conexion.commit();
       return true;
-    } catch (error) { await conexion.rollback(); throw error; }
-    finally { conexion.release(); }
+    } catch (error) {
+      await conexion.rollback();
+      throw error;
+    } finally {
+      conexion.release();
+    }
   }
 
   async cerrar({ turnoId, usuarioId, montoContado }) {
@@ -194,7 +231,13 @@ export class ModeloTurnoCaja {
             SET cerrado_por = ?, efectivo_esperado = ?, efectivo_contado = ?,
                 diferencia = ?, cerrado_en = CURRENT_TIMESTAMP, estado = 'CERRADO'
           WHERE id = ? AND estado = 'ABIERTO'`,
-        [usuarioId, importeSql(esperado), importeSql(centavos(montoContado)), importeSql(diferencia), turnoId],
+        [
+          usuarioId,
+          importeSql(esperado),
+          importeSql(centavos(montoContado)),
+          importeSql(diferencia),
+          turnoId,
+        ],
       );
       const [filas] = await conexion.execute(
         `SELECT id, abierto_por, cerrado_por, monto_apertura, abierto_en,

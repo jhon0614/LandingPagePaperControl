@@ -41,9 +41,7 @@ export class ControladorCliente {
       );
       const clientes = await this.servicioCliente.buscar(
         termino,
-        puedeAdministrar
-          ? requerimiento.query.incluirInactivos
-          : undefined,
+        puedeAdministrar ? requerimiento.query.incluirInactivos : undefined,
       );
 
       return respuesta.status(200).json({

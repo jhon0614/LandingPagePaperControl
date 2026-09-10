@@ -35,15 +35,32 @@ export class ServicioUsuario {
     this.modeloAuditoria = modeloAuditoria;
     // Una instancia ligada a la conexión no abre transacciones anidadas.
     if (typeof modeloUsuario.conexiones?.getConnection === "function") {
-      for (const metodo of ["crear", "actualizar", "cambiarEstado", "eliminar"]) {
+      for (const metodo of [
+        "crear",
+        "actualizar",
+        "cambiarEstado",
+        "eliminar",
+      ]) {
         this[metodo] = async (...argumentos) => {
-          const responsableId = metodo === "crear" ? argumentos[0].administradorId
-            : metodo === "eliminar" ? argumentos[1] : argumentos[2];
-          return transaccionAdministrativa(modeloUsuario.conexiones, responsableId, (conexion) => {
-            const servicio = new ServicioUsuario(new ModeloUsuario(conexion),
-              new ModeloRol(conexion), new ModeloSesion(conexion), new ModeloAuditoria(conexion));
-            return servicio[metodo](...argumentos);
-          });
+          const responsableId =
+            metodo === "crear"
+              ? argumentos[0].administradorId
+              : metodo === "eliminar"
+                ? argumentos[1]
+                : argumentos[2];
+          return transaccionAdministrativa(
+            modeloUsuario.conexiones,
+            responsableId,
+            (conexion) => {
+              const servicio = new ServicioUsuario(
+                new ModeloUsuario(conexion),
+                new ModeloRol(conexion),
+                new ModeloSesion(conexion),
+                new ModeloAuditoria(conexion),
+              );
+              return servicio[metodo](...argumentos);
+            },
+          );
         };
       }
     }
@@ -299,7 +316,10 @@ export class ServicioUsuario {
       });
     }
 
-    if (rolIdFinal !== usuarioActual.rol_id || correoFinal !== usuarioActual.correo) {
+    if (
+      rolIdFinal !== usuarioActual.rol_id ||
+      correoFinal !== usuarioActual.correo
+    ) {
       await this.modeloSesion.revocarPorUsuario(numeroId);
     }
 

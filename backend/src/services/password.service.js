@@ -25,14 +25,28 @@ export class ServicioContrasena {
     this.modeloAuditoria = modeloAuditoria;
     this.configuracion = configuracion;
     if (typeof modeloUsuario.conexiones?.getConnection === "function") {
-      for (const metodo of ["solicitarRestablecimientoAdministrativo", "desbloquearUsuario"]) {
-        this[metodo] = (datos) => transaccionAdministrativa(modeloUsuario.conexiones, datos.responsableId, (conexion) => {
-          const servicio = new ServicioContrasena({ modeloUsuario: new ModeloUsuario(conexion),
-            modeloRestablecimiento: new ModeloRestablecimientoContrasena(conexion),
-            modeloAuditoria: new ModeloAuditoria(conexion), modeloColaCorreo: new ModeloColaCorreo(conexion),
-            servicioCorreo, configuracion });
-          return servicio[metodo](datos);
-        });
+      for (const metodo of [
+        "solicitarRestablecimientoAdministrativo",
+        "desbloquearUsuario",
+      ]) {
+        this[metodo] = (datos) =>
+          transaccionAdministrativa(
+            modeloUsuario.conexiones,
+            datos.responsableId,
+            (conexion) => {
+              const servicio = new ServicioContrasena({
+                modeloUsuario: new ModeloUsuario(conexion),
+                modeloRestablecimiento: new ModeloRestablecimientoContrasena(
+                  conexion,
+                ),
+                modeloAuditoria: new ModeloAuditoria(conexion),
+                modeloColaCorreo: new ModeloColaCorreo(conexion),
+                servicioCorreo,
+                configuracion,
+              });
+              return servicio[metodo](datos);
+            },
+          );
       }
     }
   }
@@ -164,7 +178,8 @@ export class ServicioContrasena {
     });
 
     return {
-      mensaje: "La solicitud fue registrada. Las instrucciones se enviarán al correo del usuario.",
+      mensaje:
+        "La solicitud fue registrada. Las instrucciones se enviarán al correo del usuario.",
     };
   }
 

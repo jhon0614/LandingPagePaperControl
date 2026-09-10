@@ -122,7 +122,11 @@ export class ModeloProducto {
         return false;
       }
       if (datos.stock !== Number(actuales[0].stock_actual)) {
-        throw new ErrorAplicacion("El stock cambió o intentas ajustarlo desde la edición. Recarga el producto y usa movimientos de inventario para modificar existencias.", 409, "STOCK_EDICION_CONFLICTO");
+        throw new ErrorAplicacion(
+          "El stock cambió o intentas ajustarlo desde la edición. Recarga el producto y usa movimientos de inventario para modificar existencias.",
+          409,
+          "STOCK_EDICION_CONFLICTO",
+        );
       }
       const categoriaId = await this.#obtenerCategoria(
         conexion,
@@ -202,10 +206,7 @@ export class ModeloProducto {
         await conexion.rollback();
         return { tieneVentas: true };
       }
-      if (
-        usos[0].tiene_movimientos ||
-        usos[0].tiene_alertas
-      ) {
+      if (usos[0].tiene_movimientos || usos[0].tiene_alertas) {
         // Se conserva el producto para mantener sus referencias históricas,
         // pero se marca como eliminado para retirarlo de todos los catálogos.
         await conexion.execute(

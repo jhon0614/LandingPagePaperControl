@@ -12,7 +12,10 @@ const esquemaContrasenaSegura = z
   .regex(/[A-Z]/, "Debe contener una letra mayúscula.")
   .regex(/[a-z]/, "Debe contener una letra minúscula.")
   .regex(/[0-9]/, "Debe contener un número.")
-  .refine((valor) => Buffer.byteLength(valor, "utf8") <= 72, "La contraseña no puede superar 72 bytes UTF-8.");
+  .refine(
+    (valor) => Buffer.byteLength(valor, "utf8") <= 72,
+    "La contraseña no puede superar 72 bytes UTF-8.",
+  );
 
 const esquemaInicioSesion = z.object({
   correo: z.string().trim().email().max(191),
@@ -64,7 +67,11 @@ export function crearRutasAutenticacion({
     validar(esquemaInicioSesion),
     controladorAutenticacion.iniciarSesion,
   );
-  rutas.post("/refresh", limitarRenovacion, controladorAutenticacion.renovarSesion);
+  rutas.post(
+    "/refresh",
+    limitarRenovacion,
+    controladorAutenticacion.renovarSesion,
+  );
   rutas.post("/logout", controladorAutenticacion.cerrarSesion);
   rutas.patch(
     "/contrasena",

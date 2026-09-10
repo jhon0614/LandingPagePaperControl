@@ -43,18 +43,23 @@ export class BaseDatos {
       decimalNumbers: false,
     });
     this.conexiones.on("connection", (conexion) => {
-      // Se encola antes de las consultas de la aplicación en cada conexión nueva.
+      // La conexión emitida por mysql2/promise es la conexión interna basada en
+      // callbacks. El comando queda encolado antes de la primera consulta que
+      // obtiene la conexión del pool.
       conexion.query(
-        "SET SESSION time_zone = ?, max_execution_time = ?, innodb_lock_wait_timeout = ?",
+        "SET SESSION time_zone = ?, innodb_lock_wait_timeout = ?",
         [
           configuracion.zonaHoraria === "Z"
             ? "+00:00"
             : (configuracion.zonaHoraria ?? "-05:00"),
-          configuracion.tiempoConsultaMs ?? 10000,
           configuracion.esperaBloqueoSegundos ?? 5,
         ],
         (error) => {
-          if (error) conexion.destroy();
+          // No se destruye aquí la conexión: hacerlo mientras mysql2 entrega la
+          // misma conexión a una consulta pendiente puede producir
+          // ERR_STREAM_WRITE_AFTER_END. El callback consume cualquier error del
+          // comando de inicialización sin cerrar el stream en pleno uso.
+          if (error) return;
         },
       );
     });

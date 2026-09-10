@@ -344,15 +344,17 @@ test("la recuperación HTTP responde igual sin SMTP y limita por cuenta", async 
   } finally { servidor.closeAllConnections(); await new Promise((resolve) => servidor.close(resolve)); }
 });
 
-test("pool configura zona, consultas acotadas y cola limitada", async () => {
+test("pool configura zona, espera de bloqueos y cola limitada", async () => {
   const base = BaseDatos.obtenerInstancia({ servidor: opciones.host, puerto: opciones.port,
     usuario: opciones.user, contrasena: opciones.password, nombre, zonaHoraria: "-05:00",
     limiteConexiones: 1, limiteCola: 1, tiempoConsultaMs: 5000, esperaBloqueoSegundos: 5 });
   try {
     await base.comprobarEsquema();
-    const [[fila]] = await base.conexiones.query("SELECT @@session.time_zone AS zona, @@session.max_execution_time AS espera");
+    const [[fila]] = await base.conexiones.query(
+      "SELECT @@session.time_zone AS zona, @@session.innodb_lock_wait_timeout AS espera",
+    );
     assert.equal(fila.zona, "-05:00");
-    assert.equal(Number(fila.espera), 5000);
+    assert.equal(Number(fila.espera), 5);
     const ocupada = await base.conexiones.getConnection();
     try {
       const pendiente = base.conexiones.getConnection();

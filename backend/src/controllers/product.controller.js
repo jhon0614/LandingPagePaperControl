@@ -1,3 +1,4 @@
+import { listaPaginada } from "../utils/query.js";
 // Adaptador HTTP del módulo de productos. La lógica de negocio permanece en
 // ServicioProducto para poder probarla sin depender de Express.
 export class ControladorProducto {
@@ -9,8 +10,9 @@ export class ControladorProducto {
       const productos = await this.servicio.listar(
         requerimiento.query.incluirInactivos,
         requerimiento.query.categoriaId,
+        requerimiento.query,
       );
-      return respuesta.json({ exito: true, datos: { productos } });
+      return respuesta.json(listaPaginada("productos", productos, requerimiento.query));
     } catch (error) {
       return siguiente(error);
     }

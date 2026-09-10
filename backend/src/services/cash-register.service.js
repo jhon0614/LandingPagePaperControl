@@ -1,3 +1,5 @@
+import { rangoFechas } from "../utils/query.js";
+import { centavos, importeNumero } from "../utils/money.js";
 import { ErrorAplicacion } from "../errors/app-error.js";
 
 const numero = (valor) => Number(valor ?? 0);
@@ -61,7 +63,7 @@ function presentarResumen(fila) {
       TRANSFERENCIA: numero(fila.transferencia),
     },
     totalGastos,
-    montoEsperadoEfectivo: montoInicial + efectivo - totalGastos,
+    montoEsperadoEfectivo: importeNumero(centavos(fila.monto_apertura) + centavos(fila.efectivo) - centavos(fila.total_gastos)),
   };
 }
 
@@ -157,7 +159,7 @@ export class ServicioTurnoCaja {
         "ACCESO_DENEGADO",
       );
     }
-    await this.modelo.eliminarGasto(gastoId);
+    await this.modelo.eliminarGasto(gastoId, usuario, turno.id);
   }
 
   async cerrar(montoContado, usuarioId) {
@@ -192,6 +194,7 @@ export class ServicioTurnoCaja {
 
   async historial(filtros) {
     // Las fechas se comparan como texto porque AAAA-MM-DD conserva orden cronológico.
+    rangoFechas(filtros.desde, filtros.hasta);
     const patronFecha = /^\d{4}-\d{2}-\d{2}$/;
     const desde = filtros.desde?.trim() || undefined;
     const hasta = filtros.hasta?.trim() || undefined;
@@ -212,6 +215,6 @@ export class ServicioTurnoCaja {
         "RANGO_FECHAS_INVALIDO",
       );
     }
-    return (await this.modelo.listar({ desde, hasta })).map(presentarTurno);
+    return (await this.modelo.listar({ ...filtros, desde, hasta })).map(presentarTurno);
   }
 }

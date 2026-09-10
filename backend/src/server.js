@@ -9,10 +9,12 @@ const baseDatos = BaseDatos.obtenerInstancia(configuracion.baseDatos);
 try {
   // La API solo inicia cuando se confirma que MySQL responde.
   await baseDatos.comprobarConexion();
+  await baseDatos.comprobarEsquema();
   const aplicacion = crearAplicacion({
     conexiones: baseDatos.conexiones,
     configuracion,
   });
+  const detenerTrabajador = aplicacion.locals.iniciarTrabajadorCorreo();
   const servidor = aplicacion.listen(configuracion.puerto, () => {
     console.log(
       `PaperControl API disponible en http://localhost:${configuracion.puerto}`,
@@ -23,6 +25,7 @@ try {
   async function cerrarServidor(senal) {
     console.log(`${senal} recibida. Cerrando servidor...`);
     servidor.close(async () => {
+      await detenerTrabajador();
       await baseDatos.cerrar();
       process.exit(0);
     });

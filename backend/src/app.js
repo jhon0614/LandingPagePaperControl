@@ -60,6 +60,10 @@ import { crearLimite, validarOrigen, validarConsultaSimple } from "./middleware/
 
 // Construye la aplicación Express y conecta las piezas del patrón MVC.
 // Recibir las conexiones y la configuración como parámetros facilita las pruebas.
+import { AlmacenLimitesMySQL } from "./models/rate-limit.store.js";
+import { ModeloColaCorreo } from "./models/mail-queue.model.js";
+import { iniciarTrabajadorCorreo } from "./services/mail-worker.js";
+
 export function crearAplicacion({ conexiones, configuracion }) {
   const aplicacion = express();
 
@@ -68,7 +72,11 @@ export function crearAplicacion({ conexiones, configuracion }) {
 
   // Protecciones y reglas comunes para todas las solicitudes.
   aplicacion.use(helmet());
-  aplicacion.use("/api", crearLimite(300, 60 * 1000));
+  let numeroLimite = 0;
+  const limitar = (cantidad, ventana, opciones = {}) => crearLimite(cantidad, ventana, {
+    ...opciones,
+    ...(configuracion.limitesCompartidos ? { store: new AlmacenLimitesMySQL(conexiones, `api-${numeroLimite++}`) } : {}),
+  });
   aplicacion.use(validarOrigen(configuracion.origenFrontend));
   aplicacion.use(validarConsultaSimple);
   aplicacion.use("/api", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
@@ -77,8 +85,10 @@ export function crearAplicacion({ conexiones, configuracion }) {
       //permite comunicación con el frontend
       origin: configuracion.origenFrontend,
       credentials: true,
+      exposedHeaders: ["Retry-After", "RateLimit", "RateLimit-Policy"],
     }),
   );
+  aplicacion.use("/api", limitar(300, 60 * 1000));
   aplicacion.use(express.json({ limit: "100kb" })); //limita el tamaño de las peticiones
 
   const modeloUsuario = new ModeloUsuario(conexiones);
@@ -137,7 +147,9 @@ export function crearAplicacion({ conexiones, configuracion }) {
     configuracion.restablecimientoContrasena,
   );
   // El servicio coordina usuarios, tokens, correo y auditoría sin depender de Express.
+  const modeloColaCorreo = new ModeloColaCorreo(conexiones);
   const servicioContrasena = new ServicioContrasena({
+    modeloColaCorreo,
     modeloUsuario,
     modeloRestablecimiento,
     servicioCorreo,
@@ -145,10 +157,12 @@ export function crearAplicacion({ conexiones, configuracion }) {
     configuracion: configuracion.restablecimientoContrasena,
   });
   const controladorContrasena = new ControladorContrasena(servicioContrasena);
+  aplicacion.locals.iniciarTrabajadorCorreo = () => iniciarTrabajadorCorreo(servicioContrasena, modeloColaCorreo);
 
   const autenticar = crearMiddlewareAutenticacion({
     modeloUsuario,
     secretoAcceso: configuracion.autenticacion.secretoAcceso,
+    modeloSesion,
   });
 
   // Ruta para confirmar que la API se encuentra en ejecución.
@@ -161,6 +175,7 @@ export function crearAplicacion({ conexiones, configuracion }) {
       controladorAutenticacion,
       controladorContrasena,
       autenticar,
+      limitar,
     }),
   );
   aplicacion.use(

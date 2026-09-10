@@ -5,6 +5,11 @@ el inicio de sesión siguiendo MVC y utiliza un grupo de conexiones Singleton.
 
 ## Preparación
 
+Para actualizar una base existente, aplicar primero la
+[migración de seguridad](../database/migrations/2026-09-09-seguridad-backend.sql).
+Consultar [cambios y compatibilidad](docs/correcciones-backend-2026-09-09.md):
+la migración cierra sesiones anteriores y no debe repetirse sobre el esquema nuevo.
+
 1. Instalar MySQL 8 y preparar la base con los archivos de `../database`.
 2. Crear un usuario de MySQL con permisos únicamente sobre `paper_control`.
 3. Copiar `.env.example` como `.env` y reemplazar los valores sensibles.

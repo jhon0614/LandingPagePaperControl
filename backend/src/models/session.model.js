@@ -1,5 +1,7 @@
 // Registra las sesiones iniciadas. Solo recibe el hash del refresh token,
 // nunca el token original que se entrega al navegador.
+import { fechaUtcSql } from "../utils/utc.js";
+
 export class ModeloSesion {
   constructor(conexiones) {
     this.conexiones = conexiones;
@@ -12,21 +14,35 @@ export class ModeloSesion {
     agenteUsuario,
     expiraEn,
     esPersistente,
+    hashContrasena,
   }) {
-    await this.conexiones.execute(
+    const [resultado] = await this.conexiones.execute(
       `INSERT INTO sesiones_usuario
         (usuario_id, hash_token_renovacion, direccion_ip, agente_usuario,
          expira_en, es_persistente)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       SELECT ?, ?, ?, ?, ?, ? FROM usuarios
+        WHERE id = ? AND hash_contrasena = ? AND esta_activo = TRUE AND eliminado_en IS NULL`,
       [
         usuarioId,
         hashTokenRenovacion,
         direccionIp ?? null,
         agenteUsuario?.slice(0, 500) ?? null,
-        expiraEn,
+        fechaUtcSql(expiraEn),
         esPersistente,
+        usuarioId,
+        hashContrasena,
       ],
     );
+    return resultado.affectedRows ? resultado.insertId : null;
+  }
+
+  async estaActiva(id, usuarioId) {
+    const [filas] = await this.conexiones.execute(
+      `SELECT id FROM sesiones_usuario WHERE id = ? AND usuario_id = ?
+        AND revocado_en IS NULL AND expira_en > UTC_TIMESTAMP() LIMIT 1`,
+      [id, usuarioId],
+    );
+    return filas.length > 0;
   }
 
   async buscarActivaPorHash(hashTokenRenovacion) {
@@ -35,7 +51,7 @@ export class ModeloSesion {
     // cuando React restaura la sesión mediante /refresh.
     const [filas] = await this.conexiones.execute(
       `SELECT s.id AS sesion_id, s.usuario_id, s.hash_token_renovacion,
-              s.expira_en, s.es_persistente,
+              DATE_FORMAT(s.expira_en, '%Y-%m-%dT%H:%i:%s.000Z') AS expira_en, s.es_persistente,
               u.nombres, u.apellidos, u.correo, u.debe_cambiar_contrasena,
               r.nombre AS rol
          FROM sesiones_usuario s
@@ -64,7 +80,7 @@ export class ModeloSesion {
           AND hash_token_renovacion = ?
           AND revocado_en IS NULL
           AND expira_en > UTC_TIMESTAMP()`,
-      [hashTokenNuevo, expiraEn, sesionId, hashTokenActual],
+      [hashTokenNuevo, fechaUtcSql(expiraEn), sesionId, hashTokenActual],
     );
 
     return resultado.affectedRows > 0;

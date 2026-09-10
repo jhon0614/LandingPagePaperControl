@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { ErrorAplicacion } from "../errors/app-error.js";
 
-export function crearMiddlewareAutenticacion({ modeloUsuario, secretoAcceso }) {
+export function crearMiddlewareAutenticacion({ modeloUsuario, modeloSesion, secretoAcceso }) {
   return async function autenticar(solicitud, _respuesta, siguiente) {
     try {
       // 1. Obtener el encabezado Authorization.
@@ -50,12 +50,18 @@ export function crearMiddlewareAutenticacion({ modeloUsuario, secretoAcceso }) {
       const id = Number(contenidoToken.sub);
 
       // comprobar que sea un número entero mayor que cero.
-      if (!Number.isInteger(id) || id <= 0) {
+      if (!Number.isSafeInteger(id) || id <= 0) {
         throw new ErrorAplicacion(
           "ID inválido.",
           401,
           "TOKEN_INVALIDO",
         );
+      }
+
+      const sesionId = Number(contenidoToken.sid);
+      if (!Number.isSafeInteger(sesionId) || sesionId <= 0 ||
+          !(await modeloSesion.estaActiva(sesionId, id))) {
+        throw new ErrorAplicacion("La sesión fue cerrada o expiró.", 401, "SESION_NO_VALIDA");
       }
 
       // 4. Consultar el usuario actual en MySQL.

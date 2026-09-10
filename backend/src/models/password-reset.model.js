@@ -1,3 +1,4 @@
+import { fechaUtcSql } from "../utils/utc.js";
 // Administra los tokens temporales utilizados para restablecer contraseñas.
 // El token original se envía al usuario; en MySQL se guarda únicamente su hash.
 export class ModeloRestablecimientoContrasena {
@@ -6,29 +7,34 @@ export class ModeloRestablecimientoContrasena {
   }
 
   async crear({ usuarioId, hashToken, expiraEn }) {
-    // Invalida solicitudes anteriores para que solo funcione el token más reciente.
-    await this.conexiones.execute(
-      `UPDATE tokens_recuperacion_contrasena
-          SET usado_en = UTC_TIMESTAMP()
-        WHERE usuario_id = ?
-          AND usado_en IS NULL`,
-      [usuarioId],
-    );
-
-    const [resultado] = await this.conexiones.execute(
-      `INSERT INTO tokens_recuperacion_contrasena
-         (usuario_id, hash_token, expira_en)
-       VALUES (?, ?, ?)`,
-      [usuarioId, hashToken, expiraEn],
-    );
-
-    return resultado.insertId;
+    const conexion = await this.conexiones.getConnection();
+    try {
+      await conexion.beginTransaction();
+      const [usuarios] = await conexion.execute(
+        `SELECT id FROM usuarios WHERE id = ? AND esta_activo = TRUE
+          AND eliminado_en IS NULL FOR UPDATE`, [usuarioId],
+      );
+      if (!usuarios[0]) { await conexion.rollback(); return null; }
+      await conexion.execute(
+        `UPDATE tokens_recuperacion_contrasena SET usado_en = UTC_TIMESTAMP()
+          WHERE usuario_id = ? AND usado_en IS NULL`, [usuarioId],
+      );
+      const [resultado] = await conexion.execute(
+        `INSERT INTO tokens_recuperacion_contrasena (usuario_id, hash_token, expira_en)
+          VALUES (?, ?, ?)`, [usuarioId, hashToken, fechaUtcSql(expiraEn)],
+      );
+      await conexion.commit();
+      return resultado.insertId;
+    } catch (error) {
+      await conexion.rollback();
+      throw error;
+    } finally { conexion.release(); }
   }
 
   async buscarActivoPorHash(hashToken) {
     // Busca un token que todavía no haya sido usado ni haya vencido.
     const [filas] = await this.conexiones.execute(
-      `SELECT id, usuario_id, hash_token, expira_en, creado_en
+      `SELECT id, usuario_id, hash_token, DATE_FORMAT(expira_en, '%Y-%m-%dT%H:%i:%s.000Z') AS expira_en, creado_en
          FROM tokens_recuperacion_contrasena
         WHERE hash_token = ?
           AND usado_en IS NULL
@@ -62,6 +68,16 @@ export class ModeloRestablecimientoContrasena {
     try {
       // FOR UPDATE reserva el registro hasta confirmar o deshacer la operación.
       await conexion.beginTransaction();
+      const [candidatos] = await conexion.execute(
+        `SELECT usuario_id FROM tokens_recuperacion_contrasena WHERE hash_token = ?`, [hashToken],
+      );
+      if (!candidatos[0]) { await conexion.rollback(); return null; }
+      // Todas las operaciones de contraseña bloquean primero el usuario.
+      const [usuarios] = await conexion.execute(
+        `SELECT id FROM usuarios WHERE id = ? AND esta_activo = TRUE
+          AND eliminado_en IS NULL FOR UPDATE`, [candidatos[0].usuario_id],
+      );
+      if (!usuarios[0]) { await conexion.rollback(); return null; }
       const [filas] = await conexion.execute(
         `SELECT t.id, t.usuario_id
            FROM tokens_recuperacion_contrasena t
@@ -85,8 +101,8 @@ export class ModeloRestablecimientoContrasena {
       await conexion.execute(
         `UPDATE tokens_recuperacion_contrasena
             SET usado_en = UTC_TIMESTAMP()
-          WHERE id = ?`,
-        [solicitud.id],
+          WHERE usuario_id = ? AND usado_en IS NULL`,
+        [solicitud.usuario_id],
       );
       await conexion.execute(
         `UPDATE usuarios

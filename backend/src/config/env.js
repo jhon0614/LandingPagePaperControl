@@ -31,9 +31,16 @@ export function cargarConfiguracion() {
   if (origen.origin !== origenFrontend || !["http:", "https:"].includes(origen.protocol) ||
       (entorno === "production" && origen.protocol !== "https:"))
     throw new Error("FRONTEND_ORIGIN debe ser un origen válido, con HTTPS en producción.");
+  const zonaHoraria = process.env.DB_TIMEZONE ?? "-05:00";
+  if (!/^(Z|[+-](0\d|1[0-3]):[0-5]\d|\+14:00)$/.test(zonaHoraria))
+    throw new Error("DB_TIMEZONE debe ser Z o un desplazamiento fijo válido, por ejemplo -05:00.");
+  const urlRecuperacion = new URL(obligatoria("FRONTEND_RESET_PASSWORD_URL"));
+  if (urlRecuperacion.origin !== origenFrontend)
+    throw new Error("FRONTEND_RESET_PASSWORD_URL debe pertenecer a FRONTEND_ORIGIN.");
 
   return Object.freeze({ //freeze para que no se pueda modificar
     entorno,
+    limitesCompartidos: true,
     puerto: enteroPositivo("PORT", 3000),
     origenFrontend,
     // IP o CIDR de proxies controlados; por defecto se ignora X-Forwarded-For.
@@ -45,8 +52,14 @@ export function cargarConfiguracion() {
       usuario: obligatoria("DB_USER"),
       contrasena: obligatoria("DB_PASSWORD"),
       limiteConexiones: enteroPositivo("DB_CONNECTION_LIMIT", 10),
+      limiteCola: enteroPositivo("DB_QUEUE_LIMIT", 50),
+      tiempoConexionMs: enteroPositivo("DB_CONNECT_TIMEOUT_MS", 10000),
+      tiempoConsultaMs: enteroPositivo("DB_QUERY_TIMEOUT_MS", 10000),
+      esperaBloqueoSegundos: enteroPositivo("DB_LOCK_WAIT_SECONDS", 5),
+      tls: process.env.DB_TLS === "true",
+      certificadoCa: process.env.DB_TLS_CA_FILE || undefined,
       // La base actual almacena y entrega sus DATETIME en hora de Colombia.
-      zonaHoraria: process.env.DB_TIMEZONE ?? "-05:00",
+      zonaHoraria,
     }),
     autenticacion: Object.freeze({
       secretoAcceso,

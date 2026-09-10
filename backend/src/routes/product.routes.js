@@ -3,7 +3,7 @@ import { z } from "zod";
 import { validar } from "../middleware/validate.js";
 import { permitirRoles } from "../middleware/roles.middleware.js";
 
-const dinero = z.number().finite().nonnegative().max(9999999999.99);
+import { dinero } from "../utils/money.js";
 const esquemaProducto = z.object({
   nombre: z.string().trim().min(1).max(150),
   marca: z.string().trim().min(1).max(500),

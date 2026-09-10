@@ -44,14 +44,19 @@ export function crearRutasAutenticacion({
   controladorAutenticacion,
   controladorContrasena,
   autenticar,
+  limitar = crearLimite,
 }) {
   // Las rutas públicas validan sus datos, pero no requieren un token de acceso.
   // Cambiar la contraseña sí exige conocer la sesión y la contraseña actual.
   const rutas = Router();
-  const limitarRecuperacion = crearLimite(5, 15 * 60 * 1000);
-  const limitarLogin = crearLimite(20, 15 * 60 * 1000);
-  const limitarRenovacion = crearLimite(60, 15 * 60 * 1000);
-  const limitarCambio = crearLimite(5, 15 * 60 * 1000);
+  const limitarRecuperacion = limitar(5, 15 * 60 * 1000);
+  const limitarLogin = limitar(20, 15 * 60 * 1000);
+  const limitarRenovacion = limitar(60, 15 * 60 * 1000);
+  const limitarCambio = limitar(5, 15 * 60 * 1000);
+
+  const limitarCorreo = limitar(3, 15 * 60 * 1000, {
+    keyGenerator: (req) => req.body.correo.trim().toLowerCase(),
+  });
 
   rutas.post(
     "/login",
@@ -72,6 +77,7 @@ export function crearRutasAutenticacion({
     "/olvide-contrasena",
     limitarRecuperacion,
     validar(esquemaSolicitarRestablecimiento),
+    limitarCorreo,
     controladorContrasena.solicitarRestablecimiento,
   );
   rutas.post(

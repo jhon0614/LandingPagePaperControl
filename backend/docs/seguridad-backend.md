@@ -77,13 +77,9 @@ Los controles de transporte y cookies siguen las
   operaciones de inventario y errores de integridad.
 - Configuración local comprobada sin mostrar secretos; no se modificó `.env`.
 
-Los access tokens ya emitidos pueden seguir válidos hasta expirar aunque se
-revoque el refresh al cerrar sesión o cambiar contraseña; no hay lista de
-revocación por access token. La baja de un usuario se comprueba en cada petición.
-La inactividad documentada depende del cliente; no se incorporó un reloj de
-inactividad persistido en servidor. Las consultas antiguas de listados no tienen
-paginación general. Estos puntos quedan registrados para endurecimiento futuro.
-
-Pendiente validar despliegue real: HTTPS, configuración del proxy, almacén
-compartido si hay réplicas, permisos mínimos MySQL y pruebas de concurrencia con
-una base exclusiva de pruebas. No se cambió infraestructura ni frontend.
+Actualización 2026-09-09: los pendientes de revocación, concurrencia, límites
+compartidos y paginación se implementaron. Consultar
+[correcciones y migración](correcciones-backend-2026-09-09.md) para el estado
+actual, compatibilidad con frontend y pruebas con MySQL real. Las secciones
+anteriores describen la revisión previa; el resultado de auditoría de paquetes
+allí mencionado no representa una nueva auditoría de dependencias.

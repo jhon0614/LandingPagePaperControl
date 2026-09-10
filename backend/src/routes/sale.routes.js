@@ -3,7 +3,7 @@ import { z } from "zod";
 import { validar } from "../middleware/validate.js";
 import { permitirRoles } from "../middleware/roles.middleware.js";
 
-const dinero = z.number().finite().nonnegative().max(9999999999.99);
+import { dinero } from "../utils/money.js";
 // Valida la venta completa antes de iniciar la transacción de inventario y pago.
 const itemVenta = z.object({
   productoId: z.number().int().positive(),

@@ -138,7 +138,7 @@ export class ServicioAutenticacion {
 
     await this.modeloUsuario.registrarAccesoExitoso(usuario.id);
 
-    const tokenAcceso = this.#crearTokenAcceso(usuario);
+
 
     // El refresh token permite renovar la sesión. En MySQL se guarda solamente
     // su huella digital para que el valor original no quede expuesto.
@@ -149,14 +149,17 @@ export class ServicioAutenticacion {
         this.configuracionAutenticacion.diasRenovacion * 24 * 60 * 60 * 1000,
     );
 
-    await this.modeloSesion.crear({
+    const sesionId = await this.modeloSesion.crear({
       usuarioId: usuario.id,
       hashTokenRenovacion,
       direccionIp,
       agenteUsuario,
       expiraEn,
       esPersistente: Boolean(recordarme),
+      hashContrasena: usuario.hash_contrasena,
     });
+    if (!sesionId) throw new ErrorAplicacion("Las credenciales cambiaron. Inicia sesión nuevamente.", 401, "SESION_NO_VALIDA");
+    const tokenAcceso = this.#crearTokenAcceso(usuario, sesionId);
     await this.#registrarIntento(
       usuario.id,
       correoNormalizado,
@@ -219,7 +222,7 @@ export class ServicioAutenticacion {
         id: sesion.usuario_id,
         correo: sesion.correo,
         rol: sesion.rol,
-      }),
+      }, sesion.sesion_id),
       tokenRenovacion: tokenRenovacionNuevo,
       expiracionTokenRenovacion: expiraEn,
       esPersistente: Boolean(sesion.es_persistente),
@@ -227,6 +230,7 @@ export class ServicioAutenticacion {
         id: sesion.usuario_id,
         nombres: sesion.nombres,
         apellidos: sesion.apellidos,
+        debe_cambiar_contrasena: sesion.debe_cambiar_contrasena,
         correo: sesion.correo,
         rol: sesion.rol,
       }),
@@ -245,10 +249,10 @@ export class ServicioAutenticacion {
     );
   }
 
-  #crearTokenAcceso(usuario) {
+  #crearTokenAcceso(usuario, sesionId) {
     // El token de acceso identifica al usuario en las futuras solicitudes.
     return jwt.sign(
-      { rol: usuario.rol, correo: usuario.correo },
+      { rol: usuario.rol, correo: usuario.correo, sid: String(sesionId) },
       this.configuracionAutenticacion.secretoAcceso,
       {
         subject: String(usuario.id),

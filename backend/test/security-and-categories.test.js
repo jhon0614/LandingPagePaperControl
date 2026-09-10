@@ -32,6 +32,7 @@ async function servidorPrueba(t) {
       return [{ affectedRows: categorias.delete(params[0]) ? 1 : 0 }];
     }
     if (sql.includes("FROM categorias")) return [[...categorias].map(([id, nombre]) => ({ id, nombre }))];
+    if (sql.includes("SELECT id FROM sesiones_usuario")) return [[{ id: 1 }]];
     if (sql.includes("FROM sesiones_usuario")) return [[]];
     if (sql.includes("UPDATE sesiones_usuario")) return [{ affectedRows: 1 }];
     if (sql.includes("UNION ALL")) return [[]];
@@ -45,7 +46,7 @@ async function servidorPrueba(t) {
   const solicitar = (ruta, { usuario = 1, body, headers = {}, ...opciones } = {}) => fetch(base + ruta, {
     ...opciones,
     headers: {
-      ...(usuario == null ? {} : { authorization: `Bearer ${jwt.sign({}, secreto, { subject: String(usuario), expiresIn: "5m" })}` }),
+      ...(usuario == null ? {} : { authorization: `Bearer ${jwt.sign({ sid: "1" }, secreto, { subject: String(usuario), expiresIn: "5m" })}` }),
       ...(body === undefined ? {} : { "content-type": "application/json" }), ...headers,
     },
     ...(body === undefined ? {} : { body: typeof body === "string" ? body : JSON.stringify(body) }),
@@ -81,9 +82,9 @@ test("seguridad HTTP: origen, cabeceras, JSON, tamaño, consultas repetidas y JW
   assert.equal((await solicitar("/api/categorias", { method: "POST", body: "{" })).status, 400);
   assert.equal((await solicitar("/api/categorias", { method: "POST", body: { nombre: "x".repeat(110000) } })).status, 413);
   assert.equal((await solicitar("/api/productos?categoriaId=1&categoriaId=2")).status, 400);
-  const token = jwt.sign({}, secreto, { subject: "1", algorithm: "HS384" });
+  const token = jwt.sign({ sid: "1" }, secreto, { subject: "1", algorithm: "HS384" });
   assert.equal((await solicitar("/api/categorias", { headers: { authorization: `Bearer ${token}` } })).status, 401);
-  const expirado = jwt.sign({}, secreto, { subject: "1", expiresIn: -1 });
+  const expirado = jwt.sign({ sid: "1" }, secreto, { subject: "1", expiresIn: -1 });
   assert.equal((await solicitar("/api/categorias", { headers: { authorization: `Bearer ${expirado}` } })).status, 401);
 });
 

@@ -7,7 +7,7 @@ const secreto = "a-secure-test-secret-with-more-than-32-characters";
 
 // Simula una solicitud autenticada para probar el cambio obligatorio sin servidor.
 async function ejecutar({ originalUrl, debeCambiarContrasena }) {
-  const token = jwt.sign({}, secreto, { subject: "2", expiresIn: "15m" });
+  const token = jwt.sign({ sid: "1" }, secreto, { subject: "2", expiresIn: "15m" });
   const solicitud = {
     originalUrl,
     get: (nombre) => nombre === "authorization" ? `Bearer ${token}` : undefined,
@@ -16,6 +16,7 @@ async function ejecutar({ originalUrl, debeCambiarContrasena }) {
   let permitioContinuar = false;
   const autenticar = crearMiddlewareAutenticacion({
     secretoAcceso: secreto,
+    modeloSesion: { estaActiva: async () => true },
     modeloUsuario: {
       buscarPorId: async () => ({
         id: 2,

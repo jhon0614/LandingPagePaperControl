@@ -1,8 +1,9 @@
 import { rateLimit } from "express-rate-limit";
 import { ErrorAplicacion } from "../errors/app-error.js";
 
-export function crearLimite(limit, windowMs) {
+export function crearLimite(limit, windowMs, opciones = {}) {
   return rateLimit({
+    ...opciones,
     limit, windowMs, standardHeaders: "draft-8", legacyHeaders: false,
     handler: (_req, _res, next) => next(new ErrorAplicacion(
       "Has realizado demasiadas solicitudes. Intenta nuevamente más tarde.",

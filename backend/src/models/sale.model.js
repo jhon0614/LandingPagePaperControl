@@ -1,3 +1,5 @@
+import { limiteSql } from "../utils/query.js";
+import { centavos, importeSql } from "../utils/money.js";
 import { randomUUID } from "node:crypto";
 
 // Persiste ventas, pagos e inventario como una única unidad transaccional.
@@ -37,10 +39,12 @@ export class ModeloVenta {
     productos,
     metodoPago,
     tipoDescuento,
-    valorDescuento,
+    valorDescuento = 0,
     referencia,
     montoRecibido,
     turnoCajaId,
+    claveIdempotencia,
+    hashSolicitud,
   }) {
     // Protege también a los consumidores internos que no pasan por la ruta HTTP.
     if (!Array.isArray(productos) || productos.length === 0 ||
@@ -53,6 +57,23 @@ export class ModeloVenta {
     try {
       // La venta completa se confirma únicamente si caja, stock y pago son válidos.
       await conexion.beginTransaction();
+      if (claveIdempotencia) {
+        await conexion.execute(
+          `INSERT INTO solicitudes_venta (usuario_id, clave, hash_solicitud)
+            VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE clave = clave`,
+          [usuarioId, claveIdempotencia, hashSolicitud],
+        );
+        const [solicitudes] = await conexion.execute(
+          `SELECT hash_solicitud, venta_id FROM solicitudes_venta
+            WHERE usuario_id = ? AND clave = ? FOR UPDATE`, [usuarioId, claveIdempotencia],
+        );
+        if (solicitudes[0].hash_solicitud !== hashSolicitud)
+          return await this.#cancelar(conexion, { error: "IDEMPOTENCIA_CONFLICTO" });
+        if (solicitudes[0].venta_id) {
+          await conexion.commit();
+          return { id: solicitudes[0].venta_id };
+        }
+      }
       const [turnos] = await conexion.execute(
         `SELECT id FROM turnos_caja WHERE estado = 'ABIERTO'
           AND (? IS NULL OR id = ?)
@@ -110,34 +131,22 @@ export class ModeloVenta {
         });
 
       // Los importes se calculan con los precios recuperados de la base de datos.
-      const subtotal = productos.reduce(
-        (total, solicitado) =>
-          total +
-          Number(porId.get(solicitado.productoId).precio_venta) *
-            solicitado.cantidad,
-        0,
-      );
-      const montoDescuento =
-        tipoDescuento === "PORCENTAJE"
-          ? this.#redondear((subtotal * valorDescuento) / 100)
-          : tipoDescuento === "VALOR_FIJO"
-            ? valorDescuento
-            : 0;
-      if (montoDescuento > subtotal)
+      const subtotalCentavos = productos.reduce((total, solicitado) =>
+        total + centavos(porId.get(solicitado.productoId).precio_venta) * BigInt(solicitado.cantidad), 0n);
+      const valor = centavos(valorDescuento ?? 0);
+      const descuentoCentavos = tipoDescuento === "PORCENTAJE"
+        ? (subtotalCentavos * valor + 5000n) / 10000n
+        : tipoDescuento === "VALOR_FIJO" ? valor : 0n;
+      if (descuentoCentavos < 0n || descuentoCentavos > subtotalCentavos)
         return await this.#cancelar(conexion, { error: "DESCUENTO_INVALIDO" });
-      const total = this.#redondear(subtotal - montoDescuento);
-      if (total <= 0)
+      const totalCentavos = subtotalCentavos - descuentoCentavos;
+      if (totalCentavos <= 0n)
         return await this.#cancelar(conexion, { error: "TOTAL_INVALIDO" });
-      if (
-        metodoPago === "EFECTIVO" &&
-        montoRecibido != null &&
-        montoRecibido < total
-      ) {
-        return await this.#cancelar(conexion, {
-          error: "MONTO_RECIBIDO_INSUFICIENTE",
-          total,
-        });
-      }
+      const subtotal = importeSql(subtotalCentavos);
+      const montoDescuento = importeSql(descuentoCentavos);
+      const total = importeSql(totalCentavos);
+      if (metodoPago === "EFECTIVO" && montoRecibido != null && centavos(montoRecibido) < totalCentavos)
+        return await this.#cancelar(conexion, { error: "MONTO_RECIBIDO_INSUFICIENTE", total: Number(total) });
 
       // El valor temporal satisface la clave única hasta conocer el insertId.
       // numero_venta admite 30 caracteres, por eso se eliminan los guiones del
@@ -169,7 +178,7 @@ export class ModeloVenta {
       for (const solicitado of productos) {
         // Cada línea descuenta existencias y deja trazabilidad en inventario.
         const producto = porId.get(solicitado.productoId);
-        const precio = Number(producto.precio_venta);
+        const precio = importeSql(centavos(producto.precio_venta));
         const stockAnterior = Number(producto.stock_actual);
         const stockPosterior = stockAnterior - solicitado.cantidad;
         await conexion.execute(
@@ -184,7 +193,7 @@ export class ModeloVenta {
             producto.sku,
             solicitado.cantidad,
             precio,
-            this.#redondear(precio * solicitado.cantidad),
+            importeSql(centavos(precio) * BigInt(solicitado.cantidad)),
           ],
         );
         await conexion.execute(
@@ -230,7 +239,7 @@ export class ModeloVenta {
 
       const cambio =
         metodoPago === "EFECTIVO" && montoRecibido != null
-          ? this.#redondear(montoRecibido - total)
+          ? importeSql(centavos(montoRecibido) - totalCentavos)
           : null;
       await conexion.execute(
         `INSERT INTO pagos_venta
@@ -245,6 +254,12 @@ export class ModeloVenta {
           cambio,
         ],
       );
+      if (claveIdempotencia) {
+        await conexion.execute(
+          `UPDATE solicitudes_venta SET venta_id = ? WHERE usuario_id = ? AND clave = ?`,
+          [venta.insertId, usuarioId, claveIdempotencia],
+        );
+      }
       await conexion.commit();
       return { id: venta.insertId };
     } catch (error) {
@@ -261,21 +276,16 @@ export class ModeloVenta {
     return resultado;
   }
 
-  #redondear(valor) {
-    // Los montos de la venta se almacenan con precisión de dos decimales.
-    return Math.round((valor + Number.EPSILON) * 100) / 100;
-  }
-
-  async buscarPorVendedor(usuarioId) {
+  async buscarPorVendedor(usuarioId, filtros = {}) {
     const [filas] = await this.conexiones.execute(
       `${this.#consultaListado()} WHERE v.vendido_por = ?
-        GROUP BY v.id ORDER BY v.confirmado_en DESC`,
+        GROUP BY v.id ORDER BY v.confirmado_en DESC, v.id DESC ${limiteSql(filtros)}`,
       [usuarioId],
     );
     return filas;
   }
 
-  async historial({ fechaInicio, fechaFin, vendedorId, orden }) {
+  async historial({ fechaInicio, fechaFin, vendedorId, orden, ...filtros }) {
     // Los nombres de columna para ordenar provienen de esta lista controlada.
     const condiciones = [];
     const parametros = [];
@@ -300,7 +310,7 @@ export class ModeloVenta {
       ? `WHERE ${condiciones.join(" AND ")}`
       : "";
     const [filas] = await this.conexiones.execute(
-      `${this.#consultaListado()} ${where} GROUP BY v.id ORDER BY ${ordenes[orden]}`,
+      `${this.#consultaListado()} ${where} GROUP BY v.id ORDER BY ${ordenes[orden]}, v.id DESC ${limiteSql(filtros)}`,
       parametros,
     );
     return filas;

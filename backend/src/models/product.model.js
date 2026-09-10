@@ -1,6 +1,9 @@
+import { limiteSql } from "../utils/query.js";
 // Centraliza las consultas de productos, existencias y sus relaciones.
 // Las operaciones que cambian stock usan transacciones para que el producto,
 // el movimiento y la alerta siempre queden sincronizados.
+import { ErrorAplicacion } from "../errors/app-error.js";
+
 export class ModeloProducto {
   constructor(conexiones) {
     this.conexiones = conexiones;
@@ -13,13 +16,13 @@ export class ModeloProducto {
     return filas;
   }
 
-  async listar(incluirInactivos = false, categoriaId) {
+  async listar(incluirInactivos = false, categoriaId, filtros = {}) {
     const [filas] = await this.conexiones.execute(
       `SELECT p.*, c.nombre AS categoria
          FROM productos p JOIN categorias c ON c.id = p.categoria_id
         WHERE p.eliminado_en IS NULL ${incluirInactivos ? "" : "AND p.esta_activo = TRUE"}
           ${categoriaId == null ? "" : "AND p.categoria_id = ?"}
-        ORDER BY p.nombre`,
+        ORDER BY p.nombre, p.id ${limiteSql(filtros)}`,
       categoriaId == null ? [] : [categoriaId],
     );
     return this.#adjuntarProveedores(filas);
@@ -118,13 +121,16 @@ export class ModeloProducto {
         await conexion.rollback();
         return false;
       }
+      if (datos.stock !== Number(actuales[0].stock_actual)) {
+        throw new ErrorAplicacion("El stock cambió o intentas ajustarlo desde la edición. Recarga el producto y usa movimientos de inventario para modificar existencias.", 409, "STOCK_EDICION_CONFLICTO");
+      }
       const categoriaId = await this.#obtenerCategoria(
         conexion,
         datos.categoria,
       );
       await conexion.execute(
         `UPDATE productos SET categoria_id = ?, sku = ?, nombre = ?, descripcion = ?,
-                precio_compra = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ?,
+                precio_compra = ?, precio_venta = ?, stock_minimo = ?,
                 actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
         [
           categoriaId,
@@ -133,30 +139,10 @@ export class ModeloProducto {
           datos.marca,
           datos.precioMayor,
           datos.precioDetal,
-          datos.stock,
           datos.stockMinimo,
           id,
         ],
       );
-      const anterior = Number(actuales[0].stock_actual);
-      if (anterior !== datos.stock) {
-        // Una edición que cambia stock se registra como ajuste, no como venta.
-        const diferencia = datos.stock - anterior;
-        await conexion.execute(
-          `INSERT INTO movimientos_inventario
-            (producto_id, usuario_id, tipo_movimiento, cantidad, stock_anterior,
-             stock_posterior, notas)
-           VALUES (?, ?, ?, ?, ?, ?, 'Ajuste desde edición de producto')`,
-          [
-            id,
-            usuarioId,
-            diferencia > 0 ? "AJUSTE_ENTRADA" : "AJUSTE_SALIDA",
-            diferencia,
-            anterior,
-            datos.stock,
-          ],
-        );
-      }
       await this.#sincronizarAlerta(conexion, id, usuarioId);
       await conexion.commit();
       return true;

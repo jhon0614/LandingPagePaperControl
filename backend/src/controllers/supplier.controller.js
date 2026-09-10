@@ -1,3 +1,4 @@
+import { listaPaginada } from "../utils/query.js";
 // Convierte los resultados del servicio al formato uniforme { exito, datos }.
 export class ControladorProveedor {
   constructor(servicio) {
@@ -5,8 +6,8 @@ export class ControladorProveedor {
   }
   listar = async (_requerimiento, respuesta, siguiente) => {
     try {
-      const proveedores = await this.servicio.listar();
-      return respuesta.json({ exito: true, datos: { proveedores } });
+      const proveedores = await this.servicio.listar(_requerimiento.query);
+      return respuesta.json(listaPaginada("proveedores", proveedores, _requerimiento.query));
     } catch (error) {
       return siguiente(error);
     }

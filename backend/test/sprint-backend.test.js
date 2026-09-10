@@ -67,7 +67,7 @@ test("reporte sin actividad devuelve totales en cero", async () => {
 
 test("categoría filtra productos y rechaza identificadores inválidos", async () => {
   const servicio = new ServicioProducto({ listar: async (...args) => {
-    assert.deepEqual(args, [false, 3]); return [];
+    assert.deepEqual(args, [false, 3, {}]); return [];
   } });
   await servicio.listar(undefined, "3");
   await assert.rejects(servicio.listar(undefined, "abc"), { codigo: "ID_CATEGORIA_INVALIDO" });

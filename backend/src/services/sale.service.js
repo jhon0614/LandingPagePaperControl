@@ -1,3 +1,5 @@
+import { rangoFechas } from "../utils/query.js";
+import { createHash } from "node:crypto";
 import { ErrorAplicacion } from "../errors/app-error.js";
 
 const numero = (valor) => Number(valor ?? 0);
@@ -116,7 +118,7 @@ export class ServicioVenta {
     };
   }
 
-  async crear(datos, usuarioId) {
+  async crear(datos, usuarioId, claveIdempotencia) {
     // Esta validación se repite en el servicio para proteger llamadas internas
     // que no atraviesen el esquema Zod de la ruta.
     if (datos.tipoDescuento === "PORCENTAJE" && datos.valorDescuento > 100) {
@@ -126,7 +128,19 @@ export class ServicioVenta {
         "DESCUENTO_INVALIDO",
       );
     }
+    if (claveIdempotencia !== undefined &&
+        (typeof claveIdempotencia !== "string" || !/^[A-Za-z0-9:_-]{16,128}$/.test(claveIdempotencia)))
+      throw new ErrorAplicacion("Idempotency-Key debe contener entre 16 y 128 caracteres alfanuméricos, : _ o -.", 400, "IDEMPOTENCIA_INVALIDA");
+    const contenido = {
+      turnoCajaId: datos.turnoCajaId ?? null, clienteId: datos.clienteId ?? null,
+      productos: [...datos.productos].map(({ productoId, cantidad }) => ({ productoId, cantidad })).sort((a, b) => a.productoId - b.productoId),
+      metodoPago: datos.metodoPago, tipoDescuento: datos.tipoDescuento ?? null,
+      valorDescuento: datos.valorDescuento ?? 0, referencia: datos.referencia ?? null,
+      montoRecibido: datos.montoRecibido ?? null,
+    };
+    const hashSolicitud = createHash("sha256").update(JSON.stringify(contenido)).digest("hex");
     const resultado = await this.modelo.crear({
+      claveIdempotencia, hashSolicitud,
       ...datos,
       usuarioId,
       clienteId: datos.clienteId ?? null,
@@ -137,6 +151,7 @@ export class ServicioVenta {
     // El modelo devuelve códigos de dominio para poder deshacer la transacción;
     // aquí se traducen al formato uniforme de errores HTTP de la aplicación.
     const errores = {
+      IDEMPOTENCIA_CONFLICTO: ["La clave ya fue usada con otra venta.", 409, "IDEMPOTENCIA_CONFLICTO"],
       SIN_TURNO: [
         "Debes abrir un turno de caja antes de vender.",
         409,
@@ -191,14 +206,15 @@ export class ServicioVenta {
     return presentarComprobante(await this.modelo.comprobante(resultado.id));
   }
 
-  async propias(usuarioId) {
-    return (await this.modelo.buscarPorVendedor(usuarioId)).map(
+  async propias(usuarioId, filtros = {}) {
+    return (await this.modelo.buscarPorVendedor(usuarioId, filtros)).map(
       presentarListado,
     );
   }
 
   async historial(filtros) {
     // Solo se permiten filtros y órdenes conocidos antes de construir el SQL.
+    rangoFechas(filtros.fechaInicio, filtros.fechaFin);
     const fechaInicio = filtros.fechaInicio?.trim() || undefined;
     const fechaFin = filtros.fechaFin?.trim() || undefined;
     if (
@@ -230,7 +246,7 @@ export class ServicioVenta {
         "ORDEN_INVALIDO",
       );
     return (
-      await this.modelo.historial({ fechaInicio, fechaFin, vendedorId, orden })
+      await this.modelo.historial({ ...filtros, fechaInicio, fechaFin, vendedorId, orden })
     ).map(presentarListado);
   }
 

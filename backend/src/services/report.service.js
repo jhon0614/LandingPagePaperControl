@@ -1,3 +1,5 @@
+import { rangoFechas } from "../utils/query.js";
+import { centavos, importeNumero } from "../utils/money.js";
 import { ErrorAplicacion } from "../errors/app-error.js";
 const fecha = /^\d{4}-\d{2}-\d{2}$/;
 // Valida los filtros antes de construir la consulta y presenta cantidades como
@@ -30,8 +32,8 @@ export class ServicioReporte {
         throw new ErrorAplicacion("El vendedorId no es válido.", 400, "VENDEDOR_ID_INVALIDO");
       vendedorId = Number(filtros.vendedorId);
     }
-    const redondear = (valor) => Math.round((valor + Number.EPSILON) * 100) / 100;
-    const dias = (await this.modelo.caja({ desde, hasta, vendedorId })).map((fila) => ({
+    const filas = await this.modelo.caja({ desde, hasta, vendedorId });
+    const dias = filas.map((fila) => ({
       fecha: fila.fecha,
       totalVentas: Number(fila.total_ventas),
       ventasPorMetodo: {
@@ -39,19 +41,19 @@ export class ServicioReporte {
         transferencia: Number(fila.transferencia),
       },
       totalGastos: Number(fila.total_gastos),
-      flujoNeto: redondear(Number(fila.total_ventas) - Number(fila.total_gastos)),
+      flujoNeto: importeNumero(centavos(fila.total_ventas) - centavos(fila.total_gastos)),
     }));
-    const sumar = (obtener) => redondear(dias.reduce((total, dia) => total + obtener(dia), 0));
+    const sumar = (obtener) => importeNumero(filas.reduce((total, fila) => total + obtener(fila), 0n));
     return {
       desde, hasta, vendedorId: vendedorId ?? null, dias,
       resumen: {
-        totalVentas: sumar((d) => d.totalVentas),
-        totalGastos: sumar((d) => d.totalGastos),
-        flujoNeto: sumar((d) => d.totalVentas - d.totalGastos),
+        totalVentas: sumar((d) => centavos(d.total_ventas)),
+        totalGastos: sumar((d) => centavos(d.total_gastos)),
+        flujoNeto: sumar((d) => centavos(d.total_ventas) - centavos(d.total_gastos)),
         ventasPorMetodo: {
-          efectivo: sumar((d) => d.ventasPorMetodo.efectivo),
-          tarjeta: sumar((d) => d.ventasPorMetodo.tarjeta),
-          transferencia: sumar((d) => d.ventasPorMetodo.transferencia),
+          efectivo: sumar((d) => centavos(d.efectivo)),
+          tarjeta: sumar((d) => centavos(d.tarjeta)),
+          transferencia: sumar((d) => centavos(d.transferencia)),
         },
       },
     };
@@ -64,6 +66,7 @@ export class ServicioReporte {
         400,
         "PERIODO_INVALIDO",
       );
+    if (periodo === "rango") rangoFechas(filtros.desde, filtros.hasta);
     const desde = filtros.desde?.trim();
     const hasta = filtros.hasta?.trim();
     if (

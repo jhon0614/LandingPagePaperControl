@@ -3,7 +3,7 @@ import { z } from "zod";
 import { permitirRoles } from "../middleware/roles.middleware.js";
 import { validar } from "../middleware/validate.js";
 
-const dinero = z.number().finite().nonnegative().max(9999999999.99);
+import { dinero } from "../utils/money.js";
 // Vendedores, administradores y dueños participan en la operación de caja.
 const rolesCaja = permitirRoles("VENDEDOR", "ADMINISTRADOR", "DUENO");
 

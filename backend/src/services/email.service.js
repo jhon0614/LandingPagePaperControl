@@ -22,6 +22,9 @@ export class ServicioCorreo {
       port: configuracionCorreo.puerto,
       secure: configuracionCorreo.seguro,
       requireTLS: !configuracionCorreo.seguro,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 30000,
       auth: {
         user: configuracionCorreo.usuario,
         pass: configuracionCorreo.contrasena,

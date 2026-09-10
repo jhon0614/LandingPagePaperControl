@@ -1,3 +1,4 @@
+import { limiteSql } from "../utils/query.js";
 // Agrupa las consultas relacionadas con usuarios. De esta manera, el resto de
 // la aplicación no necesita conocer cómo están escritas las consultas SQL.
 export class ModeloUsuario {
@@ -10,7 +11,7 @@ export class ModeloUsuario {
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.correo, u.nombres, u.apellidos, u.hash_contrasena,
               u.debe_cambiar_contrasena, u.esta_activo,
-              u.intentos_acceso_fallidos, u.bloqueado_hasta,
+              u.intentos_acceso_fallidos, DATE_FORMAT(u.bloqueado_hasta, '%Y-%m-%dT%H:%i:%s.000Z') AS bloqueado_hasta,
               r.nombre AS rol
          FROM usuarios u
          JOIN roles r ON r.id = u.rol_id
@@ -27,7 +28,7 @@ export class ModeloUsuario {
       `UPDATE usuarios
           SET intentos_acceso_fallidos = intentos_acceso_fallidos + 1,
               bloqueado_hasta = CASE
-                WHEN intentos_acceso_fallidos + 1 >= ?
+                WHEN intentos_acceso_fallidos >= ?
                 THEN DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? MINUTE)
                 ELSE bloqueado_hasta
               END
@@ -36,7 +37,7 @@ export class ModeloUsuario {
     );
 
     const [filas] = await this.conexiones.execute(
-      `SELECT intentos_acceso_fallidos, bloqueado_hasta
+      `SELECT intentos_acceso_fallidos, DATE_FORMAT(bloqueado_hasta, '%Y-%m-%dT%H:%i:%s.000Z') AS bloqueado_hasta
          FROM usuarios WHERE id = ?`,
       [usuarioId],
     );
@@ -60,7 +61,7 @@ export class ModeloUsuario {
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.nombres, u.apellidos, u.correo,
               u.debe_cambiar_contrasena, u.esta_activo,
-              u.intentos_acceso_fallidos, u.bloqueado_hasta, u.creado_en,
+              u.intentos_acceso_fallidos, DATE_FORMAT(u.bloqueado_hasta, '%Y-%m-%dT%H:%i:%s.000Z') AS bloqueado_hasta, u.creado_en,
               r.id AS rol_id, r.nombre AS rol
          FROM usuarios u
          JOIN roles r ON r.id = u.rol_id
@@ -71,16 +72,16 @@ export class ModeloUsuario {
     return filas[0] ?? null;
   }
 
-  async listar() {
+  async listar(filtros = {}) {
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.nombres, u.apellidos, u.correo,
             u.esta_activo, u.debe_cambiar_contrasena,
-            u.intentos_acceso_fallidos, u.bloqueado_hasta, u.creado_en,
+            u.intentos_acceso_fallidos, DATE_FORMAT(u.bloqueado_hasta, '%Y-%m-%dT%H:%i:%s.000Z') AS bloqueado_hasta, u.creado_en,
             r.id AS rol_id, r.nombre AS rol
        FROM usuarios u
        JOIN roles r ON r.id = u.rol_id
       WHERE u.eliminado_en IS NULL
-      ORDER BY u.nombres, u.apellidos`,
+      ORDER BY u.nombres, u.apellidos, u.id ${limiteSql(filtros)}`,
     );
 
     return filas;
@@ -192,7 +193,7 @@ export class ModeloUsuario {
     return resultado.affectedRows > 0;
   }
 
-  async actualizarContrasenaYRevocarSesiones(usuarioId, hashContrasena) {
+  async actualizarContrasenaYRevocarSesiones(usuarioId, hashContrasena, hashAnterior) {
     // Ambas operaciones se confirman juntas para no conservar sesiones
     // renovables con una contraseña que ya fue reemplazada.
     const conexion = await this.conexiones.getConnection();
@@ -209,8 +210,8 @@ export class ModeloUsuario {
                 bloqueado_hasta = NULL
           WHERE id = ?
             AND esta_activo = TRUE
-            AND eliminado_en IS NULL`,
-        [hashContrasena, usuarioId],
+            AND eliminado_en IS NULL AND hash_contrasena = ?`,
+        [hashContrasena, usuarioId, hashAnterior],
       );
 
       if (resultado.affectedRows === 0) {
@@ -227,7 +228,12 @@ export class ModeloUsuario {
         [usuarioId],
       );
 
-      // Confirma las dos modificaciones únicamente cuando ambas tuvieron éxito.
+      await conexion.execute(
+        `UPDATE tokens_recuperacion_contrasena SET usado_en = UTC_TIMESTAMP()
+          WHERE usuario_id = ? AND usado_en IS NULL`, [usuarioId],
+      );
+
+      // Confirma las modificaciones únicamente cuando todas tuvieron éxito.
       await conexion.commit();
       return true;
     } catch (error) {

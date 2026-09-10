@@ -11,12 +11,21 @@ export function manejarError(error, _solicitud, respuesta, _siguiente) { //_soli
     error = new ErrorAplicacion("El cuerpo no contiene JSON válido.", 400, "JSON_INVALIDO");
   if (error.type === "entity.too.large")
     error = new ErrorAplicacion("La solicitud supera el tamaño permitido.", 413, "CUERPO_DEMASIADO_GRANDE");
+  if (["ER_LOCK_DEADLOCK", "ER_LOCK_WAIT_TIMEOUT"].includes(error.code))
+    error = new ErrorAplicacion("Otra operación modificó estos datos. Reintenta la solicitud.", 409, "CONFLICTO_CONCURRENCIA");
+  if (error.code === "ER_DUP_ENTRY")
+    error = new ErrorAplicacion("Ya existe un registro con esos datos únicos.", 409, "REGISTRO_DUPLICADO");
+  if (["ETIMEDOUT", "ECONNREFUSED", "ER_CON_COUNT_ERROR", "ER_QUERY_TIMEOUT"].includes(error.code) || error.message === "Queue limit reached.") {
+    respuesta.set("Retry-After", "2");
+    error = new ErrorAplicacion("El servicio está ocupado o temporalmente no disponible.", 503, "SERVICIO_NO_DISPONIBLE");
+  }
   const esControlado = error instanceof ErrorAplicacion;
   const estadoHttp = esControlado ? error.estadoHttp : 500;
 
   if (!esControlado) {
-    // Los detalles inesperados se muestran solo en la consola del servidor.
-    console.error(error);
+    // Evita volcar SQL, valores de parámetros, hashes o credenciales en los logs.
+    console.error({ tipo: error.name, codigo: error.code ?? "ERROR_INTERNO",
+      origen: error.stack?.split("\n").slice(1, 4).join("\n") });
   }
 
   respuesta.status(estadoHttp).json({

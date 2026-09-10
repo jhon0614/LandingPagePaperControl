@@ -1,3 +1,4 @@
+import { listaPaginada } from "../utils/query.js";
 // Traduce las solicitudes HTTP de ventas a llamadas del servicio; las reglas de
 // inventario, permisos y caja permanecen fuera del controlador.
 export class ControladorVenta {
@@ -35,6 +36,7 @@ export class ControladorVenta {
       const venta = await this.servicio.crear(
         requerimiento.body,
         requerimiento.usuario.id,
+        requerimiento.get?.("Idempotency-Key"),
       );
       return respuesta.status(201).json({ exito: true, datos: { venta } });
     } catch (error) {
@@ -45,8 +47,8 @@ export class ControladorVenta {
   // Limita el listado al vendedor identificado por la sesión.
   propias = async (requerimiento, respuesta, siguiente) => {
     try {
-      const ventas = await this.servicio.propias(requerimiento.usuario.id);
-      return respuesta.status(200).json({ exito: true, datos: { ventas } });
+      const ventas = await this.servicio.propias(requerimiento.usuario.id, requerimiento.query);
+      return respuesta.status(200).json(listaPaginada("ventas", ventas, requerimiento.query));
     } catch (error) {
       return siguiente(error);
     }
@@ -56,7 +58,7 @@ export class ControladorVenta {
   historial = async (requerimiento, respuesta, siguiente) => {
     try {
       const ventas = await this.servicio.historial(requerimiento.query);
-      return respuesta.status(200).json({ exito: true, datos: { ventas } });
+      return respuesta.status(200).json(listaPaginada("ventas", ventas, requerimiento.query));
     } catch (error) {
       return siguiente(error);
     }

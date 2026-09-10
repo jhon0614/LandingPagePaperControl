@@ -1,3 +1,8 @@
+import { transaccionAdministrativa } from "../utils/admin-transaction.js";
+import { ModeloUsuario } from "../models/user.model.js";
+import { ModeloRestablecimientoContrasena } from "../models/password-reset.model.js";
+import { ModeloAuditoria } from "../models/audit.model.js";
+import { ModeloColaCorreo } from "../models/mail-queue.model.js";
 import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import { ErrorAplicacion } from "../errors/app-error.js";
@@ -10,13 +15,26 @@ export class ServicioContrasena {
     modeloRestablecimiento,
     servicioCorreo,
     modeloAuditoria,
+    modeloColaCorreo,
     configuracion,
   }) {
+    this.modeloColaCorreo = modeloColaCorreo;
     this.modeloUsuario = modeloUsuario;
     this.modeloRestablecimiento = modeloRestablecimiento;
     this.servicioCorreo = servicioCorreo;
     this.modeloAuditoria = modeloAuditoria;
     this.configuracion = configuracion;
+    if (typeof modeloUsuario.conexiones?.getConnection === "function") {
+      for (const metodo of ["solicitarRestablecimientoAdministrativo", "desbloquearUsuario"]) {
+        this[metodo] = (datos) => transaccionAdministrativa(modeloUsuario.conexiones, datos.responsableId, (conexion) => {
+          const servicio = new ServicioContrasena({ modeloUsuario: new ModeloUsuario(conexion),
+            modeloRestablecimiento: new ModeloRestablecimientoContrasena(conexion),
+            modeloAuditoria: new ModeloAuditoria(conexion), modeloColaCorreo: new ModeloColaCorreo(conexion),
+            servicioCorreo, configuracion });
+          return servicio[metodo](datos);
+        });
+      }
+    }
   }
 
   async cambiarContrasena({ usuarioId, contrasenaActual, contrasenaNueva }) {
@@ -63,6 +81,7 @@ export class ServicioContrasena {
       await this.modeloUsuario.actualizarContrasenaYRevocarSesiones(
         usuarioId,
         hashContrasenaNueva,
+        usuario.hash_contrasena,
       );
 
     if (!fueActualizada) {
@@ -82,17 +101,13 @@ export class ServicioContrasena {
     // El mismo mensaje se usa para correos existentes e inexistentes.
     const mensaje =
       "Si el correo pertenece a una cuenta disponible, recibirás las instrucciones.";
-    const correoNormalizado = correo.trim().toLowerCase();
-    const usuario =
-      await this.modeloUsuario.buscarActivoPorCorreo(correoNormalizado);
-
-    if (!usuario) {
-      // La respuesta no revela si el correo se encuentra registrado.
-      return { mensaje };
-    }
-
-    await this.#crearSolicitudYEnviarCorreo(usuario);
+    await this.modeloColaCorreo.encolar(correo.trim().toLowerCase());
     return { mensaje };
+  }
+
+  async procesarRecuperacion(correo) {
+    const usuario = await this.modeloUsuario.buscarActivoPorCorreo(correo);
+    if (usuario) await this.#crearSolicitudYEnviarCorreo(usuario);
   }
 
   async restablecerContrasena({ token, contrasenaNueva }) {
@@ -135,7 +150,7 @@ export class ServicioContrasena {
       );
     }
 
-    await this.#crearSolicitudYEnviarCorreo(usuario);
+    await this.modeloColaCorreo.encolar(usuario.correo);
 
     await this.modeloAuditoria.registrar({
       usuarioId: Number(responsableId),
@@ -149,7 +164,7 @@ export class ServicioContrasena {
     });
 
     return {
-      mensaje: "Las instrucciones fueron enviadas al correo del usuario.",
+      mensaje: "La solicitud fue registrada. Las instrucciones se enviarán al correo del usuario.",
     };
   }
 
@@ -197,7 +212,7 @@ export class ServicioContrasena {
     const hashToken = this.#crearHashToken(token);
     const expiraEn = new Date(Date.now() + this.configuracion.tiempoTokenMs);
 
-    await this.modeloRestablecimiento.crear({
+    const solicitudId = await this.modeloRestablecimiento.crear({
       usuarioId: usuario.id,
       hashToken,
       expiraEn,

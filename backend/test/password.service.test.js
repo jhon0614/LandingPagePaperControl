@@ -7,6 +7,7 @@ import { ServicioContrasena } from "../src/services/password.service.js";
 // Construye dependencias simuladas para probar las reglas sin MySQL ni Gmail.
 function construirServicio(reemplazos = {}) {
   const correos = [];
+  const cola = [];
   const solicitudes = [];
   const auditorias = [];
   const modeloUsuario = {
@@ -35,13 +36,14 @@ function construirServicio(reemplazos = {}) {
 
   const servicio = new ServicioContrasena({
     modeloUsuario,
+    modeloColaCorreo: { encolar: async (correo) => cola.push(correo) },
     modeloRestablecimiento,
     servicioCorreo,
     modeloAuditoria,
     configuracion: { tiempoTokenMs: 30 * 60 * 1000 },
   });
 
-  return { servicio, correos, solicitudes, auditorias };
+  return { servicio, correos, solicitudes, auditorias, cola };
 }
 
 // Cada prueba cubre una regla de seguridad observable desde el servicio.
@@ -125,6 +127,10 @@ test("la recuperación pública no revela si el correo existe", async () => {
 
   assert.deepEqual(respuestaDesconocido, respuestaConocido);
   assert.equal(desconocido.correos.length, 0);
+  assert.equal(conocido.correos.length, 0);
+  assert.deepEqual(conocido.cola, ["user@papercontrol.local"]);
+  assert.deepEqual(desconocido.cola, ["unknown@example.com"]);
+  await conocido.servicio.procesarRecuperacion(conocido.cola[0]);
   assert.equal(conocido.correos.length, 1);
   assert.equal(conocido.solicitudes[0].hashToken.length, 64);
   assert.notEqual(conocido.solicitudes[0].hashToken, conocido.correos[0].token);
@@ -166,8 +172,8 @@ test("rechaza un token vencido, utilizado o inexistente", async () => {
   );
 });
 
-test("el restablecimiento administrativo envía correo y registra auditoría", async () => {
-  const { servicio, correos, auditorias } = construirServicio({
+test("el restablecimiento administrativo encola correo y registra auditoría", async () => {
+  const { servicio, correos, auditorias, cola } = construirServicio({
     modeloUsuario: {
       buscarPorId: async () => ({ id: 3, correo: "user@papercontrol.local" }),
     },
@@ -179,7 +185,8 @@ test("el restablecimiento administrativo envía correo y registra auditoría", a
     direccionIp: "127.0.0.1",
   });
 
-  assert.equal(correos.length, 1);
+  assert.equal(correos.length, 0);
+  assert.deepEqual(cola, ["user@papercontrol.local"]);
   assert.equal(auditorias[0].usuarioId, 1);
   assert.equal(auditorias[0].entidadId, 3);
   assert.equal(auditorias[0].accion, "SOLICITAR_RESTABLECIMIENTO_USUARIO");

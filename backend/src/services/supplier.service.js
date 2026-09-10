@@ -18,8 +18,8 @@ export class ServicioProveedor {
   constructor(modelo) {
     this.modelo = modelo;
   }
-  async listar() {
-    return (await this.modelo.listar()).map(presentar);
+  async listar(filtros = {}) {
+    return (await this.modelo.listar(filtros)).map(presentar);
   }
   async obtener(id) {
     const fila = await this.modelo.buscarPorId(this.#id(id));

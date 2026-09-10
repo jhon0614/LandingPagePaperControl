@@ -1,13 +1,25 @@
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import InactividadAviso from "./InactividadAviso";
+import { useEffect, useState } from "react";
 import "../styles/Dashboard.css";
 
 function Layout({ children }) {
-    return (
-        <div className="dashboard">
+    const [sidebarContraido, setSidebarContraido] = useState(() =>
+        localStorage.getItem("sidebarContraido") === "true"
+    );
 
-        <Sidebar />
+    useEffect(() => {
+        localStorage.setItem("sidebarContraido", String(sidebarContraido));
+    }, [sidebarContraido]);
+
+    return (
+        <div className={`dashboard ${sidebarContraido ? "dashboard-sidebar-contraido" : ""}`}>
+
+        <Sidebar
+            contraido={sidebarContraido}
+            onAlternar={() => setSidebarContraido((actual) => !actual)}
+        />
 
         <div className="dashboard-body">
 

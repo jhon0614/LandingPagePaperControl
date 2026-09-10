@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import "../styles/Dashboard.css";
 import "../styles/Caja.css";
 import { formatoFechaHora, formatoHora } from "../utils/fecha";
+import { aNumeroMonto, formatearMontoEntrada, limpiarMontoEntrada } from "../utils/moneda";
 import {
     obtenerTurnoActual,
     abrirCaja,
@@ -22,24 +23,6 @@ function formatoMoneda(valor) {
     return `$${Number(valor || 0).toLocaleString("es-CO")}`;
 
 }
-
-function formatearEntrada(valor) {
-
-    const digitos = String(valor || "").replace(/\D/g, "");
-
-    if (!digitos) return "";
-
-    return Number(digitos).toLocaleString("es-CO");
-
-}
-
-
-function limpiarEntrada(valorFormateado) {
-
-    return String(valorFormateado).replace(/\D/g, "");
-
-}
-
 
 function Caja() {
 
@@ -100,6 +83,8 @@ function Caja() {
     const [montoGasto, setMontoGasto] = useState("");
 
     const [guardandoGasto, setGuardandoGasto] = useState(false);
+
+    const [mostrarDetallesGastos, setMostrarDetallesGastos] = useState(false);
 
 
     /*
@@ -193,7 +178,7 @@ function Caja() {
 
         if (
             montoInicial === "" ||
-            Number(montoInicial) < 0
+            aNumeroMonto(montoInicial) < 0
         ) {
 
             setError(
@@ -254,7 +239,7 @@ function Caja() {
 
         if (
             montoGasto === "" ||
-            Number(montoGasto) <= 0
+            aNumeroMonto(montoGasto) <= 0
         ) {
 
             setError(
@@ -271,7 +256,7 @@ function Caja() {
 
             await registrarGasto({
                 descripcion: descripcionGasto.trim(),
-                monto: montoGasto,
+                monto: aNumeroMonto(montoGasto),
             });
 
             setDescripcionGasto("");
@@ -511,9 +496,9 @@ function Caja() {
                             type="text"
                             inputMode="numeric"
                             placeholder="Ej: 100.000"
-                            value={formatearEntrada(montoInicial)}
-                            onChange={(e) =>
-                                setMontoInicial(limpiarEntrada(e.target.value))
+                        value={formatearMontoEntrada(montoInicial)}
+                        onChange={(e) =>
+                            setMontoInicial(limpiarMontoEntrada(e.target.value))
                             }
                             disabled={abriendo}
                         />
@@ -675,9 +660,9 @@ function Caja() {
                         type="text"
                         inputMode="numeric"
                         placeholder="Monto"
-                        value={formatearEntrada(montoGasto)}
+                        value={formatearMontoEntrada(montoGasto)}
                         onChange={(e) =>
-                            setMontoGasto(limpiarEntrada(e.target.value))
+                            setMontoGasto(limpiarMontoEntrada(e.target.value))
                         }
                         disabled={guardandoGasto}
                     />
@@ -705,7 +690,20 @@ function Caja() {
 
                 </form>
 
-                <div className="caja-gastos-tabla">
+                <div className="caja-gastos-acciones">
+                    <button
+                        type="button"
+                        className="btn-ver-detalles-gastos"
+                        onClick={() => setMostrarDetallesGastos((actual) => !actual)}
+                        aria-expanded={mostrarDetallesGastos}
+                    >
+                        <i className={`fa-solid ${mostrarDetallesGastos ? "fa-chevron-up" : "fa-chevron-down"}`}></i>
+                        {mostrarDetallesGastos ? "Ocultar detalles de gastos" : "Ver detalles de gastos"}
+                    </button>
+                </div>
+
+                {mostrarDetallesGastos && (
+                <div className="caja-gastos-tabla" aria-live="polite">
 
                     {gastos.length === 0 ? (
 
@@ -773,6 +771,7 @@ function Caja() {
                     )}
 
                 </div>
+                )}
 
             </section>
 
@@ -961,9 +960,9 @@ function Caja() {
                                         type="text"
                                         inputMode="numeric"
                                         placeholder="Ej: 200.000"
-                                        value={formatearEntrada(montoContado)}
-                                        onChange={(e) =>
-                                            setMontoContado(limpiarEntrada(e.target.value))
+                        value={formatearMontoEntrada(montoContado)}
+                        onChange={(e) =>
+                            setMontoContado(limpiarMontoEntrada(e.target.value))
                                         }
                                         disabled={cerrando}
                                     />

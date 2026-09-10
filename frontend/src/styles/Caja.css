@@ -225,6 +225,26 @@
     background: #046273;
 }
 
+.caja-gastos-acciones {
+    display: flex;
+    justify-content: flex-end;
+    margin: 4px 0 14px;
+}
+
+.btn-ver-detalles-gastos {
+    border: 1px solid #b9dfe5;
+    border-radius: 9px;
+    padding: 9px 12px;
+    background: #f0fbfc;
+    color: #046273;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-ver-detalles-gastos:hover {
+    background: #dff5f7;
+}
+
 .caja-gastos-tabla table {
     width: 100%;
     border-collapse: collapse;
@@ -410,4 +430,8 @@
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+}
+
+.caja-gastos-tabla {
+    overflow-x: auto;
 }

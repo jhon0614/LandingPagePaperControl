@@ -1530,11 +1530,70 @@
 
     max-width: 250px;
 
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+}
 
-    overflow: hidden;
+.historial-acciones {
+    display: flex;
+    gap: 8px;
+}
 
-    text-overflow: ellipsis;
+.btn-ver-recibo {
+    border: none;
+    background: #e6f7fa;
+    color: #05788a;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn-ver-recibo:hover {
+    background: #05788a;
+    color: #fff;
+}
+
+.recibo-modal {
+    max-width: 720px;
+}
+
+.recibo-tabla {
+    overflow-x: auto;
+    border: 1px solid #edf2f7;
+    border-radius: 8px;
+}
+
+.recibo-tabla table {
+    width: 100%;
+    min-width: 540px;
+    border-collapse: collapse;
+}
+
+.recibo-tabla th,
+.recibo-tabla td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.recibo-totales {
+    margin-top: 16px;
+}
+
+.recibo-totales p {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 8px 0;
+}
+
+.recibo-total {
+    padding-top: 10px;
+    border-top: 1px solid #dbe3eb;
+    color: #062f3d;
+    font-size: 17px;
 }
 
 

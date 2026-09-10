@@ -13,10 +13,12 @@ import {
     obtenerHistorialVentas, 
     registrarVenta as crearVentaApi,
     eliminarVenta,
+    obtenerComprobante,
 } from "../services/ventas.service";
 import { obtenerProductos } from "../services/productos.service";
 import { obtenerMetodosPago, cambiarEstadoMetodoPago } from "../services/ventas.service";
 import { obtenerClientes, obtenerCliente } from "../services/clientes.service";
+import { aNumeroMonto, formatearMontoEntrada, limpiarMontoEntrada } from "../utils/moneda";
 
 function Dropdown({
     value,
@@ -442,6 +444,9 @@ function Ventas() {
 
     const [ventaExitosaInfo, setVentaExitosaInfo] = 
         useState(null);
+
+    const [comprobante, setComprobante] = useState(null);
+    const [cargandoComprobante, setCargandoComprobante] = useState(false);
     
     const [modalAnular, setModalAnular] = useState(false);
 
@@ -492,6 +497,44 @@ function Ventas() {
 
         }
 
+    }
+
+    async function verComprobante(idVenta) {
+        try {
+            setCargandoComprobante(true);
+            setComprobante(await obtenerComprobante(idVenta));
+        } catch (error) {
+            alert(error.message || "No fue posible cargar el recibo.");
+        } finally {
+            setCargandoComprobante(false);
+        }
+    }
+
+    function imprimirComprobante() {
+        if (!comprobante) return;
+
+        const escaparHtml = (texto) => String(texto ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        const productos = comprobante.productos.map((producto) => `
+            <tr><td>${escaparHtml(producto.nombre)}</td><td>${producto.cantidad}</td><td>$${producto.precioUnitario.toLocaleString("es-CO")}</td><td>$${producto.total.toLocaleString("es-CO")}</td></tr>
+        `).join("");
+        const pagos = escaparHtml(comprobante.pagos.map((pago) => pago.nombre || pago.metodo).join(", "));
+        const ventana = window.open("", "_blank");
+
+        if (!ventana) {
+            alert("El navegador bloqueó la ventana de impresión.");
+            return;
+        }
+
+        ventana.opener = null;
+        ventana.document.write(`<!doctype html><html lang="es"><head><title>Recibo ${comprobante.numeroVenta}</title><style>body{font-family:Arial,sans-serif;color:#17313a;padding:24px}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{padding:8px;border-bottom:1px solid #dce6e8;text-align:left}h1{color:#05788a}.total{font-size:18px;font-weight:bold}</style></head><body><h1>PaperControl</h1><p><strong>Recibo:</strong> ${comprobante.numeroVenta}<br><strong>Fecha:</strong> ${new Date(comprobante.fecha).toLocaleString("es-CO", { timeZone: "America/Bogota" })}</p><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Total</th></tr></thead><tbody>${productos}</tbody></table><p>Subtotal: $${comprobante.subtotal.toLocaleString("es-CO")}<br>Descuento: $${comprobante.descuento.monto.toLocaleString("es-CO")}<br>Método de pago: ${pagos}</p><p class="total">Total: $${comprobante.total.toLocaleString("es-CO")}</p></body></html>`);
+        ventana.document.close();
+        ventana.focus();
+        ventana.print();
     }
 
     /* =========================================================
@@ -1306,7 +1349,7 @@ function Ventas() {
 
         if (metodoPago === "EFECTIVO") {
 
-            const recibido = Number(montoRecibido);
+            const recibido = aNumeroMonto(montoRecibido);
 
             if (!montoRecibido || !Number.isFinite(recibido)) {
 
@@ -1386,7 +1429,7 @@ function Ventas() {
 
                 montoRecibido:
                     metodoPago === "EFECTIVO"
-                        ? Number(montoRecibido)
+                        ? aNumeroMonto(montoRecibido)
                         : null,
 
                 items: carrito.map((item) => ({
@@ -1406,7 +1449,7 @@ function Ventas() {
                 metodoPago,
                 montoRecibido:
                     metodoPago === "EFECTIVO"
-                        ? Number(montoRecibido)
+                        ? aNumeroMonto(montoRecibido)
                         : null,
                 cambio: pagoEfectivo?.cambio ?? null,
             });
@@ -1999,24 +2042,23 @@ function Ventas() {
                                 </label>
 
                                 <input
-                                    type="number"
-                                    min="0"
-                                    step="100"
+                                    type="text"
+                                    inputMode="decimal"
                                     placeholder={`Mínimo $${total.toLocaleString("es-CO")}`}
-                                    value={montoRecibido}
+                                    value={formatearMontoEntrada(montoRecibido)}
                                     onChange={(e) =>
-                                        setMontoRecibido(e.target.value)
+                                        setMontoRecibido(limpiarMontoEntrada(e.target.value))
                                     }
                                     className="pos-monto-recibido-input"
                                 />
 
                                 {montoRecibido &&
-                                    Number(montoRecibido) >= total && (
+                                    aNumeroMonto(montoRecibido) >= total && (
 
                                         <small className="pos-cambio-estimado">
                                             Cambio estimado: $
                                             {(
-                                                Number(montoRecibido) - total
+                                                aNumeroMonto(montoRecibido) - total
                                             ).toLocaleString("es-CO")}
                                         </small>
 
@@ -2540,11 +2582,21 @@ function Ventas() {
 
                                             <td>
 
-                                                {String(
-                                                    venta.estado || ""
-                                                ).toUpperCase() !==
-                                                    "ANULADA" &&
-                                                    puedeAnular(venta) && (
+                                                <div className="historial-acciones">
+                                                    <button
+                                                        type="button"
+                                                        className="btn-ver-recibo"
+                                                        title="Ver recibo"
+                                                        onClick={() => verComprobante(venta.id)}
+                                                    >
+                                                        <i className="fa-solid fa-receipt"></i>
+                                                    </button>
+
+                                                    {String(
+                                                        venta.estado || ""
+                                                    ).toUpperCase() !==
+                                                        "ANULADA" &&
+                                                        puedeAnular(venta) && (
 
                                                         <button
                                                             type="button"
@@ -2560,6 +2612,7 @@ function Ventas() {
                                                         </button>
 
                                                     )}
+                                                </div>
 
                                             </td>
 
@@ -2678,6 +2731,41 @@ function Ventas() {
 
                 </div>
 
+            )}
+
+            {cargandoComprobante && (
+                <div className="pos-modal-overlay">
+                    <div className="pos-modal"><div className="config-pagos-body">Cargando recibo...</div></div>
+                </div>
+            )}
+
+            {comprobante && (
+                <div className="pos-modal-overlay" onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) setComprobante(null);
+                }}>
+                    <div className="pos-modal recibo-modal">
+                        <div className="pos-modal-header">
+                            <div>
+                                <h2>Recibo {comprobante.numeroVenta}</h2>
+                                <p>{new Date(comprobante.fecha).toLocaleString("es-CO", { timeZone: "America/Bogota" })}</p>
+                            </div>
+                            <button type="button" className="pos-modal-cerrar" onClick={() => setComprobante(null)}><i className="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div className="config-pagos-body recibo-contenido">
+                            <p><strong>Cliente:</strong> {comprobante.cliente?.nombre || "Venta sin cliente"}</p>
+                            <div className="recibo-tabla"><table><thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>
+                                {comprobante.productos.map((producto) => <tr key={producto.productoId}><td>{producto.nombre}</td><td>{producto.cantidad}</td><td>${producto.precioUnitario.toLocaleString("es-CO")}</td><td>${producto.total.toLocaleString("es-CO")}</td></tr>)}
+                            </tbody></table></div>
+                            <div className="recibo-totales">
+                                <p>Subtotal <strong>${comprobante.subtotal.toLocaleString("es-CO")}</strong></p>
+                                <p>Descuento <strong>-${comprobante.descuento.monto.toLocaleString("es-CO")}</strong></p>
+                                <p>Método de pago <strong>{comprobante.pagos.map((pago) => pago.nombre || pago.metodo).join(", ")}</strong></p>
+                                <p className="recibo-total">Total <strong>${comprobante.total.toLocaleString("es-CO")}</strong></p>
+                            </div>
+                        </div>
+                        <div className="pos-modal-footer"><button type="button" className="btn-cerrar-pos-modal" onClick={imprimirComprobante}><i className="fa-solid fa-print"></i> Imprimir</button></div>
+                    </div>
+                </div>
             )}
 
             {modalVentaExitosa && ventaExitosaInfo && (
@@ -2818,7 +2906,9 @@ function Ventas() {
                                 <div className="datos-cliente-detalle">
 
                                     <p><strong>Nombre:</strong> {datosCliente.nombres} {datosCliente.apellidos}</p>
-                                    <p><strong>Documento:</strong> {datosCliente.tipoDocumento} {datosCliente.documento}</p>
+                                    {rolActual !== "VENDEDOR" && (
+                                        <p><strong>Documento:</strong> {datosCliente.tipoDocumento} {datosCliente.documento}</p>
+                                    )}
                                     <p><strong>Teléfono:</strong> {datosCliente.telefono || "—"}</p>
                                     <p><strong>Correo:</strong> {datosCliente.correo || "—"}</p>
                                     <p><strong>Dirección:</strong> {datosCliente.direccion || "—"}</p>

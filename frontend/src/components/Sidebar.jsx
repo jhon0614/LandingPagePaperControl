@@ -2,7 +2,7 @@ import Logo from "./Logo";
 import { NavLink } from "react-router-dom";
 import "../styles/Dashboard.css";
 
-function Sidebar() {
+function Sidebar({ contraido, onAlternar }) {
 
     const usuario = JSON.parse(
         localStorage.getItem("usuario")
@@ -11,7 +11,17 @@ function Sidebar() {
 
     return (
 
-        <aside className="sidebar">
+        <aside className={`sidebar ${contraido ? "sidebar-contraido" : ""}`}>
+
+            <button
+                type="button"
+                className="sidebar-alternar"
+                onClick={onAlternar}
+                aria-label={contraido ? "Expandir menú lateral" : "Contraer menú lateral"}
+                title={contraido ? "Expandir menú" : "Contraer menú"}
+            >
+                <i className={`fa-solid ${contraido ? "fa-angles-right" : "fa-angles-left"}`}></i>
+            </button>
 
             <div className="sidebar-logo">
 
@@ -44,7 +54,7 @@ function Sidebar() {
 
                     <>
 
-                        <NavLink to="/admin">
+                        <NavLink to="/admin" title={contraido ? "Dashboard" : undefined}>
 
                             <i className="fa-solid fa-house"></i>
 
@@ -53,7 +63,7 @@ function Sidebar() {
                         </NavLink>
 
 
-                        <NavLink to="/inventario">
+                        <NavLink to="/inventario" title={contraido ? "Inventario" : undefined}>
 
                             <i className="fa-solid fa-boxes-stacked"></i>
 
@@ -61,7 +71,7 @@ function Sidebar() {
 
                         </NavLink>
 
-                        <NavLink to="/proveedores">
+                        <NavLink to="/proveedores" title={contraido ? "Proveedores" : undefined}>
 
                             <i className="fa-solid fa-truck"></i>
 
@@ -69,13 +79,13 @@ function Sidebar() {
 
                         </NavLink>
 
-                        <NavLink to="/caja">
+                        <NavLink to="/caja" title={contraido ? "Caja" : undefined}>
                             <i className="fa-solid fa-cash-register"></i>
                             Caja
                         </NavLink>
 
 
-                        <NavLink to="/usuarios">
+                        <NavLink to="/usuarios" title={contraido ? "Usuarios" : undefined}>
 
                             <i className="fa-solid fa-users"></i>
 
@@ -84,7 +94,7 @@ function Sidebar() {
                         </NavLink>
 
 
-                        <NavLink to="/clientes">
+                        <NavLink to="/clientes" title={contraido ? "Clientes" : undefined}>
 
                             <i className="fa-solid fa-user-group"></i>
 
@@ -93,7 +103,7 @@ function Sidebar() {
                         </NavLink>
 
 
-                        <NavLink to="/ventas">
+                        <NavLink to="/ventas" title={contraido ? "Ventas" : undefined}>
 
                             <i className="fa-solid fa-cart-shopping"></i>
 
@@ -102,7 +112,7 @@ function Sidebar() {
                         </NavLink>
 
 
-                        <NavLink to="/reportes">
+                        <NavLink to="/reportes" title={contraido ? "Reportes" : undefined}>
 
                             <i className="fa-solid fa-chart-column"></i>
 
@@ -123,7 +133,7 @@ function Sidebar() {
 
                     <>
 
-                        <NavLink to="/vendedor">
+                        <NavLink to="/vendedor" title={contraido ? "Dashboard" : undefined}>
 
                             <i className="fa-solid fa-house"></i>
 
@@ -131,13 +141,13 @@ function Sidebar() {
 
                         </NavLink>
 
-                        <NavLink to="/caja">
+                        <NavLink to="/caja" title={contraido ? "Caja" : undefined}>
                             <i className="fa-solid fa-cash-register"></i>
                             Caja
                         </NavLink>
 
 
-                        <NavLink to="/ventas">
+                        <NavLink to="/ventas" title={contraido ? "Ventas" : undefined}>
 
                             <i className="fa-solid fa-cart-shopping"></i>
 
@@ -146,7 +156,7 @@ function Sidebar() {
                         </NavLink>
 
 
-                        <NavLink to="/clientes">
+                        <NavLink to="/clientes" title={contraido ? "Clientes" : undefined}>
 
                             <i className="fa-solid fa-user-group"></i>
 
@@ -167,7 +177,7 @@ function Sidebar() {
 
                     <>
 
-                        <NavLink to="/dueno">
+                        <NavLink to="/dueno" title={contraido ? "Dashboard" : undefined}>
 
                             <i className="fa-solid fa-house"></i>
 
@@ -176,7 +186,7 @@ function Sidebar() {
                         </NavLink>
 
 
-                        <NavLink to="/inventario">
+                        <NavLink to="/inventario" title={contraido ? "Inventario" : undefined}>
 
                             <i className="fa-solid fa-boxes-stacked"></i>
 
@@ -184,18 +194,18 @@ function Sidebar() {
 
                         </NavLink>
 
-                        <NavLink to="/proveedores">
+                        <NavLink to="/proveedores" title={contraido ? "Proveedores" : undefined}>
                             <i className="fa-solid fa-truck"></i>
                             Proveedores
                         </NavLink>
 
-                        <NavLink to="/caja">
+                        <NavLink to="/caja" title={contraido ? "Caja" : undefined}>
                             <i className="fa-solid fa-cash-register"></i>
                             Caja
                         </NavLink>
 
 
-                        <NavLink to="/usuarios">
+                        <NavLink to="/usuarios" title={contraido ? "Usuarios" : undefined}>
 
                             <i className="fa-solid fa-users"></i>
 
@@ -204,7 +214,7 @@ function Sidebar() {
                         </NavLink>
 
 
-                        <NavLink to="/clientes">
+                        <NavLink to="/clientes" title={contraido ? "Clientes" : undefined}>
 
                             <i className="fa-solid fa-user-group"></i>
 
@@ -213,7 +223,7 @@ function Sidebar() {
                         </NavLink>
 
 
-                        <NavLink to="/ventas">
+                        <NavLink to="/ventas" title={contraido ? "Ventas" : undefined}>
 
                             <i className="fa-solid fa-cart-shopping"></i>
 
@@ -222,7 +232,7 @@ function Sidebar() {
                         </NavLink>
 
 
-                        <NavLink to="/reportes">
+                        <NavLink to="/reportes" title={contraido ? "Reportes" : undefined}>
 
                             <i className="fa-solid fa-chart-column"></i>
 

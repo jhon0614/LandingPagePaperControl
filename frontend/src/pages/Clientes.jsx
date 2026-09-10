@@ -20,6 +20,7 @@ function Clientes() {
     );
 
     const rolActual = usuarioActual?.rol || "";
+    const esVendedor = rolActual === "VENDEDOR";
 
     const [clientes, setClientes] = useState([]);
 
@@ -503,9 +504,11 @@ function Clientes() {
                                 Cliente
                             </th>
 
-                            <th>
-                                Documento
-                            </th>
+                            {!esVendedor && (
+                                <th>
+                                    Documento
+                                </th>
+                            )}
 
                             <th>
                                 Teléfono
@@ -554,9 +557,11 @@ function Clientes() {
                                     </div>
                                 </td>
 
-                                <td>
-                                    {cliente.documento}
-                                </td>
+                                {!esVendedor && (
+                                    <td>
+                                        {cliente.documento}
+                                    </td>
+                                )}
 
                                 <td>
                                     {cliente.telefono}
@@ -1032,17 +1037,19 @@ function Clientes() {
                             </div>
 
                             <div className="cliente-detalle-datos">
-                                <div>
-                                    <span>
-                                        Documento
-                                    </span>
+                                {!esVendedor && (
+                                    <div>
+                                        <span>
+                                            Documento
+                                        </span>
 
-                                    <strong>
-                                        {
-                                            clienteSeleccionado.documento
-                                        }
-                                    </strong>
-                                </div>
+                                        <strong>
+                                            {
+                                                clienteSeleccionado.documento
+                                            }
+                                        </strong>
+                                    </div>
+                                )}
 
                                 <div>
                                     <span>

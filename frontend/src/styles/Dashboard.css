@@ -5,6 +5,7 @@
 }
 
 .sidebar {
+    position: relative;
     width: 260px;
     background: #062f3d;
     color: white;
@@ -12,6 +13,46 @@
     flex-direction: column;
     padding: 30px 20px;
     box-shadow: 4px 0 12px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-alternar {
+    position: absolute;
+    top: 18px;
+    right: -15px;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 50%;
+    background: #05788a;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .18);
+}
+
+.sidebar-contraido {
+    width: 76px;
+    padding: 30px 12px;
+}
+
+.sidebar-contraido .sidebar-logo {
+    width: 48px;
+    margin-bottom: 28px;
+}
+
+.sidebar-contraido .sidebar-user {
+    display: none;
+}
+
+.sidebar-contraido .sidebar-menu a {
+    justify-content: center;
+    padding: 15px 10px;
+    font-size: 0;
+}
+
+.sidebar-contraido .sidebar-menu a i {
+    width: auto;
+    font-size: 18px;
 }
 
 .sidebar-logo {
@@ -217,6 +258,27 @@
 
     .sidebar {
     width: 100%;
+    }
+
+    .sidebar-contraido {
+        width: 100%;
+        padding: 20px;
+    }
+
+    .sidebar-contraido .sidebar-logo,
+    .sidebar-contraido .sidebar-user {
+        display: block;
+    }
+
+    .sidebar-contraido .sidebar-menu a {
+        justify-content: flex-start;
+        padding: 15px 18px;
+        font-size: inherit;
+    }
+
+    .sidebar-contraido .sidebar-menu a i {
+        width: 20px;
+        font-size: inherit;
     }
 
 }

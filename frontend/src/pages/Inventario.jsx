@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import Layout from "../components/Layout";
 import "../styles/Inventario.css";
 import { formatoFechaHora } from "../utils/fecha";
+import { aNumeroMonto, formatearMontoEntrada } from "../utils/moneda";
 import {
     obtenerProductos,
     crearProducto,
@@ -453,7 +454,7 @@ function Inventario() {
                     obtenerProductos({
                         incluirInactivos: true,
                     categoriaId:
-                        filtroCategoriaId !== "todas"
+                        filtroCategoriaId === "todas"
                         ? undefined
                         : filtroCategoriaId,
                     }),
@@ -829,8 +830,8 @@ function Inventario() {
             marca: formulario.get("marca").trim(),
             codigo: formulario.get("codigo").trim(),
             categoria: formulario.get("categoria").trim(),
-            precioMayor: Number(formulario.get("precioMayor")),
-            precioDetal: Number(formulario.get("precioDetal")),
+            precioMayor: aNumeroMonto(formulario.get("precioMayor")),
+            precioDetal: aNumeroMonto(formulario.get("precioDetal")),
             stock: Number(formulario.get("stock")),
             stockMinimo: Number(formulario.get("stockMinimo")),
         };
@@ -1738,13 +1739,15 @@ function Inventario() {
                                         <label>Precio proveedor</label>
                                         <input
                                             name="precioMayor"
-                                            type="number"
-                                            min="0"
+                                            type="text"
+                                            inputMode="decimal"
                                             placeholder="Ej: 4000"
                                             defaultValue={
-                                                productoEditar?.precioMayor ||
-                                                ""
+                                                formatearMontoEntrada(productoEditar?.precioMayor || "")
                                             }
+                                            onChange={(e) => {
+                                                e.currentTarget.value = formatearMontoEntrada(e.currentTarget.value);
+                                            }}
                                             required
                                         />
                                     </div>
@@ -1753,13 +1756,15 @@ function Inventario() {
                                         <label>Precio al detal</label>
                                         <input
                                             name="precioDetal"
-                                            type="number"
-                                            min="0"
+                                            type="text"
+                                            inputMode="decimal"
                                             placeholder="Ej: 6500"
                                             defaultValue={
-                                                productoEditar?.precioDetal ||
-                                                ""
+                                                formatearMontoEntrada(productoEditar?.precioDetal || "")
                                             }
+                                            onChange={(e) => {
+                                                e.currentTarget.value = formatearMontoEntrada(e.currentTarget.value);
+                                            }}
                                             required
                                         />
                                     </div>
@@ -2152,7 +2157,7 @@ function Inventario() {
                     </div>
 
                 )}
-                
+
                 {/* =====================================================
                     MODAL GESTIONAR CATEGORÍAS
                 ===================================================== */}

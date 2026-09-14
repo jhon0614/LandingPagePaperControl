@@ -12,7 +12,9 @@ import {
     actualizarCliente,
     cambiarEstadoCliente,
     eliminarCliente as eliminarClienteApi,
+    obtenerComprasCliente,
 } from "../services/clientes.service";
+import { obtenerComprobante } from "../services/ventas.service";
 
 function Clientes() {
     const usuarioActual = JSON.parse(
@@ -68,6 +70,14 @@ function Clientes() {
 
     const [clienteSeleccionado, setClienteSeleccionado] =
         useState(null);
+
+    const [comprasCliente, setComprasCliente] = useState([]);
+    const [paginacionCompras, setPaginacionCompras] = useState({ pagina: 1, hayMas: false });
+    const [cargandoCompras, setCargandoCompras] = useState(false);
+    const [errorCompras, setErrorCompras] = useState("");
+    const [filtrosCompras, setFiltrosCompras] = useState({ estado: "TODAS", fechaInicio: "", fechaFin: "" });
+    const [mostrarCompras, setMostrarCompras] = useState(false);
+    const [comprobanteCompra, setComprobanteCompra] = useState(null);
 
     /* ESTADO DEL FORMULARIO (crear / editar) */
 
@@ -184,6 +194,35 @@ function Clientes() {
 
     function cerrarDetalle() {
         setClienteSeleccionado(null);
+    }
+
+    async function cargarComprasCliente(cliente, pagina = 1) {
+        try {
+            setCargandoCompras(true);
+            setErrorCompras("");
+            const resultado = await obtenerComprasCliente(cliente.id, {
+                ...filtrosCompras,
+                pagina,
+                limite: 10,
+            });
+            setComprasCliente(resultado.compras);
+            setPaginacionCompras({ ...resultado.paginacion, pagina });
+            setMostrarCompras(true);
+        } catch (error) {
+            setErrorCompras(error.message || "No fue posible cargar el historial de compras.");
+            setComprasCliente([]);
+        } finally {
+            setCargandoCompras(false);
+        }
+    }
+
+    async function verComprobanteCompra(idVenta) {
+        try {
+            const resultado = await obtenerComprobante(idVenta);
+            setComprobanteCompra(resultado);
+        } catch (error) {
+            setErrorCompras(error.message || "No fue posible cargar el comprobante.");
+        }
     }
 
     function puedeAdministrar() {
@@ -1080,6 +1119,14 @@ function Clientes() {
                         <div className="cliente-modal-footer">
                             <button
                                 type="button"
+                                className="btn-ver-cliente"
+                                onClick={() => cargarComprasCliente(clienteSeleccionado)}
+                            >
+                                <i className="fa-solid fa-receipt"></i>
+                                Ver compras
+                            </button>
+                            <button
+                                type="button"
                                 className="btn-cerrar-cliente"
                                 onClick={
                                     cerrarDetalle
@@ -1088,6 +1135,58 @@ function Clientes() {
                                 Cerrar
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {mostrarCompras && clienteSeleccionado && (
+                <div className="cliente-modal-overlay" onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) setMostrarCompras(false);
+                }}>
+                    <div className="cliente-modal historial-compras-modal">
+                        <div className="cliente-modal-header">
+                            <div>
+                                <h2>Historial de compras</h2>
+                                <p>{clienteSeleccionado.nombres} {clienteSeleccionado.apellidos}</p>
+                            </div>
+                            <button type="button" className="cliente-modal-cerrar" onClick={() => setMostrarCompras(false)}><i className="fa-solid fa-xmark"></i></button>
+                        </div>
+
+                        <div className="historial-compras-filtros">
+                            <input type="date" value={filtrosCompras.fechaInicio} onChange={(e) => setFiltrosCompras((actual) => ({ ...actual, fechaInicio: e.target.value }))} />
+                            <input type="date" value={filtrosCompras.fechaFin} onChange={(e) => setFiltrosCompras((actual) => ({ ...actual, fechaFin: e.target.value }))} />
+                            <select value={filtrosCompras.estado} onChange={(e) => setFiltrosCompras((actual) => ({ ...actual, estado: e.target.value }))}>
+                                <option value="TODAS">Todas</option>
+                                <option value="CONFIRMADA">Confirmadas</option>
+                                <option value="ANULADA">Anuladas</option>
+                            </select>
+                            <button type="button" className="btn-guardar-cliente" onClick={() => cargarComprasCliente(clienteSeleccionado, 1)}>Consultar</button>
+                        </div>
+
+                        {cargandoCompras && <p className="caja-gastos-vacio">Cargando compras...</p>}
+                        {errorCompras && <div className="caja-error">{errorCompras}</div>}
+                        {!cargandoCompras && !errorCompras && comprasCliente.length === 0 && <p className="caja-gastos-vacio">Este cliente no tiene compras para los filtros seleccionados.</p>}
+                        {!cargandoCompras && comprasCliente.length > 0 && (
+                            <div className="historial-compras-tabla">
+                                <table><thead><tr><th>Fecha</th><th>Venta</th><th>Vendedor</th><th>Productos</th><th>Descuento</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>
+                                    {comprasCliente.map((compra) => <tr key={compra.id}><td>{compra.fecha ? new Date(compra.fecha).toLocaleString("es-CO", { timeZone: "America/Bogota" }) : "—"}</td><td>{compra.numeroVenta || compra.numero_venta || "—"}</td><td>{compra.vendedor || "—"}</td><td><ul>{(compra.items || []).map((item, indice) => <li key={`${item.productoId || item.sku || "item"}-${indice}`}>{item.nombre} ({item.sku || "sin SKU"}) × {item.cantidad} — ${Number(item.precioUnitario ?? item.precio ?? 0).toLocaleString("es-CO")}</li>)}</ul></td><td>${Number(compra.montoDescuento ?? compra.monto_descuento ?? 0).toLocaleString("es-CO")}</td><td>${Number(compra.total ?? compra.monto_total ?? 0).toLocaleString("es-CO")}</td><td>{compra.estado || "—"}</td><td><button type="button" className="btn-ver-cliente" onClick={() => verComprobanteCompra(compra.id)} title="Ver comprobante"><i className="fa-solid fa-receipt"></i></button></td></tr>)}
+                                </tbody></table>
+                            </div>
+                        )}
+                        <div className="cliente-modal-footer">
+                            <button type="button" className="btn-cancelar-cliente" disabled={!paginacionCompras.pagina || paginacionCompras.pagina <= 1} onClick={() => cargarComprasCliente(clienteSeleccionado, paginacionCompras.pagina - 1)}>Anterior</button>
+                            <span>Página {paginacionCompras.pagina || 1}</span>
+                            <button type="button" className="btn-guardar-cliente" disabled={!paginacionCompras.hayMas} onClick={() => cargarComprasCliente(clienteSeleccionado, (paginacionCompras.pagina || 1) + 1)}>Siguiente</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {comprobanteCompra && (
+                <div className="cliente-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setComprobanteCompra(null); }}>
+                    <div className="cliente-modal historial-compras-modal">
+                        <div className="cliente-modal-header"><h2>Comprobante {comprobanteCompra.numeroVenta}</h2><button type="button" className="cliente-modal-cerrar" onClick={() => setComprobanteCompra(null)}><i className="fa-solid fa-xmark"></i></button></div>
+                        <div className="cliente-detalle compras-comprobante"><p><strong>Fecha:</strong> {new Date(comprobanteCompra.fecha).toLocaleString("es-CO", { timeZone: "America/Bogota" })}</p>{comprobanteCompra.estado === "ANULADA" && <p className="caja-error"><strong>Venta anulada:</strong> {comprobanteCompra.motivoAnulacion || "Sin motivo registrado."}</p>}<ul>{(comprobanteCompra.productos || []).map((item) => <li key={item.productoId}>{item.nombre} ({item.sku || "sin SKU"}) × {item.cantidad} — ${Number(item.precioUnitario || 0).toLocaleString("es-CO")}</li>)}</ul><p><strong>Descuento:</strong> ${Number(comprobanteCompra.descuento?.monto || 0).toLocaleString("es-CO")}</p><p><strong>Total:</strong> ${Number(comprobanteCompra.total || 0).toLocaleString("es-CO")}</p></div>
                     </div>
                 </div>
             )}

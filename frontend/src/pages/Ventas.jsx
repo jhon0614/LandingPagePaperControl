@@ -14,6 +14,7 @@ import {
     registrarVenta as crearVentaApi,
     eliminarVenta,
     obtenerComprobante,
+    obtenerComprobanteHtml,
 } from "../services/ventas.service";
 import { obtenerProductos } from "../services/productos.service";
 import { obtenerMetodosPago, cambiarEstadoMetodoPago } from "../services/ventas.service";
@@ -439,6 +440,9 @@ function Ventas() {
     const [montoRecibido, setMontoRecibido] = 
         useState("");
 
+    const [tipoDescuento, setTipoDescuento] = useState("");
+    const [valorDescuento, setValorDescuento] = useState("");
+
     const [modalVentaExitosa, setModalVentaExitosa] = 
         useState(false);
 
@@ -447,6 +451,8 @@ function Ventas() {
 
     const [comprobante, setComprobante] = useState(null);
     const [cargandoComprobante, setCargandoComprobante] = useState(false);
+    const [htmlComprobante, setHtmlComprobante] = useState("");
+    const [cargandoHtmlComprobante, setCargandoHtmlComprobante] = useState(false);
     
     const [modalAnular, setModalAnular] = useState(false);
 
@@ -889,7 +895,7 @@ function Ventas() {
      * =========================================================
      */
 
-    const total = useMemo(() => {
+    const subtotal = useMemo(() => {
 
         return carrito.reduce(
             (acumulado, item) =>
@@ -900,6 +906,75 @@ function Ventas() {
         );
 
     }, [carrito]);
+
+    const montoDescuentoEstimado = useMemo(() => {
+        const valor = aNumeroMonto(valorDescuento);
+        if (!tipoDescuento || valor <= 0) return 0;
+        return tipoDescuento === "PORCENTAJE"
+            ? Math.round((subtotal * valor / 100) * 100) / 100
+            : valor;
+    }, [subtotal, tipoDescuento, valorDescuento]);
+
+    const total = Math.max(0, subtotal - montoDescuentoEstimado);
+
+    function manejarValorDescuento(valor) {
+        const limpio = limpiarMontoEntrada(valor);
+        setValorDescuento(limpio);
+    }
+
+    async function cargarHtmlComprobante(idVenta = comprobante?.id) {
+        if (!idVenta) return "";
+        setCargandoHtmlComprobante(true);
+        try {
+            const html = await obtenerComprobanteHtml(idVenta);
+            setHtmlComprobante(html);
+            return html;
+        } catch (error) {
+            alert(error.message || "No fue posible cargar el comprobante HTML.");
+            return "";
+        } finally {
+            setCargandoHtmlComprobante(false);
+        }
+    }
+
+    async function mostrarHtmlComprobante() {
+        const html = htmlComprobante || await cargarHtmlComprobante();
+        if (html) setComprobante((actual) => ({ ...actual, mostrarHtml: true }));
+    }
+
+    async function imprimirHtmlComprobante() {
+        const html = htmlComprobante || await cargarHtmlComprobante();
+        if (!html) return;
+        const ventana = window.open("", "_blank");
+        if (!ventana) {
+            alert("El navegador bloqueó la ventana de impresión.");
+            return;
+        }
+        ventana.opener = null;
+        ventana.document.write(html);
+        ventana.document.close();
+        ventana.focus();
+        ventana.print();
+    }
+
+    async function descargarHtmlComprobante() {
+        if (!comprobante?.id) return;
+        try {
+            const respuesta = await obtenerComprobanteHtml(comprobante.id, { descargar: true });
+            const url = URL.createObjectURL(respuesta.blob);
+            const enlace = document.createElement("a");
+            const disposicion = respuesta.headers.get("Content-Disposition") || "";
+            const nombre = disposicion.match(/filename\*?=(?:UTF-8'')?['"]?([^;"']+)/i)?.[1] || `comprobante-${comprobante.numeroVenta || comprobante.id}.html`;
+            enlace.href = url;
+            enlace.download = decodeURIComponent(nombre);
+            document.body.appendChild(enlace);
+            enlace.click();
+            enlace.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+        } catch (error) {
+            alert(error.message || "No fue posible descargar el comprobante.");
+        }
+    }
 
 
     /*
@@ -1288,6 +1363,20 @@ function Ventas() {
 
         }
 
+        const descuento = aNumeroMonto(valorDescuento);
+        if (descuento < 0 || (tipoDescuento === "PORCENTAJE" && descuento > 100)) {
+            alert("El descuento no es válido.");
+            return;
+        }
+        if (tipoDescuento === "VALOR_FIJO" && descuento > subtotal) {
+            alert("El descuento no puede superar el subtotal.");
+            return;
+        }
+        if (tipoDescuento && subtotal - montoDescuentoEstimado <= 0) {
+            alert("El descuento no puede dejar la venta en cero.");
+            return;
+        }
+
 
         if (!metodoPago) {
 
@@ -1426,6 +1515,12 @@ function Ventas() {
                 tipoTarjeta: tipoTarjetaSeleccionado || null,
 
                 banco: bancoSeleccionado || null,
+                ...(tipoDescuento
+                    ? {
+                        tipoDescuento,
+                        valorDescuento: descuento,
+                    }
+                    : {}),
 
                 montoRecibido:
                     metodoPago === "EFECTIVO"
@@ -1445,6 +1540,8 @@ function Ventas() {
             );
 
             setVentaExitosaInfo({
+                subtotal: venta?.subtotal ?? subtotal,
+                descuento: venta?.descuento?.monto ?? venta?.montoDescuento ?? montoDescuentoEstimado,
                 total: venta?.total ?? total,
                 metodoPago,
                 montoRecibido:
@@ -1468,6 +1565,8 @@ function Ventas() {
             setBancoSeleccionado("");
             
             setMontoRecibido("");
+            setTipoDescuento("");
+            setValorDescuento("");
 
             /*
              * La venta ya se registró (201). Un fallo aquí es solo
@@ -1984,6 +2083,29 @@ function Ventas() {
                     ================================================= */}
 
                     <div className="pos-carrito-pago">
+
+                        <div className="pos-descuento-panel">
+                            <label htmlFor="tipoDescuento">Descuento</label>
+                            <select id="tipoDescuento" value={tipoDescuento} onChange={(e) => { setTipoDescuento(e.target.value); setValorDescuento(""); }}>
+                                <option value="">Sin descuento</option>
+                                <option value="PORCENTAJE">Porcentaje</option>
+                                <option value="VALOR_FIJO">Valor fijo</option>
+                            </select>
+                            {tipoDescuento && (
+                                <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={formatearMontoEntrada(valorDescuento)}
+                                    onChange={(e) => manejarValorDescuento(e.target.value)}
+                                    placeholder={tipoDescuento === "PORCENTAJE" ? "Ej: 10" : "Ej: 5000"}
+                                />
+                            )}
+                            <div className="pos-descuento-resumen">
+                                <span>Subtotal: ${subtotal.toLocaleString("es-CO")}</span>
+                                <span>Descuento: -${montoDescuentoEstimado.toLocaleString("es-CO")}</span>
+                                <strong>Total estimado: ${total.toLocaleString("es-CO")}</strong>
+                            </div>
+                        </div>
 
 
                         <div className="pos-carrito-pago-header">
@@ -2753,6 +2875,7 @@ function Ventas() {
                         </div>
                         <div className="config-pagos-body recibo-contenido">
                             <p><strong>Cliente:</strong> {comprobante.cliente?.nombre || "Venta sin cliente"}</p>
+                            {comprobante.estado === "ANULADA" && <p className="caja-error"><strong>Venta anulada:</strong> {comprobante.motivoAnulacion || "Sin motivo registrado."}</p>}
                             <div className="recibo-tabla"><table><thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>
                                 {comprobante.productos.map((producto) => <tr key={producto.productoId}><td>{producto.nombre}</td><td>{producto.cantidad}</td><td>${producto.precioUnitario.toLocaleString("es-CO")}</td><td>${producto.total.toLocaleString("es-CO")}</td></tr>)}
                             </tbody></table></div>
@@ -2763,7 +2886,16 @@ function Ventas() {
                                 <p className="recibo-total">Total <strong>${comprobante.total.toLocaleString("es-CO")}</strong></p>
                             </div>
                         </div>
-                        <div className="pos-modal-footer"><button type="button" className="btn-cerrar-pos-modal" onClick={imprimirComprobante}><i className="fa-solid fa-print"></i> Imprimir</button></div>
+                        <div className="pos-modal-footer"><button type="button" className="btn-cerrar-pos-modal" onClick={imprimirComprobante}><i className="fa-solid fa-print"></i> Imprimir</button><button type="button" className="btn-cerrar-pos-modal" onClick={mostrarHtmlComprobante} disabled={cargandoHtmlComprobante}>{cargandoHtmlComprobante ? "Cargando..." : "Ver HTML"}</button><button type="button" className="btn-cerrar-pos-modal" onClick={imprimirHtmlComprobante} disabled={cargandoHtmlComprobante}>Imprimir HTML</button><button type="button" className="btn-cerrar-pos-modal" onClick={descargarHtmlComprobante}>Descargar HTML</button></div>
+                    </div>
+                </div>
+            )}
+
+            {comprobante?.mostrarHtml && htmlComprobante && (
+                <div className="pos-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setComprobante((actual) => ({ ...actual, mostrarHtml: false })); }}>
+                    <div className="pos-modal recibo-html-modal">
+                        <div className="pos-modal-header"><h2>Comprobante HTML</h2><button type="button" className="pos-modal-cerrar" onClick={() => setComprobante((actual) => ({ ...actual, mostrarHtml: false }))}><i className="fa-solid fa-xmark"></i></button></div>
+                        <iframe title="Comprobante HTML" className="recibo-html-frame" srcDoc={htmlComprobante}></iframe>
                     </div>
                 </div>
             )}
@@ -2804,6 +2936,16 @@ function Ventas() {
                         <div className="config-pagos-body">
 
                             <div className="datos-cliente-detalle">
+
+                                <p>
+                                    <strong>Subtotal:</strong> $
+                                    {(ventaExitosaInfo.subtotal ?? 0).toLocaleString("es-CO")}
+                                </p>
+
+                                <p>
+                                    <strong>Descuento:</strong> -$
+                                    {(ventaExitosaInfo.descuento ?? 0).toLocaleString("es-CO")}
+                                </p>
 
                                 <p>
                                     <strong>Total:</strong> $

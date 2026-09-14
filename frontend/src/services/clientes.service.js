@@ -121,3 +121,23 @@ export async function eliminarCliente(id) {
     );
 
 }
+
+export async function obtenerComprasCliente(id, filtros = {}) {
+    const parametros = new URLSearchParams();
+
+    if (filtros.fechaInicio) parametros.append("fechaInicio", filtros.fechaInicio);
+    if (filtros.fechaFin) parametros.append("fechaFin", filtros.fechaFin);
+    if (filtros.estado && filtros.estado !== "TODAS") parametros.append("estado", filtros.estado);
+    if (filtros.pagina) parametros.append("pagina", String(filtros.pagina));
+    if (filtros.limite) parametros.append("limite", String(filtros.limite));
+
+    const query = parametros.toString();
+    const respuesta = await apiFetch(
+        `/api/clientes/${id}/compras${query ? `?${query}` : ""}`
+    );
+
+    return {
+        compras: respuesta?.datos?.compras || [],
+        paginacion: respuesta?.datos?.paginacion || { hayMas: false },
+    };
+}

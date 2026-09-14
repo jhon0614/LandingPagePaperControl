@@ -117,7 +117,7 @@ async function renovarToken() {
 
         } catch {
 
-            datos = null;
+            // La respuesta no contiene JSON válido.
 
         }
 
@@ -373,7 +373,7 @@ export async function apiFetch(
 
         } catch {
 
-            datos = null;
+            // La respuesta no contiene JSON válido.
 
         }
 
@@ -407,6 +407,17 @@ export async function apiFetch(
 
         return null;
 
+    }
+
+    if (opciones.respuesta === "texto") {
+        return await respuesta.text();
+    }
+
+    if (opciones.respuesta === "blob") {
+        return {
+            blob: await respuesta.blob(),
+            headers: respuesta.headers,
+        };
     }
 
 

@@ -121,7 +121,20 @@ export async function obtenerComprobante(id) {
     }
   );
 
-  return respuesta?.datos;
+  return respuesta?.datos?.comprobante || respuesta?.datos;
+}
+
+export async function obtenerComprobanteHtml(id, { descargar = false } = {}) {
+  const parametros = new URLSearchParams({ formato: "html" });
+  if (descargar) parametros.set("descargar", "true");
+
+  return apiFetch(
+    `/api/ventas/${id}/comprobante?${parametros.toString()}`,
+    {
+      method: "GET",
+      respuesta: descargar ? "blob" : "texto",
+    },
+  );
 }
 
 /* =====================================================

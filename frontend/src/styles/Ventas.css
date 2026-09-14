@@ -1555,6 +1555,42 @@
     color: #fff;
 }
 
+.pos-descuento-panel {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.pos-descuento-panel label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.pos-descuento-panel select,
+.pos-descuento-panel input {
+    min-height: 38px;
+    border: 1px solid #dbe3eb;
+    border-radius: 8px;
+    padding: 0 10px;
+    background: #fff;
+}
+
+.pos-descuento-resumen {
+    display: grid;
+    gap: 4px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.pos-descuento-resumen strong {
+    color: #062f3d;
+}
+
 .recibo-modal {
     max-width: 720px;
 }
@@ -1594,6 +1630,19 @@
     border-top: 1px solid #dbe3eb;
     color: #062f3d;
     font-size: 17px;
+}
+
+.recibo-html-modal {
+    width: min(960px, 96vw);
+    max-width: 960px;
+}
+
+.recibo-html-frame {
+    display: block;
+    width: 100%;
+    height: min(70vh, 760px);
+    border: 0;
+    background: #fff;
 }
 
 

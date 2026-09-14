@@ -1095,3 +1095,54 @@
     background: #f1f5f9;
     color: #64748b;
 }
+
+.historial-compras-modal {
+    max-width: 1100px;
+}
+
+.historial-compras-filtros {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 0 24px 18px;
+}
+
+.historial-compras-filtros input,
+.historial-compras-filtros select {
+    min-height: 38px;
+    border: 1px solid #dbe3eb;
+    border-radius: 8px;
+    padding: 0 10px;
+}
+
+.historial-compras-tabla {
+    overflow-x: auto;
+    margin: 0 24px;
+    border: 1px solid #edf2f7;
+    border-radius: 10px;
+}
+
+.historial-compras-tabla table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+}
+
+.historial-compras-tabla th,
+.historial-compras-tabla td {
+    padding: 10px;
+    border-bottom: 1px solid #edf2f7;
+    text-align: left;
+    vertical-align: top;
+}
+
+.historial-compras-tabla ul,
+.compras-comprobante ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.historial-compras-tabla li,
+.compras-comprobante li {
+    margin-bottom: 4px;
+}

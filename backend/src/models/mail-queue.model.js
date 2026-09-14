@@ -17,7 +17,7 @@ export class ModeloColaCorreo {
       await conexion.beginTransaction();
       const [filas] = await conexion.execute(
         `SELECT id, correo FROM cola_recuperacion WHERE disponible_en <= UTC_TIMESTAMP()
-          AND intentos < 3 ORDER BY disponible_en, id LIMIT 1 FOR UPDATE SKIP LOCKED`,
+          AND intentos < 3 ORDER BY disponible_en, id LIMIT 1 FOR UPDATE`,
       );
       if (!filas[0]) {
         await conexion.commit();

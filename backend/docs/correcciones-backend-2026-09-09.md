@@ -32,7 +32,7 @@ de sesiones, concurrencia y paginación de la revisión anterior.
   consultar usuarios ni esperar a SMTP en la petición. La cola no guarda tokens.
   El trabajador genera el enlace y guarda solo su SHA-256.
 - `npm start` inicia el trabajador. Reservas de cinco minutos, hasta tres
-  intentos y limpieza posterior; varias instancias usan `SKIP LOCKED`.
+  intentos y limpieza posterior; varias instancias usan bloqueo transaccional `FOR UPDATE`.
   Fallos SMTP no cambian la respuesta HTTP. Se registran sin correo/token/SQL.
 - Cambios administrativos, desbloqueos y solicitudes administrativas incluyen
   auditoría en la misma transacción. Se revalida al responsable después del

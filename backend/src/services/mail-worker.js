@@ -1,4 +1,4 @@
-// Cada proceso puede ejecutar el consumidor: SKIP LOCKED evita reservar el mismo trabajo.
+// Cada proceso puede ejecutar el consumidor: la transacción bloquea el trabajo reservado.
 export function iniciarTrabajadorCorreo(
   servicio,
   cola,

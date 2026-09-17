@@ -4,12 +4,14 @@ import AlertaStockBajo from "../components/AlertaStockBajo";
 import ProductosMasVendidos from "../components/ProductosMasVendidos";
 import "../styles/Dashboard.css";
 
-import { obtenerProductos } from "../services/productos.service";
+import { obtenerResumenDashboard } from "../services/dashboard.service";
 
 function Dueno() {
 
     const [totales, setTotales] = useState({
         productos: 0,
+        ventas: 0,
+        usuarios: 0,
         stockBajo: 0,
     });
 
@@ -19,22 +21,9 @@ function Dueno() {
 
             try {
 
-                const productos = await obtenerProductos();
+                const resumen = await obtenerResumenDashboard();
 
-                const activos = productos.filter(
-                    (p) => p.estaActivo
-                );
-
-                const stockBajo = activos.filter(
-                    (p) =>
-                        Number(p.stock) > 0 &&
-                        Number(p.stock) <= Number(p.stockMinimo)
-                ).length;
-
-                setTotales({
-                    productos: activos.length,
-                    stockBajo,
-                });
+                setTotales(resumen);
 
             } catch {
 
@@ -66,13 +55,13 @@ function Dueno() {
                 <div className="card">
                     <i className="fa-solid fa-cart-shopping"></i>
                     <h2>Ventas</h2>
-                    <span>38</span>
+                    <span>{totales.ventas}</span>
                 </div>
 
                 <div className="card">
                     <i className="fa-solid fa-users"></i>
                     <h2>Usuarios</h2>
-                    <span>3</span>
+                    <span>{totales.usuarios}</span>
                 </div>
 
                 <div className="card">

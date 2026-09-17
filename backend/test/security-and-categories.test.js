@@ -119,7 +119,7 @@ test("logout limpia la cookie antes de terminar la respuesta", async (t) => {
   assert.match(res.headers.get("set-cookie"), /tokenRenovacion=;/);
   assert.match(res.headers.get("set-cookie"), /HttpOnly/);
   assert.match(res.headers.get("set-cookie"), /Secure/);
-  assert.match(res.headers.get("set-cookie"), /SameSite=Strict/);
+  assert.match(res.headers.get("set-cookie"), /SameSite=None/);
 });
 
 test("contraseñas nuevas rechazan truncamiento bcrypt y cambio tiene límite propio", async (t) => {

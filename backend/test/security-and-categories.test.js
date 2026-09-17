@@ -17,6 +17,8 @@ async function servidorPrueba(t) {
   let secuencia = 0;
   const conexiones = { execute: async (sql, params) => {
     consultas.push({ sql, params });
+    if (sql.includes("AS productos") && sql.includes("AS stock_bajo"))
+      return [[{ productos: 4, ventas: 8, usuarios: 2, stock_bajo: 1 }]];
     if (sql.includes("FROM usuarios")) return [[{ id: params[0], esta_activo: 1,
       rol: Number(params[0]) === 1 ? "ADMINISTRADOR" : "VENDEDOR" }]];
     if (sql.startsWith("INSERT INTO categorias")) {
@@ -120,6 +122,27 @@ test("logout limpia la cookie antes de terminar la respuesta", async (t) => {
   assert.match(res.headers.get("set-cookie"), /HttpOnly/);
   assert.match(res.headers.get("set-cookie"), /Secure/);
   assert.match(res.headers.get("set-cookie"), /SameSite=None/);
+});
+
+test("dashboard exige autenticación y rol administrativo", async (t) => {
+  const { solicitar } = await servidorPrueba(t);
+  assert.equal(
+    (await solicitar("/api/dashboard/resumen", { usuario: null })).status,
+    401,
+  );
+  assert.equal(
+    (await solicitar("/api/dashboard/resumen", { usuario: 2 })).status,
+    403,
+  );
+
+  const respuesta = await solicitar("/api/dashboard/resumen");
+  assert.equal(respuesta.status, 200);
+  assert.deepEqual((await respuesta.json()).datos.resumen, {
+    productos: 4,
+    ventas: 8,
+    usuarios: 2,
+    stockBajo: 1,
+  });
 });
 
 test("contraseñas nuevas rechazan truncamiento bcrypt y cambio tiene límite propio", async (t) => {

@@ -101,3 +101,63 @@
     color: #062f3d;
     font-size: 17px;
 }
+
+/* =========================================================
+   PRODUCTOS MÁS VENDIDOS
+   ========================================================= */
+
+.reportes-productos-panel {
+    margin-top: 24px;
+    padding: 24px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.reportes-productos-cabecera {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.reportes-productos-cabecera h2 {
+    margin: 0 0 6px;
+    color: #062f3d;
+}
+
+.reportes-productos-cabecera p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.reportes-productos-filtros {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.reportes-productos-filtros .reportes-filtro {
+    min-width: 180px;
+}
+
+.reportes-productos-rango {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.reportes-productos-rango .reportes-filtro {
+    min-width: 180px;
+}
+
+.reportes-productos-grafico {
+    width: 100%;
+    min-height: 360px;
+    margin-top: 20px;
+}

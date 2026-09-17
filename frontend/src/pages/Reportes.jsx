@@ -1,10 +1,23 @@
 import {useState} from "react";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from "recharts";
 
 import Layout from "../components/Layout";
 import "../styles/Dashboard.css";
 import "../styles/Reportes.css";
 
-import { obtenerReporteCaja } from "../services/reportes.service";
+import {
+    obtenerReporteCaja,
+    obtenerProductosMasVendidos,
+} from "../services/reportes.service";
+
 import { obtenerUsuarios } from "../services/usuarios.service";
 
 import { useEffect } from "react";
@@ -86,6 +99,16 @@ function Reportes() {
     const [error, setError] = useState("");
 
     const [consultado, setConsultado] = useState(false);
+
+    const [periodoProductos, setPeriodoProductos] = useState("mes");
+
+    const [productosMasVendidos, setProductosMasVendidos] = useState([]);
+
+    const [cargandoProductos, setCargandoProductos] = useState(false);
+
+    const [errorProductos, setErrorProductos] = useState("");
+
+    const [consultadoProductos, setConsultadoProductos] = useState(false);
 
 
     useEffect(() => {
@@ -180,6 +203,65 @@ function Reportes() {
 
     }
 
+        async function consultarProductosMasVendidos() {
+
+        setErrorProductos("");
+        setConsultadoProductos(false);
+
+        try {
+
+            setCargandoProductos(true);
+
+            const parametros = {
+                periodo: periodoProductos,
+            };
+
+            if (periodoProductos === "rango") {
+
+                if (!desde || !hasta) {
+
+                    setErrorProductos(
+                        "Selecciona la fecha de inicio y de fin para consultar el rango."
+                    );
+
+                    return;
+                }
+
+                if (new Date(hasta) < new Date(desde)) {
+
+                    setErrorProductos(
+                        "La fecha final no puede ser anterior a la inicial."
+                    );
+
+                    return;
+                }
+
+                parametros.desde = desde;
+                parametros.hasta = hasta;
+
+            }
+
+            const productos = await obtenerProductosMasVendidos(parametros);
+
+            setProductosMasVendidos(productos || []);
+            setConsultadoProductos(true);
+
+        } catch (error) {
+
+            setProductosMasVendidos([]);
+
+            setErrorProductos(
+                error.message ||
+                "No fue posible consultar los productos más vendidos."
+            );
+
+        } finally {
+
+            setCargandoProductos(false);
+
+        }
+
+    }
 
     if (!tieneAcceso) {
 
@@ -297,6 +379,138 @@ function Reportes() {
                 </button>
 
             </form>
+
+            <section className="reportes-productos-panel">
+
+                <div className="reportes-productos-cabecera">
+                    <div>
+                        <h2>Productos más vendidos</h2>
+                        <p>
+                            Consulta las unidades vendidas por producto según el período seleccionado.
+                        </p>
+                    </div>
+
+                    <div className="reportes-productos-filtros">
+
+                        <div className="reportes-filtro">
+                            <label htmlFor="productos-periodo">Período</label>
+
+                            <select
+                                id="productos-periodo"
+                                value={periodoProductos}
+                                onChange={(e) => setPeriodoProductos(e.target.value)}
+                                disabled={cargandoProductos}
+                            >
+                                <option value="semana">Esta semana</option>
+                                <option value="mes">Este mes</option>
+                                <option value="rango">Rango de fechas</option>
+                            </select>
+                        </div>
+
+                        <button
+                            type="button"
+                            className="btn-consultar-reporte"
+                            onClick={consultarProductosMasVendidos}
+                            disabled={cargandoProductos}
+                        >
+                            {cargandoProductos ? (
+                                <>
+                                    <i className="fa-solid fa-spinner fa-spin"></i>
+                                    Consultando...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fa-solid fa-chart-column"></i>
+                                    Consultar productos
+                                </>
+                            )}
+                        </button>
+
+                    </div>
+                </div>
+
+                {periodoProductos === "rango" && (
+                    <div className="reportes-productos-rango">
+
+                        <div className="reportes-filtro">
+                            <label htmlFor="productos-desde">Desde</label>
+
+                            <input
+                                id="productos-desde"
+                                type="date"
+                                value={desde}
+                                onChange={(e) => setDesde(e.target.value)}
+                                disabled={cargandoProductos}
+                            />
+                        </div>
+
+                        <div className="reportes-filtro">
+                            <label htmlFor="productos-hasta">Hasta</label>
+
+                            <input
+                                id="productos-hasta"
+                                type="date"
+                                value={hasta}
+                                onChange={(e) => setHasta(e.target.value)}
+                                disabled={cargandoProductos}
+                            />
+                        </div>
+
+                    </div>
+                )}
+
+                {errorProductos && (
+                    <div className="caja-error">
+                        {errorProductos}
+                    </div>
+                )}
+
+                {!cargandoProductos &&
+                    consultadoProductos &&
+                    productosMasVendidos.length === 0 && (
+                        <p className="caja-gastos-vacio">
+                            No hay productos vendidos en el período seleccionado.
+                        </p>
+                    )}
+
+                {!cargandoProductos &&
+                    productosMasVendidos.length > 0 && (
+                        <div className="reportes-productos-grafico">
+                            <ResponsiveContainer width="100%" height={360}>
+                                <BarChart
+                                    data={productosMasVendidos}
+                                    margin={{
+                                        top: 20,
+                                        right: 20,
+                                        left: 10,
+                                        bottom: 70,
+                                    }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" />
+
+                                    <XAxis
+                                        dataKey="nombre"
+                                        angle={-35}
+                                        textAnchor="end"
+                                        interval={0}
+                                        height={80}
+                                    />
+
+                                    <YAxis allowDecimals={false} />
+
+                                    <Tooltip />
+
+                                    <Bar
+                                        dataKey="cantidadVendida"
+                                        name="Unidades vendidas"
+                                        fill="#05788a"
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+
+            </section>
 
             {error && (
                 <div className="caja-error">{error}</div>

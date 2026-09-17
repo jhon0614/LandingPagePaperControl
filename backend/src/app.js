@@ -52,6 +52,10 @@ import { ModeloReporte } from "./models/report.model.js";
 import { ServicioReporte } from "./services/report.service.js";
 import { ControladorReporte } from "./controllers/report.controller.js";
 import { crearRutasReportes } from "./routes/report.routes.js";
+import { ModeloDashboard } from "./models/dashboard.model.js";
+import { ServicioDashboard } from "./services/dashboard.service.js";
+import { ControladorDashboard } from "./controllers/dashboard.controller.js";
+import { crearRutasDashboard } from "./routes/dashboard.routes.js";
 import { ModeloCategoria } from "./models/category.model.js";
 import { ServicioCategoria } from "./services/category.service.js";
 import { ControladorCategoria } from "./controllers/category.controller.js";
@@ -145,6 +149,9 @@ export function crearAplicacion({ conexiones, configuracion }) {
   );
   const controladorReporte = new ControladorReporte(
     new ServicioReporte(new ModeloReporte(conexiones)),
+  );
+  const controladorDashboard = new ControladorDashboard(
+    new ServicioDashboard(new ModeloDashboard(conexiones)),
   );
 
   // Se crean los modelos y se entregan al servicio responsable del login.
@@ -254,6 +261,10 @@ export function crearAplicacion({ conexiones, configuracion }) {
   aplicacion.use(
     "/api/reportes",
     crearRutasReportes({ autenticar, controlador: controladorReporte }),
+  );
+  aplicacion.use(
+    "/api/dashboard",
+    crearRutasDashboard({ autenticar, controlador: controladorDashboard }),
   );
 
   // Estos manejadores deben permanecer al final de todas las rutas.

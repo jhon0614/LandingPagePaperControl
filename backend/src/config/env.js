@@ -19,6 +19,31 @@ function enteroPositivo(nombre, valorDefecto) {
   return valor;
 }
 
+// Express admite una cantidad fija de saltos o una lista de proxies confiables.
+// Un número es apropiado cuando la aplicación siempre está detrás de una
+// topología conocida, como el balanceador que antecede al servicio en Render.
+export function interpretarProxyConfiable(valorOriginal) {
+  const valor = valorOriginal?.trim();
+  if (!valor || valor === "false") return false;
+
+  if (/^\d+$/.test(valor)) {
+    const saltos = Number(valor);
+    if (!Number.isSafeInteger(saltos) || saltos <= 0)
+      throw new Error("TRUST_PROXY debe ser un entero mayor que cero.");
+    return saltos;
+  }
+
+  if (valor === "true")
+    throw new Error(
+      "TRUST_PROXY=true no es seguro; use una cantidad de saltos o IP/CIDR controlados.",
+    );
+
+  return valor
+    .split(",")
+    .map((proxy) => proxy.trim())
+    .filter(Boolean);
+}
+
 // Reúne la configuración del proyecto en un solo objeto para compartirla
 // entre el servidor, la base de datos y el módulo de autenticación.
 export function cargarConfiguracion() {
@@ -58,11 +83,9 @@ export function cargarConfiguracion() {
     limitesCompartidos: true,
     puerto: enteroPositivo("PORT", 3000),
     origenFrontend,
-    // IP o CIDR de proxies controlados; por defecto se ignora X-Forwarded-For.
-    proxyConfiable:
-      process.env.TRUST_PROXY?.split(",")
-        .map((ip) => ip.trim())
-        .filter(Boolean) ?? false,
+    // Cantidad de saltos o IP/CIDR controlados. Por defecto se ignora
+    // X-Forwarded-For para impedir que el cliente suplante su dirección.
+    proxyConfiable: interpretarProxyConfiable(process.env.TRUST_PROXY),
     baseDatos: Object.freeze({
       servidor: obligatoria("DB_HOST"),
       puerto: enteroPositivo("DB_PORT", 3306),

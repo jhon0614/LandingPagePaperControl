@@ -90,10 +90,12 @@ export class ControladorAutenticacion {
   };
 
   #opcionesCookie() {
+    const esProduccion = this.configuracion.entorno === "production";
+
     return {
       httpOnly: true, //no accesible desde JS
-      secure: this.configuracion.entorno === "production", //solo se envía en conexiones HTTPS
-      sameSite: "strict", //no se envía en solicitudes cross-site
+      secure: esProduccion, //solo se envía en conexiones HTTPS
+      sameSite: esProduccion ? "none" : "strict",
       path: "/api/auth", //ruta donde se encuentra el endpoint de autenticación
     };
   }

@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { restaurarSesion } from "./services/api";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import PrivateRoute from "./routes/PrivateRoute";
 
 import Landing from "./pages/Landing";
@@ -113,7 +114,9 @@ function App() {
     
     return (
 
-        <Routes>
+        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+
+            <Routes>
 
 
             {/* =========================================
@@ -381,7 +384,7 @@ function App() {
 
 
         </Routes>
-
+        </GoogleOAuthProvider>
     );
 
 }

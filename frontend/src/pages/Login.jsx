@@ -13,6 +13,7 @@ import {
     limpiarToken,
 } from "../services/api";
 
+import { GoogleLogin } from "@react-oauth/google";
 
 function Login() {
 
@@ -645,6 +646,36 @@ function Login() {
                         )}
 
                     </button>
+
+                    <div className="auth-divider">
+                        <span>O continúa con</span>
+                    </div>
+
+                    <div className="google-login-container">
+                        <GoogleLogin
+                            onSuccess={(respuesta) => {
+                                console.log(
+                                    "Google devolvió una credencial."
+                                );
+
+                                // Todavía falta enviarla al backend
+                                // para verificar al usuario y crear la sesión.
+                                setError(
+                                    "Google respondió correctamente, pero falta conectar la autenticación con PaperControl."
+                                );
+                            }}
+                            onError={() => {
+                                setError(
+                                    "No fue posible iniciar el proceso con Google. Inténtalo nuevamente."
+                                );
+                            }}
+                            text="signin_with"
+                            shape="rectangular"
+                            theme="outline"
+                            size="large"
+                            width="320"
+                        />
+                    </div>
 
                     {/* VOLVER AL INICIO */}
 

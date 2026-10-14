@@ -38,6 +38,81 @@ function construirServicio(reemplazos = {}) {
   return { servicio, intentos, sesiones };
 }
 
+function construirServicioGoogle(modeloUsuario = {}) {
+  const resultado = construirServicio({ modeloUsuario });
+  resultado.servicio.clienteGoogle.verifyIdToken = async () => ({
+    getPayload: () => ({ sub: "google-123", email_verified: true }),
+  });
+  return resultado;
+}
+
+test("Google crea una sesión con el usuario y rol locales", async () => {
+  const { servicio, sesiones, intentos } = construirServicioGoogle({
+    buscarPorGoogleSub: async (sub) => {
+      assert.equal(sub, "google-123");
+      return {
+        id: 7, correo: "seller@example.com", nombres: "Ana",
+        apellidos: "Perez", rol: "VENDEDOR", esta_activo: true,
+        hash_contrasena: "hash-local", debe_cambiar_contrasena: false,
+      };
+    },
+  });
+  const resultado = await servicio.iniciarSesionGoogle({
+    credential: "credencial", recordarme: true,
+  });
+  assert.equal(resultado.usuario.id, 7);
+  assert.equal(resultado.usuario.rol, "VENDEDOR");
+  assert.equal(sesiones[0].hashContrasena, "hash-local");
+  assert.equal(sesiones[0].esPersistente, true);
+  assert.equal(intentos[0].fueExitoso, true);
+  assert.ok(resultado.tokenAcceso);
+});
+
+for (const [nombre, usuario, codigo] of [
+  ["sin vincular", null, "GOOGLE_NO_VINCULADO"],
+  ["inactiva", { id: 7, correo: "a@example.com", esta_activo: false }, "CUENTA_INACTIVA"],
+  ["bloqueada", { id: 7, correo: "a@example.com", esta_activo: true,
+    bloqueado_hasta: new Date(Date.now() + 60000) }, "CUENTA_BLOQUEADA"],
+]) {
+  test(`Google rechaza una cuenta ${nombre} sin crear sesión`, async () => {
+    const { servicio, sesiones } = construirServicioGoogle({
+      buscarPorGoogleSub: async () => usuario,
+    });
+    await assert.rejects(servicio.iniciarSesionGoogle({ credential: "credencial" }),
+      (error) => error.codigo === codigo);
+    assert.equal(sesiones.length, 0);
+  });
+}
+
+test("vincula el sub verificado al usuario autenticado y rechaza conflictos", async () => {
+  let permitir = true;
+  const { servicio } = construirServicioGoogle({
+    vincularGoogle: async (id, sub) => {
+      assert.equal(id, 7);
+      assert.equal(sub, "google-123");
+      return permitir;
+    },
+  });
+  await servicio.vincularGoogle({ usuarioId: 7, credential: "credencial" });
+  permitir = false;
+  await assert.rejects(servicio.vincularGoogle({ usuarioId: 7, credential: "credencial" }),
+    (error) => error.codigo === "GOOGLE_VINCULACION_NO_DISPONIBLE");
+});
+
+test("una credencial Google inválida no llega a consultar ni vincular usuarios", async () => {
+  const { servicio } = construirServicioGoogle({
+    buscarPorGoogleSub: async () => assert.fail("No debe consultar usuarios"),
+    vincularGoogle: async () => assert.fail("No debe vincular usuarios"),
+  });
+  servicio.clienteGoogle.verifyIdToken = async () => { throw new Error("Token inválido"); };
+  for (const operacion of [
+    () => servicio.iniciarSesionGoogle({ credential: "invalida" }),
+    () => servicio.vincularGoogle({ usuarioId: 7, credential: "invalida" }),
+  ]) {
+    await assert.rejects(operacion(), (error) => error.codigo === "GOOGLE_CREDENCIAL_INVALIDA");
+  }
+});
+
 // Cada prueba representa uno de los resultados esperados en la historia HU-35.
 test("rechaza credenciales inválidas sin revelar qué dato falló", async () => {
   const { servicio, intentos } = construirServicio();

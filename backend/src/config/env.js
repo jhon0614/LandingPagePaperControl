@@ -104,6 +104,7 @@ export function cargarConfiguracion() {
     }),
     autenticacion: Object.freeze({
       secretoAcceso,
+      googleClientId: obligatoria("GOOGLE_CLIENT_ID"),
       minutosAcceso: enteroPositivo("JWT_ACCESS_MINUTES", 15),
       diasRenovacion: enteroPositivo("REFRESH_TOKEN_DAYS", 7),
     }),

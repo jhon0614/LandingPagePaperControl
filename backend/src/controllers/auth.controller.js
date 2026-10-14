@@ -114,4 +114,44 @@ export class ControladorAutenticacion {
     //elimina la cookie de renovación
     respuesta.clearCookie("tokenRenovacion", this.#opcionesCookie());
   }
+
+  iniciarSesionGoogle = async (solicitud, respuesta, siguiente) => {
+    try {
+      const resultado = await this.servicioAutenticacion.iniciarSesionGoogle({
+        ...solicitud.body,
+        direccionIp: solicitud.ip,
+        agenteUsuario: solicitud.get("user-agent"),
+      });
+
+      this.#guardarCookieRenovacion(respuesta, resultado);
+
+      respuesta.status(200).json({
+        exito: true,
+        datos: {
+          tokenAcceso: resultado.tokenAcceso,
+          usuario: resultado.usuario,
+        },
+      });
+    } catch (error) {
+      siguiente(error);
+    }
+  };
+
+  vincularGoogle = async (solicitud, respuesta, siguiente) => {
+    try {
+      await this.servicioAutenticacion.vincularGoogle({
+        usuarioId: solicitud.usuario.id,
+        credential: solicitud.body.credential,
+      });
+
+      respuesta.status(200).json({
+        exito: true,
+        datos: {
+          mensaje: "Cuenta de Google vinculada correctamente.",
+        },
+      });
+    } catch (error) {
+      siguiente(error);
+    }
+  };
 }

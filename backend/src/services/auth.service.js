@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createHash, randomBytes } from "node:crypto";
 import { ErrorAplicacion } from "../errors/app-error.js";
+import { OAuth2Client } from "google-auth-library";
 
 // Comparación usada cuando el correo no existe para reducir diferencias de tiempo.
 const DUMMY_PASSWORD_HASH =
@@ -22,6 +23,9 @@ export class ServicioAutenticacion {
     this.modeloSesion = modeloSesion;
     this.modeloConfiguracion = modeloConfiguracion;
     this.configuracionAutenticacion = configuracionAutenticacion;
+    this.clienteGoogle = new OAuth2Client(
+      configuracionAutenticacion.googleClientId, //Autenticación con google
+    );
   }
 
   async iniciarSesion({
@@ -136,10 +140,19 @@ export class ServicioAutenticacion {
       );
     }
 
+    return this.#abrirSesion({
+      usuario,
+      recordarme,
+      direccionIp,
+      agenteUsuario,
+    });
+  }
+
+  async #abrirSesion({ usuario, recordarme, direccionIp, agenteUsuario }) {
+    const correoNormalizado = usuario.correo.trim().toLowerCase();
+
     await this.modeloUsuario.registrarAccesoExitoso(usuario.id);
 
-    // El refresh token permite renovar la sesión. En MySQL se guarda solamente
-    // su huella digital para que el valor original no quede expuesto.
     const tokenRenovacion = this.#crearTokenRenovacion();
     const hashTokenRenovacion = this.#crearHashToken(tokenRenovacion);
     const expiraEn = new Date(
@@ -156,13 +169,16 @@ export class ServicioAutenticacion {
       esPersistente: Boolean(recordarme),
       hashContrasena: usuario.hash_contrasena,
     });
+
     if (!sesionId)
       throw new ErrorAplicacion(
         "Las credenciales cambiaron. Inicia sesión nuevamente.",
         401,
         "SESION_NO_VALIDA",
       );
+
     const tokenAcceso = this.#crearTokenAcceso(usuario, sesionId);
+
     await this.#registrarIntento(
       usuario.id,
       correoNormalizado,
@@ -305,5 +321,96 @@ export class ServicioAutenticacion {
       direccionIp,
       agenteUsuario,
     });
+  }
+
+  async vincularGoogle({ usuarioId, credential }) {
+    const datosGoogle = await this.#verificarGoogle(credential);
+    const vinculado = await this.modeloUsuario.vincularGoogle(
+      usuarioId,
+      datosGoogle.sub,
+    );
+
+    if (!vinculado) {
+      throw new ErrorAplicacion(
+        "No se pudo vincular Google. Revisa si alguna cuenta ya está vinculada.",
+        409,
+        "GOOGLE_VINCULACION_NO_DISPONIBLE",
+      );
+    }
+  }
+
+  async iniciarSesionGoogle({
+    credential,
+    recordarme = false,
+    direccionIp,
+    agenteUsuario,
+  }) {
+    const datosGoogle = await this.#verificarGoogle(credential);
+    const usuario = await this.modeloUsuario.buscarPorGoogleSub(datosGoogle.sub);
+
+    if (!usuario) {
+      throw new ErrorAplicacion(
+        "Primero inicia sesión con tu contraseña y vincula Google.",
+        401,
+        "GOOGLE_NO_VINCULADO",
+      );
+    }
+
+    const estaBloqueado =
+      usuario.bloqueado_hasta && new Date(usuario.bloqueado_hasta) > new Date();
+    if (!usuario.esta_activo || estaBloqueado) {
+      const motivo = usuario.esta_activo ? "CUENTA_BLOQUEADA" : "CUENTA_INACTIVA";
+      await this.#registrarIntento(
+        usuario.id,
+        usuario.correo.trim().toLowerCase(),
+        false,
+        motivo,
+        direccionIp,
+        agenteUsuario,
+      );
+      throw new ErrorAplicacion(
+        usuario.esta_activo
+          ? "La cuenta está bloqueada temporalmente."
+          : "La cuenta no está habilitada.",
+        usuario.esta_activo ? 423 : 403,
+        motivo,
+      );
+    }
+
+    return this.#abrirSesion({
+      usuario,
+      recordarme,
+      direccionIp,
+      agenteUsuario,
+    });
+  }
+
+  async #verificarGoogle(credential) {
+    let datos;
+
+    try {
+      const ticket = await this.clienteGoogle.verifyIdToken({
+        idToken: credential,
+        audience: this.configuracionAutenticacion.googleClientId,
+      });
+
+      datos = ticket.getPayload();
+    } catch {
+      throw new ErrorAplicacion(
+        "La credencial de Google no es válida.",
+        401,
+        "GOOGLE_CREDENCIAL_INVALIDA",
+      );
+    }
+
+    if (!datos?.sub || datos.email_verified !== true) {
+      throw new ErrorAplicacion(
+        "La cuenta de Google no está verificada.",
+        401,
+        "GOOGLE_CUENTA_NO_VERIFICADA",
+      );
+    }
+
+    return datos;
   }
 }

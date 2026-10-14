@@ -43,6 +43,15 @@ const esquemaRestablecerContrasena = z.object({
   contrasenaNueva: esquemaContrasenaSegura,
 });
 
+const esquemaGoogle = z.object({
+  credential: z.string().trim().min(1).max(10000),
+  recordarme: z.boolean().optional().default(false),
+});
+
+const esquemaVincularGoogle = z.object({
+  credential: z.string().trim().min(1).max(10000),
+});
+
 export function crearRutasAutenticacion({
   controladorAutenticacion,
   controladorContrasena,
@@ -92,6 +101,21 @@ export function crearRutasAutenticacion({
     limitarRecuperacion,
     validar(esquemaRestablecerContrasena),
     controladorContrasena.restablecerContrasena,
+  );
+
+  rutas.post(
+    "/google",
+    limitarLogin,
+    validar(esquemaGoogle),
+    controladorAutenticacion.iniciarSesionGoogle,
+  );
+
+  rutas.post(
+    "/google/vincular",
+    limitarCambio,
+    autenticar,
+    validar(esquemaVincularGoogle),
+    controladorAutenticacion.vincularGoogle,
   );
 
   return rutas;

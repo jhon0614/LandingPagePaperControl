@@ -22,6 +22,7 @@ CREATE TABLE usuarios (
   rol_id TINYINT UNSIGNED NOT NULL,
   nombres VARCHAR(80) NOT NULL,
   apellidos VARCHAR(80) NOT NULL,
+  google_sub VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NULL UNIQUE,
   correo VARCHAR(191) NOT NULL,
   hash_contrasena VARCHAR(255) NOT NULL,
   debe_cambiar_contrasena BOOLEAN NOT NULL DEFAULT FALSE,

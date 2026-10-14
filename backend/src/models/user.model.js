@@ -294,4 +294,51 @@ export class ModeloUsuario {
 
     return filas[0] ?? null;
   }
+
+  
+async buscarPorGoogleSub(googleSub) {
+    // Busca un usuario por su identificador de Google (sub)
+    // Retorna el primer registro encontrado o null si no existe
+    const [filas] = await this.conexiones.execute(
+      `SELECT u.id, u.correo, u.nombres, u.apellidos,
+            u.hash_contrasena, u.debe_cambiar_contrasena,
+            u.esta_activo,
+            DATE_FORMAT(
+              u.bloqueado_hasta,
+              '%Y-%m-%dT%H:%i:%s.000Z'
+            ) AS bloqueado_hasta,
+            r.nombre AS rol
+       FROM usuarios u
+       JOIN roles r ON r.id = u.rol_id
+      WHERE u.google_sub = ?
+        AND u.eliminado_en IS NULL
+      LIMIT 1`,
+      [googleSub],
+    );
+
+    return filas[0] ?? null;
+  }
+
+  async vincularGoogle(usuarioId, googleSub) {
+    // Vincula un identificador de Google a un usuario existente
+    // Solo se permite si el usuario está activo, no eliminado,
+    // no requiere cambio de contraseña y aún no tiene google_sub asignado
+    try {
+      const [resultado] = await this.conexiones.execute(
+        `UPDATE usuarios
+          SET google_sub = ?
+        WHERE id = ?
+          AND esta_activo = TRUE
+          AND eliminado_en IS NULL
+          AND debe_cambiar_contrasena = FALSE
+          AND google_sub IS NULL`,
+        [googleSub, usuarioId],
+      );
+
+      return resultado.affectedRows > 0;
+    } catch (error) {
+      if (error.code === "ER_DUP_ENTRY") return false;
+      throw error;
+    }
+  }
 }

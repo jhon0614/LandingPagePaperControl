@@ -9,6 +9,7 @@ import {
 } from "../services/auth.service";
 
 import {
+    apiFetch,
     establecerToken,
     limpiarToken,
 } from "../services/api";
@@ -398,6 +399,79 @@ function Login() {
 
     };
 
+            
+        const iniciarSesionGoogle = async (respuesta) => {
+            setError("");
+            setCuentaBloqueada(false);
+
+            try {
+                setCargando(true);
+
+                if (!respuesta?.credential) {
+                    throw new Error(
+                        "Google no devolvió una credencial válida."
+                    );
+                }
+
+                // Enviar la credencial al backend de PaperControl.
+                const resultado = await apiFetch("/api/auth/google", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        credential: respuesta.credential,
+                        recordarme: true,
+                    }),
+                });
+
+                const usuario = resultado?.datos?.usuario;
+                const token = resultado?.datos?.tokenAcceso;
+
+                if (!usuario || !token) {
+                    throw new Error(
+                        "El servidor no devolvió los datos de autenticación."
+                    );
+                }
+
+                establecerToken(token);
+
+                localStorage.setItem(
+                    "usuario",
+                    JSON.stringify(usuario)
+                );
+
+                // Mantener la misma navegación del login tradicional.
+                if (usuario.debeCambiarContrasena === true) {
+                    navigate("/cambiar-contrasena");
+                    return;
+                }
+
+                if (usuario.rol === "ADMINISTRADOR") {
+                    navigate("/admin");
+                } else if (usuario.rol === "VENDEDOR") {
+                    navigate("/vendedor");
+                } else if (usuario.rol === "DUENO") {
+                    navigate("/dueno");
+                } else {
+                    limpiarToken();
+                    localStorage.removeItem("usuario");
+
+                    throw new Error(
+                        "El usuario no tiene un rol válido."
+                    );
+                }
+            } catch (error) {
+                console.error(
+                    "Error iniciando sesión con Google:",
+                    error
+                );
+
+                setError(
+                    error.message ||
+                    "No fue posible iniciar sesión con Google."
+                );
+            } finally {
+                setCargando(false);
+            }
+        };
 
     /*
     =========================================================
@@ -653,21 +727,9 @@ function Login() {
 
                     <div className="google-login-container">
                         <GoogleLogin
-                            onSuccess={(respuesta) => {
-                                console.log(
-                                    "Google devolvió una credencial."
-                                );
-
-                                // Todavía falta enviarla al backend
-                                // para verificar al usuario y crear la sesión.
-                                setError(
-                                    "Google respondió correctamente, pero falta conectar la autenticación con PaperControl."
-                                );
-                            }}
+                            onSuccess={iniciarSesionGoogle}
                             onError={() => {
-                                setError(
-                                    "No fue posible iniciar el proceso con Google. Inténtalo nuevamente."
-                                );
+                                setError("No fue posible autenticar con Google.");
                             }}
                             text="signin_with"
                             shape="rectangular"

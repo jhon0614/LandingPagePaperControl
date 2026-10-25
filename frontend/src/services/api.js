@@ -32,6 +32,7 @@ debe disparar un refresh).
 
 const RUTAS_PUBLICAS_AUTH = [
     "/api/auth/login",
+    "/api/auth/google",
     "/api/auth/refresh",
     "/api/auth/olvide-contrasena",
     "/api/auth/restablecer-contrasena",

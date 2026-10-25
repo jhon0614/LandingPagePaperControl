@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { GoogleLogin } from "@react-oauth/google";
+import { apiFetch } from "../services/api";
 import Layout from "../components/Layout";
 
 import {
@@ -68,7 +69,10 @@ function Usuarios() {
 
     const [desbloqueandoUsuario, setDesbloqueandoUsuario] =
         useState(null);
-
+    const [mensajeGoogle, setMensajeGoogle] = useState("");
+    const [errorGoogle, setErrorGoogle] = useState(false);
+    const [vinculandoGoogle, setVinculandoGoogle] = useState(false);
+    const [googleVinculado, setGoogleVinculado] = useState(false);
 
     /*
      * CARGAR DATOS
@@ -858,6 +862,41 @@ function Usuarios() {
             usuarioEditando
         );
 
+    async function vincularGoogle(respuesta) {
+        if (!respuesta?.credential) {
+            setErrorGoogle(true);
+            setMensajeGoogle(
+                "Google no proporcionó una credencial válida."
+            );
+            return;
+        }
+
+        try {
+            setVinculandoGoogle(true);
+            setMensajeGoogle("");
+            setErrorGoogle(false);
+
+            await apiFetch("/api/auth/google/vincular", {
+                method: "POST",
+                body: JSON.stringify({
+                    credential: respuesta.credential,
+                }),
+            });
+
+            setMensajeGoogle(
+                "Tu cuenta de Google se vinculó correctamente."
+            );
+            setGoogleVinculado(true);
+        } catch (error) {
+            setErrorGoogle(true);
+            setMensajeGoogle(
+                error.message ||
+                "No fue posible vincular tu cuenta de Google."
+            );
+        } finally {
+            setVinculandoGoogle(false);
+        }
+    }
 
     return (
 
@@ -894,6 +933,50 @@ function Usuarios() {
 
             </div>
 
+            <section className="usuarios-google">
+            <h2>Vincular cuenta de Google</h2>
+
+            <p>
+                Vincula tu cuenta de Google para utilizarla en futuros inicios
+                de sesión en PaperControl.
+            </p>
+
+            {mensajeGoogle && (
+                <div
+                    className={
+                        errorGoogle
+                            ? "usuarios-error"
+                            : "usuarios-google-exito"
+                    }
+                    role="status"
+                >
+                    {mensajeGoogle}
+                </div>
+            )}
+
+        
+            {googleVinculado ? (
+                <div className="usuarios-google-exito" role="status">
+                    <i className="fa-solid fa-circle-check"></i>
+                    Tu cuenta de Google ya está vinculada correctamente.
+                </div>
+            ) : vinculandoGoogle ? (
+                <p>Vinculando cuenta...</p>
+            ) : (
+                <GoogleLogin
+                    onSuccess={vincularGoogle}
+                    onError={() => {
+                        setErrorGoogle(true);
+                        setMensajeGoogle(
+                            "No fue posible completar la autorización de Google."
+                        );
+                    }}
+                    text="continue_with"
+                    shape="rectangular"
+                />
+            )}
+
+        </section>
 
             {/* ERROR */}
 

@@ -341,4 +341,24 @@ async buscarPorGoogleSub(googleSub) {
       throw error;
     }
   }
+
+  
+  async consultarEstadoGoogle(usuarioId) {
+    const [resultado] = await this.conexiones.execute(
+      `SELECT (google_sub IS NOT NULL) AS vinculado
+       FROM usuarios
+      WHERE id = ?
+        AND esta_activo = TRUE
+        AND eliminado_en IS NULL
+      LIMIT 1`,
+      [usuarioId],
+    );
+
+  if (resultado.length === 0) {
+    return null;
+  }
+
+  return Boolean(resultado[0].vinculado);
+  }
+
 }

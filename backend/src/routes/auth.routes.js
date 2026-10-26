@@ -118,5 +118,13 @@ export function crearRutasAutenticacion({
     controladorAutenticacion.vincularGoogle,
   );
 
+  
+  rutas.get(
+    "/google/estado",
+    autenticar,
+    controladorAutenticacion.consultarEstadoGoogle,
+  );
+
+
   return rutas;
 }

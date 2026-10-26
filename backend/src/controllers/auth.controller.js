@@ -154,4 +154,21 @@ export class ControladorAutenticacion {
       siguiente(error);
     }
   };
+
+  
+  consultarEstadoGoogle = async (solicitud, respuesta, siguiente) => {
+    try {
+      const resultado = await this.servicioAutenticacion.consultarEstadoGoogle(
+        solicitud.usuario.id,
+      );
+    
+      respuesta.status(200).json({
+        exito: true,
+        datos: resultado,
+      });
+    } catch (error) {
+      siguiente(error);
+    }
+  };
+
 }

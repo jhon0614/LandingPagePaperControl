@@ -339,6 +339,22 @@ export class ServicioAutenticacion {
     }
   }
 
+  
+  async consultarEstadoGoogle(usuarioId) {
+    const vinculado = await this.modeloUsuario.consultarEstadoGoogle(usuarioId);
+  
+    if (vinculado === null) {
+      throw new ErrorAplicacion(
+        "El usuario no existe o no está activo.",
+        403,
+        "USUARIO_NO_DISPONIBLE",
+      );
+    }
+  
+    return { vinculado };
+  }
+  
+
   async iniciarSesionGoogle({
     credential,
     recordarme = false,

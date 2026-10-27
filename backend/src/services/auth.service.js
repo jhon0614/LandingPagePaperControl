@@ -28,15 +28,90 @@ export class ServicioAutenticacion {
     );
   }
 
+  
+  async verificarRecaptcha(captchaToken) {
+    if (typeof captchaToken !== "string" || !captchaToken.trim()) {
+      throw new ErrorAplicacion(
+        "Completa la verificación CAPTCHA.",
+        400,
+        "CAPTCHA_REQUERIDO",
+      );
+    }
+
+    const parametros = new URLSearchParams({
+      secret: this.configuracionAutenticacion.recaptchaSecretKey,
+      response: captchaToken,
+    });
+
+    let resultado;
+
+    try {
+      const respuesta = await fetch(
+        "https://www.google.com/recaptcha/api/siteverify",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: parametros,
+          signal: AbortSignal.timeout(5000),
+        },
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("Servicio reCAPTCHA no disponible");
+      }
+
+      resultado = await respuesta.json();
+    } catch {
+      throw new ErrorAplicacion(
+        "No fue posible verificar el CAPTCHA. Intenta nuevamente.",
+        503,
+        "CAPTCHA_SERVICIO_NO_DISPONIBLE",
+      );
+    }
+
+    const hostnameValido =
+      typeof resultado.hostname === "string" &&
+      this.configuracionAutenticacion.recaptchaHostnames.includes(
+        resultado.hostname,
+      );
+
+    if (resultado.success !== true || !hostnameValido) {
+      throw new ErrorAplicacion(
+        "La verificación CAPTCHA no fue válida. Intenta nuevamente.",
+        403,
+        "CAPTCHA_INVALIDO",
+      );
+    }
+  }
+  
   async iniciarSesion({
     correo,
     contrasena,
+    captchaToken,
     recordarme = false,
     direccionIp,
     agenteUsuario,
   }) {
     // Los correos se guardan y comparan en minúsculas para evitar duplicados.
     const correoNormalizado = correo.trim().toLowerCase();
+    
+  try {
+    await this.verificarRecaptcha(captchaToken);
+  } catch (error) {
+    await this.#registrarIntento(
+      null,
+      correoNormalizado,
+      false,
+      error.codigo ?? "CAPTCHA_VERIFICACION_FALLIDA",
+      direccionIp,
+      agenteUsuario,
+    );
+  
+    throw error;
+  }
+
     const usuario =
       await this.modeloUsuario.buscarParaAutenticacion(correoNormalizado);
 

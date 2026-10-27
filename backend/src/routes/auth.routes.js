@@ -21,6 +21,7 @@ const esquemaInicioSesion = z.object({
   correo: z.string().trim().email().max(191),
   contrasena: z.string().min(1).max(200),
   recordarme: z.boolean().optional().default(false),
+  captchaToken: z.string().trim().min(1).max(4096), // Token generado por Google reCAPTCHA v2
 });
 
 // Además de las reglas individuales, impide enviar el mismo texto en ambos campos.

@@ -35,6 +35,9 @@ function construirServicio(reemplazos = {}) {
     },
   });
 
+  // Simula la verificación de reCAPTCHA para no llamar a Google en las pruebas.
+  servicio.verificarRecaptcha = reemplazos.verificarRecaptcha ?? (async () => {});
+
   return { servicio, intentos, sesiones };
 }
 

@@ -115,6 +115,7 @@ Crea `frontend/.env` con este contenido:
 
 ```dotenv
 VITE_API_URL=http://localhost:3000/api
+VITE_RECAPTCHA_SITE_KEY=tu_clave_del_sitio
 ```
 
 Incluye `/api`, sin una barra final. Las variables con prefijo `VITE_` se incorporan al frontend y son públicas: no coloques contraseñas ni secretos en ellas.

@@ -1,7 +1,7 @@
 import Logo from "../components/Logo";
 import "../styles/AuthLayout.css";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -14,6 +14,7 @@ import {
     limpiarToken,
 } from "../services/api";
 
+import ReCAPTCHA from "react-google-recaptcha";
 import { GoogleLogin } from "@react-oauth/google";
 
 function Login() {
@@ -41,6 +42,9 @@ function Login() {
     const [cuentaBloqueada, setCuentaBloqueada] =
         useState(false);
 
+    const recaptchaRef = useRef(null);
+
+    const [captchaToken, setCaptchaToken] = useState(null);
 
     /*
     =========================================================
@@ -75,6 +79,10 @@ function Login() {
             return;
         }
 
+        if (!captchaToken) {
+        setError("Por favor, completa la verificación reCAPTCHA.");
+        return;
+        }
 
         try {
 
@@ -91,7 +99,8 @@ function Login() {
                 await login(
                     correo.trim(),
                     contrasena,
-                    recordarme
+                    recordarme,
+                    captchaToken
                 );
 
 
@@ -394,7 +403,8 @@ function Login() {
         } finally {
 
             setCargando(false);
-
+            setCaptchaToken(null);
+            recaptchaRef.current?.reset();
         }
 
     };
@@ -688,13 +698,23 @@ function Login() {
 
                         )}
 
+                    <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                    onChange={(token) => setCaptchaToken(token)}
+                    onExpired={() => setCaptchaToken(null)}
+                    onErrored={() => {
+                        setCaptchaToken(null);
+                        setError("No se pudo cargar reCAPTCHA. Inténtalo nuevamente.");
+                    }}
+                    />
 
                     {/* BOTÓN INICIAR SESIÓN */}
 
                     <button
                         type="submit"
                         className="auth-button"
-                        disabled={cargando}
+                        disabled={cargando || !captchaToken}
                     >
 
                         {cargando ? (

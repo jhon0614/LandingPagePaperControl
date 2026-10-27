@@ -13,7 +13,8 @@ LOGIN
 export async function login(
     correo,
     contrasena,
-    recordarme =false
+    recordarme =false,
+    captchaToken
 ) {
 
     /*
@@ -29,6 +30,7 @@ export async function login(
                 correo,
                 contrasena,
                 recordarme: Boolean(recordarme),
+                captchaToken: captchaToken,
             }),
         }
     );

@@ -9,7 +9,6 @@ const baseDatos = BaseDatos.obtenerInstancia(configuracion.baseDatos);
 try {
   // La API solo inicia cuando se confirma que MySQL responde.
   await baseDatos.comprobarConexion();
-  await baseDatos.comprobarEsquema();
   const aplicacion = crearAplicacion({
     conexiones: baseDatos.conexiones,
     configuracion,

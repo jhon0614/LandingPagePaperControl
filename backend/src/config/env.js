@@ -49,15 +49,9 @@ export function interpretarProxyConfiable(valorOriginal) {
 export function cargarConfiguracion() {
   const entorno = process.env.NODE_ENV ?? "development";
   const secretoAcceso = obligatoria("JWT_ACCESS_SECRET");
-  if (
-    Buffer.byteLength(secretoAcceso, "utf8") < 32 ||
-    secretoAcceso.startsWith("replace_with")
-  )
-    throw new Error(
-      "JWT_ACCESS_SECRET debe contener al menos 32 bytes y no ser el valor de ejemplo.",
-    );
   const origenFrontend = process.env.FRONTEND_ORIGIN ?? "http://localhost:5173";
   const origen = new URL(origenFrontend);
+
   if (
     origen.origin !== origenFrontend ||
     !["http:", "https:"].includes(origen.protocol) ||
@@ -66,11 +60,14 @@ export function cargarConfiguracion() {
     throw new Error(
       "FRONTEND_ORIGIN debe ser un origen válido, con HTTPS en producción.",
     );
+
   const zonaHoraria = process.env.DB_TIMEZONE ?? "-05:00";
+
   if (!/^(Z|[+-](0\d|1[0-3]):[0-5]\d|\+14:00)$/.test(zonaHoraria))
     throw new Error(
       "DB_TIMEZONE debe ser Z o un desplazamiento fijo válido, por ejemplo -05:00.",
     );
+
   const urlRecuperacion = new URL(obligatoria("FRONTEND_RESET_PASSWORD_URL"));
   if (urlRecuperacion.origin !== origenFrontend)
     throw new Error(

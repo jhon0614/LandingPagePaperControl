@@ -8,9 +8,17 @@ URL local del backend:
 http://localhost:3000
 ```
 
-Las tres peticiones de autenticación deben usar `credentials: "include"` para
+Las peticiones que reciben o envían la cookie de sesión deben usar `credentials: "include"` para
 que el navegador pueda recibir y enviar la cookie HttpOnly. El frontend nunca
 debe intentar leer `tokenRenovacion`.
+
+## Autenticación con Google
+
+El backend admite `POST /api/auth/google` para iniciar sesión y
+`POST /api/auth/google/vincular` para vincular una identidad de Google al usuario
+autenticado. La configuración, los cuerpos, las respuestas, los requisitos de
+base de datos y los límites están en [Autenticación con Google](google-auth.md).
+La vinculación es explícita: no se crean usuarios ni se asocian cuentas por correo.
 
 ## Iniciar sesión
 

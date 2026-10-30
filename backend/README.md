@@ -77,6 +77,10 @@ Ese documento también contiene el cambio de contraseña y la recuperación por
 correo. Las acciones administrativas de desbloqueo y restablecimiento están en
 [`docs/usuarios-api.md`](docs/usuarios-api.md).
 
+El inicio de sesión y la vinculación con Google, la variable `GOOGLE_CLIENT_ID`,
+el requisito de `usuarios.google_sub` y los errores de ambos endpoints están en
+[`docs/google-auth.md`](docs/google-auth.md).
+
 ## Estructura MVC
 
 - `routes`: define las direcciones y validaciones de entrada.

@@ -471,12 +471,48 @@ export class ModeloVenta {
     return ventas[0];
   }
 
+  async buscarDetallesParaAnular(conexion, id) {
+    const [detalles] = await conexion.execute(
+      `SELECT producto_id, cantidad
+       FROM detalles_venta
+      WHERE venta_id = ?
+      ORDER BY producto_id`,
+      [id],
+    );
+
+    return detalles;
+  }
+
+  async marcarVentaAnulada(conexion, id, usuarioId, motivo) {
+    await conexion.execute(
+      `UPDATE ventas
+        SET estado = 'ANULADA',
+            cancelado_en = CURRENT_TIMESTAMP,
+            cancelado_por = ?,
+            motivo_cancelacion = ?
+      WHERE id = ?`,
+      [usuarioId, motivo, id],
+    );
+  }
+
+  async buscarProductoParaAnular(conexion, productoId) {
+    const [productos] = await conexion.execute(
+      `SELECT id, stock_actual, stock_minimo
+       FROM productos
+      WHERE id = ? FOR UPDATE`,
+      [productoId],
+    );
+
+    return productos;
+  }
+
   async anular({ id, usuarioId, puedeAnularCualquiera, motivo }) {
     const conexion = await this.conexiones.getConnection();
     try {
       // La anulación y la devolución del stock deben confirmarse juntas.
       await conexion.beginTransaction();
       const venta = await this.buscarVentaParaAnular(conexion, id);
+
       if (!venta)
         return await this.#cancelar(conexion, { error: "NO_ENCONTRADA" });
       if (!puedeAnularCualquiera && Number(venta.vendido_por) !== usuarioId)
@@ -485,15 +521,13 @@ export class ModeloVenta {
         return await this.#cancelar(conexion, { error: "YA_ANULADA" });
       if (venta.estado_turno !== "ABIERTO")
         return await this.#cancelar(conexion, { error: "TURNO_CERRADO" });
-      const [detalles] = await conexion.execute(
-        `SELECT producto_id, cantidad FROM detalles_venta WHERE venta_id = ? ORDER BY producto_id`,
-        [id],
-      );
+
+      const detalles = await this.buscarDetallesParaAnular(conexion, id);
       for (const detalle of detalles) {
         // Bloquea cada producto antes de restaurar sus existencias.
-        const [productos] = await conexion.execute(
-          `SELECT id, stock_actual, stock_minimo FROM productos WHERE id = ? FOR UPDATE`,
-          [detalle.producto_id],
+        const productos = await this.buscarProductoParaAnular(
+          conexion,
+          detalle.producto_id,
         );
         const anterior = Number(productos[0].stock_actual);
         const posterior = anterior + Number(detalle.cantidad);
@@ -517,6 +551,7 @@ export class ModeloVenta {
             motivo,
           ],
         );
+
         if (posterior > Number(productos[0].stock_minimo)) {
           await conexion.execute(
             `UPDATE alertas_inventario SET estado = 'RESUELTA', resuelto_en = CURRENT_TIMESTAMP,
@@ -525,11 +560,7 @@ export class ModeloVenta {
           );
         }
       }
-      await conexion.execute(
-        `UPDATE ventas SET estado = 'ANULADA', cancelado_en = CURRENT_TIMESTAMP,
-                cancelado_por = ?, motivo_cancelacion = ? WHERE id = ?`,
-        [usuarioId, motivo, id],
-      );
+      await this.marcarVentaAnulada(conexion, id, usuarioId, motivo);
       await conexion.commit();
       return { anulada: true };
     } catch (error) {

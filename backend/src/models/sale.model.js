@@ -506,6 +506,46 @@ export class ModeloVenta {
     return productos;
   }
 
+  async actualizarStockProducto(conexion, productoId, stock) {
+    await conexion.execute(
+      `UPDATE productos
+        SET stock_actual = ?,
+            actualizado_en = CURRENT_TIMESTAMP
+      WHERE id = ?`,
+      [stock, productoId],
+    );
+  }
+
+  async registrarMovimientoAnulacion(conexion, datos) {
+    await conexion.execute(
+      `INSERT INTO movimientos_inventario
+      (producto_id, usuario_id, venta_id, tipo_movimiento, cantidad,
+       stock_anterior, stock_posterior, referencia, notas)
+     VALUES (?, ?, ?, 'REVERSION_VENTA', ?, ?, ?, ?, ?)`,
+      [
+        datos.productoId,
+        datos.usuarioId,
+        datos.ventaId,
+        datos.cantidad,
+        datos.stockAnterior,
+        datos.stockPosterior,
+        datos.referencia,
+        datos.motivo,
+      ],
+    );
+  }
+
+  async resolverAlertasProducto(conexion, productoId, usuarioId) {
+    await conexion.execute(
+      `UPDATE alertas_inventario
+        SET estado = 'RESUELTA',
+            resuelto_en = CURRENT_TIMESTAMP,
+            resuelto_por = ?
+      WHERE producto_id = ? AND estado = 'ACTIVA'`,
+      [usuarioId, productoId],
+    );
+  }
+
   async anular({ id, usuarioId, puedeAnularCualquiera, motivo }) {
     const conexion = await this.conexiones.getConnection();
     try {
@@ -531,32 +571,27 @@ export class ModeloVenta {
         );
         const anterior = Number(productos[0].stock_actual);
         const posterior = anterior + Number(detalle.cantidad);
-        await conexion.execute(
-          `UPDATE productos SET stock_actual = ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
-          [posterior, detalle.producto_id],
+        await this.actualizarStockProducto(
+          conexion,
+          detalle.producto_id,
+          posterior,
         );
-        await conexion.execute(
-          `INSERT INTO movimientos_inventario
-            (producto_id, usuario_id, venta_id, tipo_movimiento, cantidad,
-             stock_anterior, stock_posterior, referencia, notas)
-           VALUES (?, ?, ?, 'REVERSION_VENTA', ?, ?, ?, ?, ?)`,
-          [
-            detalle.producto_id,
-            usuarioId,
-            id,
-            detalle.cantidad,
-            anterior,
-            posterior,
-            venta.numero_venta,
-            motivo,
-          ],
-        );
+        await this.registrarMovimientoAnulacion(conexion, {
+          productoId: detalle.producto_id,
+          usuarioId,
+          ventaId: id,
+          cantidad: detalle.cantidad,
+          stockAnterior: anterior,
+          stockPosterior: posterior,
+          referencia: venta.numero_venta,
+          motivo,
+        });
 
         if (posterior > Number(productos[0].stock_minimo)) {
-          await conexion.execute(
-            `UPDATE alertas_inventario SET estado = 'RESUELTA', resuelto_en = CURRENT_TIMESTAMP,
-                    resuelto_por = ? WHERE producto_id = ? AND estado = 'ACTIVA'`,
-            [usuarioId, detalle.producto_id],
+          await this.resolverAlertasProducto(
+            conexion,
+            detalle.producto_id,
+            usuarioId,
           );
         }
       }

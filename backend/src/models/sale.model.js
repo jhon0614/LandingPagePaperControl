@@ -3,11 +3,12 @@ import { ConsultasVenta } from "./sales/sale-queries.js";
 import { AnuladorVenta } from "./sales/sale-cancel.js";
 import { CreadorVenta } from "./sales/sale-create.js";
 
-// Persiste ventas, pagos e inventario como una única unidad transaccional.
+// Mantiene una interfaz común para el servicio y delega cada operación
+// al módulo de persistencia correspondiente.
 export class ModeloVenta {
   constructor(conexiones) {
     this.conexiones = conexiones;
-    // Comparte el mismo grupo de conexiones con el modelo de métodos de pago.
+    // Todos los módulos utilizan el mismo grupo de conexiones.
     this.modeloMetodoPago = new ModeloMetodoPago(conexiones);
     this.consultasVenta = new ConsultasVenta(conexiones);
     this.anuladorVenta = new AnuladorVenta(conexiones);

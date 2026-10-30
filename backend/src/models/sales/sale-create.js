@@ -7,6 +7,77 @@ export class CreadorVenta {
   constructor(conexiones) {
     this.conexiones = conexiones;
   }
+
+  async buscarTurnoAbierto(conexion, turnoCajaId) {
+    // Conserva el bloqueo del turno dentro de la transacción de la venta.
+    const [turnos] = await conexion.execute(
+      `SELECT id FROM turnos_caja WHERE estado = 'ABIERTO'
+      AND (? IS NULL OR id = ?)
+      ORDER BY abierto_en DESC LIMIT 1 FOR UPDATE`,
+      [turnoCajaId ?? null, turnoCajaId ?? null],
+    );
+
+    return turnos[0];
+  }
+
+  async buscarClienteActivo(conexion, clienteId) {
+    const [clientes] = await conexion.execute(
+      `SELECT id FROM clientes WHERE id = ? AND esta_activo = TRUE
+      AND eliminado_en IS NULL LIMIT 1`,
+      [clienteId],
+    );
+
+    return clientes[0];
+  }
+
+  async buscarProductosParaVenta(conexion, productos) {
+    const ids = productos.map((producto) => producto.productoId);
+    const marcadores = ids.map(() => "?").join(",");
+
+    // Bloquea los productos en orden de ID para coordinar ventas simultáneas.
+    const [filasProductos] = await conexion.execute(
+      `SELECT id, nombre, sku, precio_venta, stock_actual, stock_minimo,
+            alerta_stock_habilitada, esta_activo
+       FROM productos WHERE id IN (${marcadores}) AND eliminado_en IS NULL
+       ORDER BY id FOR UPDATE`,
+      ids,
+    );
+
+    return filasProductos;
+  }
+
+  async buscarMetodoPagoActivo(conexion, codigo) {
+    const [metodos] = await conexion.execute(
+      `SELECT id, codigo FROM metodos_pago WHERE codigo = ? AND esta_activo = TRUE LIMIT 1`,
+      [codigo],
+    );
+
+    return metodos[0];
+  }
+
+  calcularTotales(productos, porId, tipoDescuento, valorDescuento) {
+    // Usa los precios de la BD y calcula en centavos para evitar errores decimales.
+    const subtotalCentavos = productos.reduce(
+      (total, solicitado) =>
+        total +
+        centavos(porId.get(solicitado.productoId).precio_venta) *
+          BigInt(solicitado.cantidad),
+      0n,
+    );
+
+    const descuentoCentavos = calcularDescuento(
+      subtotalCentavos,
+      tipoDescuento,
+      valorDescuento,
+    );
+
+    return {
+      subtotalCentavos,
+      descuentoCentavos,
+      totalCentavos: subtotalCentavos - descuentoCentavos,
+    };
+  }
+
   async crear({
     usuarioId,
     clienteId,
@@ -60,34 +131,23 @@ export class CreadorVenta {
           return { id: solicitudes[0].venta_id };
         }
       }
-      const [turnos] = await conexion.execute(
-        `SELECT id FROM turnos_caja WHERE estado = 'ABIERTO'
-          AND (? IS NULL OR id = ?)
-          ORDER BY abierto_en DESC LIMIT 1 FOR UPDATE`,
-        [turnoCajaId ?? null, turnoCajaId ?? null],
-      );
-      if (!turnos[0])
-        return await this.#cancelar(conexion, { error: "SIN_TURNO" });
+      const turno = await this.buscarTurnoAbierto(conexion, turnoCajaId);
 
+      if (!turno) return await this.#cancelar(conexion, { error: "SIN_TURNO" });
+
+      // La venta puede registrarse sin cliente; si se indica uno, debe estar activo.
       if (clienteId) {
-        const [clientes] = await conexion.execute(
-          `SELECT id FROM clientes WHERE id = ? AND esta_activo = TRUE
-            AND eliminado_en IS NULL LIMIT 1`,
-          [clienteId],
-        );
-        if (!clientes[0])
-          return await this.#cancelar(conexion, { error: "CLIENTE_INVALIDO" });
+        const cliente = await this.buscarClienteActivo(conexion, clienteId);
+
+        if (!cliente)
+          return await this.#cancelar(conexion, {
+            error: "CLIENTE_INVALIDO",
+          });
       }
 
-      const ids = productos.map((producto) => producto.productoId);
-      const marcadores = ids.map(() => "?").join(",");
-      // Bloquea los productos para evitar vender el mismo stock simultáneamente.
-      const [filasProductos] = await conexion.execute(
-        `SELECT id, nombre, sku, precio_venta, stock_actual, stock_minimo,
-                alerta_stock_habilitada, esta_activo
-           FROM productos WHERE id IN (${marcadores}) AND eliminado_en IS NULL
-           ORDER BY id FOR UPDATE`,
-        ids,
+      const filasProductos = await this.buscarProductosParaVenta(
+        conexion,
+        productos,
       );
       const porId = new Map(
         filasProductos.map((producto) => [Number(producto.id), producto]),
@@ -107,29 +167,16 @@ export class CreadorVenta {
           });
       }
 
-      const [metodos] = await conexion.execute(
-        `SELECT id, codigo FROM metodos_pago WHERE codigo = ? AND esta_activo = TRUE LIMIT 1`,
-        [metodoPago],
-      );
-      if (!metodos[0])
+      const metodo = await this.buscarMetodoPagoActivo(conexion, metodoPago);
+
+      if (!metodo)
         return await this.#cancelar(conexion, {
           error: "METODO_PAGO_INVALIDO",
         });
 
       // Los importes se calculan con los precios recuperados de la base de datos.
-      const subtotalCentavos = productos.reduce(
-        (total, solicitado) =>
-          total +
-          centavos(porId.get(solicitado.productoId).precio_venta) *
-            BigInt(solicitado.cantidad),
-        0n,
-      );
-      const descuentoCentavos = calcularDescuento(
-        subtotalCentavos,
-        tipoDescuento,
-        valorDescuento,
-      );
-      const totalCentavos = subtotalCentavos - descuentoCentavos;
+      const { subtotalCentavos, descuentoCentavos, totalCentavos } =
+        this.calcularTotales(productos, porId, tipoDescuento, valorDescuento);
       if (totalCentavos <= 0n)
         return await this.#cancelar(conexion, { error: "TOTAL_INVALIDO" });
       const subtotal = importeSql(subtotalCentavos);
@@ -156,7 +203,7 @@ export class CreadorVenta {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           temporal,
-          turnos[0].id,
+          turno.id,
           clienteId,
           usuarioId,
           subtotal,
@@ -242,14 +289,7 @@ export class CreadorVenta {
         `INSERT INTO pagos_venta
           (venta_id, metodo_pago_id, monto, referencia, monto_recibido, cambio)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          venta.insertId,
-          metodos[0].id,
-          total,
-          referencia,
-          montoRecibido,
-          cambio,
-        ],
+        [venta.insertId, metodo.id, total, referencia, montoRecibido, cambio],
       );
       if (claveIdempotencia) {
         await conexion.execute(

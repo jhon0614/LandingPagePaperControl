@@ -458,18 +458,25 @@ export class ModeloVenta {
     return { venta: ventas[0], productos, pagos };
   }
 
+  async buscarVentaParaAnular(conexion, id) {
+    const [ventas] = await conexion.execute(
+      `SELECT v.id, v.numero_venta, v.vendido_por, v.estado,
+            t.estado AS estado_turno
+       FROM ventas v
+       JOIN turnos_caja t ON t.id = v.turno_caja_id
+      WHERE v.id = ? FOR UPDATE`,
+      [id],
+    );
+
+    return ventas[0];
+  }
+
   async anular({ id, usuarioId, puedeAnularCualquiera, motivo }) {
     const conexion = await this.conexiones.getConnection();
     try {
       // La anulación y la devolución del stock deben confirmarse juntas.
       await conexion.beginTransaction();
-      const [ventas] = await conexion.execute(
-        `SELECT v.id, v.numero_venta, v.vendido_por, v.estado, t.estado AS estado_turno
-           FROM ventas v JOIN turnos_caja t ON t.id = v.turno_caja_id
-          WHERE v.id = ? FOR UPDATE`,
-        [id],
-      );
-      const venta = ventas[0];
+      const venta = await this.buscarVentaParaAnular(conexion, id);
       if (!venta)
         return await this.#cancelar(conexion, { error: "NO_ENCONTRADA" });
       if (!puedeAnularCualquiera && Number(venta.vendido_por) !== usuarioId)

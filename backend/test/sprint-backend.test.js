@@ -89,7 +89,7 @@ function escenarioVenta({ stock = 5, fallarPago = false, anulada = false } = {})
         estado: anulada ? "ANULADA" : "CONFIRMADA", estado_turno: "ABIERTO",
       }]];
       if (sql.includes("SELECT producto_id, cantidad")) return [[{ producto_id: 3, cantidad: 2 }]];
-      if (sql.includes("FROM productos WHERE")) return [[{ id: 3, nombre: "Resma",
+      if (/FROM\s+productos\s+WHERE/.test(sql)) return [[{ id: 3, nombre: "Resma",
         sku: "R1", precio_venta: "10", stock_actual: stock, stock_minimo: 3,
         alerta_stock_habilitada: 1, esta_activo: 1 }]];
       if (sql.includes("SELECT id, codigo FROM metodos_pago")) return [[{ id: 1, codigo: "EFECTIVO" }]];

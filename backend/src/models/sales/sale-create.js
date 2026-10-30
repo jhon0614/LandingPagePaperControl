@@ -78,6 +78,90 @@ export class CreadorVenta {
     };
   }
 
+  async registrarPago(conexion, datos) {
+    await conexion.execute(
+      `INSERT INTO pagos_venta
+      (venta_id, metodo_pago_id, monto, referencia, monto_recibido, cambio)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        datos.ventaId,
+        datos.metodoPagoId,
+        datos.total,
+        datos.referencia,
+        datos.montoRecibido,
+        datos.cambio,
+      ],
+    );
+  }
+
+  async registrarProductos(
+    conexion,
+    { productos, porId, ventaId, usuarioId, numeroVenta },
+  ) {
+    // Cada producto guarda su detalle, descuenta stock y registra el movimiento.
+    for (const solicitado of productos) {
+      // Cada línea descuenta existencias y deja trazabilidad en inventario.
+      const producto = porId.get(solicitado.productoId);
+      const precio = importeSql(centavos(producto.precio_venta));
+      const stockAnterior = Number(producto.stock_actual);
+      const stockPosterior = stockAnterior - solicitado.cantidad;
+      await conexion.execute(
+        `INSERT INTO detalles_venta
+            (venta_id, producto_id, nombre_producto, sku, cantidad,
+             precio_unitario, total_linea)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          ventaId,
+          producto.id,
+          producto.nombre,
+          producto.sku,
+          solicitado.cantidad,
+          precio,
+          importeSql(centavos(precio) * BigInt(solicitado.cantidad)),
+        ],
+      );
+      await conexion.execute(
+        `UPDATE productos SET stock_actual = ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
+        [stockPosterior, producto.id],
+      );
+      const [movimiento] = await conexion.execute(
+        `INSERT INTO movimientos_inventario
+            (producto_id, usuario_id, venta_id, tipo_movimiento, cantidad,
+             stock_anterior, stock_posterior, referencia)
+           VALUES (?, ?, ?, 'VENTA', ?, ?, ?, ?)`,
+        [
+          producto.id,
+          usuarioId,
+          ventaId,
+          -solicitado.cantidad,
+          stockAnterior,
+          stockPosterior,
+          numeroVenta,
+        ],
+      );
+      // Solo crea una alerta activa por producto para evitar duplicados.
+      if (
+        producto.alerta_stock_habilitada &&
+        stockPosterior <= Number(producto.stock_minimo)
+      ) {
+        await conexion.execute(
+          `INSERT INTO alertas_inventario
+              (producto_id, movimiento_inventario_id, stock_al_crear, stock_minimo_al_crear)
+             SELECT ?, ?, ?, ? WHERE NOT EXISTS (
+               SELECT 1 FROM alertas_inventario WHERE producto_id = ? AND estado = 'ACTIVA'
+             )`,
+          [
+            producto.id,
+            movimiento.insertId,
+            stockPosterior,
+            producto.stock_minimo,
+            producto.id,
+          ],
+        );
+      }
+    }
+  }
+
   async crear({
     usuarioId,
     clienteId,
@@ -219,78 +303,26 @@ export class CreadorVenta {
         [numeroVenta, venta.insertId],
       );
 
-      for (const solicitado of productos) {
-        // Cada línea descuenta existencias y deja trazabilidad en inventario.
-        const producto = porId.get(solicitado.productoId);
-        const precio = importeSql(centavos(producto.precio_venta));
-        const stockAnterior = Number(producto.stock_actual);
-        const stockPosterior = stockAnterior - solicitado.cantidad;
-        await conexion.execute(
-          `INSERT INTO detalles_venta
-            (venta_id, producto_id, nombre_producto, sku, cantidad,
-             precio_unitario, total_linea)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [
-            venta.insertId,
-            producto.id,
-            producto.nombre,
-            producto.sku,
-            solicitado.cantidad,
-            precio,
-            importeSql(centavos(precio) * BigInt(solicitado.cantidad)),
-          ],
-        );
-        await conexion.execute(
-          `UPDATE productos SET stock_actual = ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
-          [stockPosterior, producto.id],
-        );
-        const [movimiento] = await conexion.execute(
-          `INSERT INTO movimientos_inventario
-            (producto_id, usuario_id, venta_id, tipo_movimiento, cantidad,
-             stock_anterior, stock_posterior, referencia)
-           VALUES (?, ?, ?, 'VENTA', ?, ?, ?, ?)`,
-          [
-            producto.id,
-            usuarioId,
-            venta.insertId,
-            -solicitado.cantidad,
-            stockAnterior,
-            stockPosterior,
-            numeroVenta,
-          ],
-        );
-        // Solo crea una alerta activa por producto para evitar duplicados.
-        if (
-          producto.alerta_stock_habilitada &&
-          stockPosterior <= Number(producto.stock_minimo)
-        ) {
-          await conexion.execute(
-            `INSERT INTO alertas_inventario
-              (producto_id, movimiento_inventario_id, stock_al_crear, stock_minimo_al_crear)
-             SELECT ?, ?, ?, ? WHERE NOT EXISTS (
-               SELECT 1 FROM alertas_inventario WHERE producto_id = ? AND estado = 'ACTIVA'
-             )`,
-            [
-              producto.id,
-              movimiento.insertId,
-              stockPosterior,
-              producto.stock_minimo,
-              producto.id,
-            ],
-          );
-        }
-      }
+      await this.registrarProductos(conexion, {
+        productos,
+        porId,
+        ventaId: venta.insertId,
+        usuarioId,
+        numeroVenta,
+      });
 
       const cambio =
         metodoPago === "EFECTIVO" && montoRecibido != null
           ? importeSql(centavos(montoRecibido) - totalCentavos)
           : null;
-      await conexion.execute(
-        `INSERT INTO pagos_venta
-          (venta_id, metodo_pago_id, monto, referencia, monto_recibido, cambio)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [venta.insertId, metodo.id, total, referencia, montoRecibido, cambio],
-      );
+      await this.registrarPago(conexion, {
+        ventaId: venta.insertId,
+        metodoPagoId: metodo.id,
+        total,
+        referencia,
+        montoRecibido,
+        cambio,
+      });
       if (claveIdempotencia) {
         await conexion.execute(
           `UPDATE solicitudes_venta SET venta_id = ? WHERE usuario_id = ? AND clave = ?`,

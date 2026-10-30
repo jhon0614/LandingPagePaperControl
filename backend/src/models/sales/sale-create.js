@@ -2,12 +2,14 @@ import { calcularDescuento, validarDescuento } from "../../utils/discount.js";
 import { centavos, importeSql } from "../../utils/money.js";
 import { randomUUID } from "node:crypto";
 import { InventarioVenta } from "./sale-inventory.js";
+import { SolicitudesVenta } from "./sale-idempotency.js";
 
 // Registra la venta, el pago y la salida de inventario en una sola transacción.
 export class CreadorVenta {
   constructor(conexiones) {
     this.conexiones = conexiones;
     this.inventarioVenta = new InventarioVenta();
+    this.solicitudesVenta = new SolicitudesVenta();
   }
 
   async buscarTurnoAbierto(conexion, turnoCajaId) {
@@ -130,23 +132,21 @@ export class CreadorVenta {
       // La venta completa se confirma únicamente si caja, stock y pago son válidos.
       await conexion.beginTransaction();
       if (claveIdempotencia) {
-        await conexion.execute(
-          `INSERT INTO solicitudes_venta (usuario_id, clave, hash_solicitud)
-            VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE clave = clave`,
-          [usuarioId, claveIdempotencia, hashSolicitud],
+        const solicitud = await this.solicitudesVenta.registrarYBuscar(
+          conexion,
+          { usuarioId, claveIdempotencia, hashSolicitud },
         );
-        const [solicitudes] = await conexion.execute(
-          `SELECT hash_solicitud, venta_id FROM solicitudes_venta
-            WHERE usuario_id = ? AND clave = ? FOR UPDATE`,
-          [usuarioId, claveIdempotencia],
-        );
-        if (solicitudes[0].hash_solicitud !== hashSolicitud)
+
+        // Una misma clave no puede representar ventas con datos diferentes.
+        if (solicitud.hash_solicitud !== hashSolicitud)
           return await this.#cancelar(conexion, {
             error: "IDEMPOTENCIA_CONFLICTO",
           });
-        if (solicitudes[0].venta_id) {
+
+        // Si la solicitud ya se completó, devuelve la venta sin registrarla otra vez.
+        if (solicitud.venta_id) {
           await conexion.commit();
-          return { id: solicitudes[0].venta_id };
+          return { id: solicitud.venta_id };
         }
       }
       const turno = await this.buscarTurnoAbierto(conexion, turnoCajaId);

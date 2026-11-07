@@ -68,6 +68,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
+  
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # El navegador accede al backend mediante el puerto publicado.
+        VITE_API_URL: http://localhost:3000
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Falta GOOGLE_CLIENT_ID}
+
+    ports:
+      - "127.0.0.1:8080:80"
+
+    depends_on:
+      - backend
 
 volumes:
   mysql_data:

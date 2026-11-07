@@ -44,7 +44,7 @@ function construirServicio(reemplazos = {}) {
 function construirServicioGoogle(modeloUsuario = {}) {
   const resultado = construirServicio({ modeloUsuario });
   resultado.servicio.clienteGoogle.verifyIdToken = async () => ({
-    getPayload: () => ({ sub: "google-123", email_verified: true }),
+    getPayload: () => ({ sub: "google-123", email: "SELLER@example.com", email_verified: true }),
   });
   return resultado;
 }
@@ -56,7 +56,7 @@ test("Google crea una sesión con el usuario y rol locales", async () => {
       return {
         id: 7, correo: "seller@example.com", nombres: "Ana",
         apellidos: "Perez", rol: "VENDEDOR", esta_activo: true,
-        hash_contrasena: "hash-local", debe_cambiar_contrasena: false,
+        hash_contrasena: "hash-local", debe_cambiar_contrasena: false, google_estado: "APROBADO",
       };
     },
   });
@@ -87,19 +87,59 @@ for (const [nombre, usuario, codigo] of [
   });
 }
 
-test("vincula el sub verificado al usuario autenticado y rechaza conflictos", async () => {
-  let permitir = true;
-  const { servicio } = construirServicioGoogle({
-    vincularGoogle: async (id, sub) => {
-      assert.equal(id, 7);
-      assert.equal(sub, "google-123");
-      return permitir;
+test("vincular desde contraseña solicita aprobación y no abre sesión", async () => {
+  const { servicio, sesiones } = construirServicioGoogle({
+    buscarParaAutenticacion: async () => ({ id: 7 }),
+    solicitarGoogle: async (id, sub, correo) => {
+      assert.deepEqual([id, sub, correo], [7, "google-123", "seller@example.com"]);
+      return true;
     },
   });
-  await servicio.vincularGoogle({ usuarioId: 7, credential: "credencial" });
-  permitir = false;
   await assert.rejects(servicio.vincularGoogle({ usuarioId: 7, credential: "credencial" }),
-    (error) => error.codigo === "GOOGLE_VINCULACION_NO_DISPONIBLE");
+    (error) => error.codigo === "GOOGLE_PENDIENTE");
+  assert.equal(sesiones.length, 0);
+});
+
+for (const estado of ["PENDIENTE", "RECHAZADO", "NINGUNO"]) {
+  test(`Google bloquea estado ${estado} sin sesión`, async () => {
+    const { servicio, sesiones } = construirServicioGoogle({
+      buscarPorGoogleSub: async () => ({ id: 7, correo: "seller@example.com", esta_activo: true, google_estado: estado }),
+    });
+    await assert.rejects(servicio.iniciarSesionGoogle({ credential: "credencial" }),
+      (error) => error.estadoHttp === 403 && error.codigo === (estado === "RECHAZADO" ? "GOOGLE_RECHAZADO" : "GOOGLE_PENDIENTE"));
+    assert.equal(sesiones.length, 0);
+  });
+}
+
+test("Google solicita por correo normalizado una sola vez y permite entrar tras aprobación", async () => {
+  const usuario = { id: 7, correo: "seller@example.com", esta_activo: true, google_sub: null, google_estado: "NINGUNO", hash_contrasena: "hash" };
+  let solicitudes = 0;
+  const { servicio, sesiones } = construirServicioGoogle({
+    buscarPorGoogleSub: async () => usuario.google_sub ? usuario : null,
+    buscarParaAutenticacion: async (correo) => { assert.equal(correo, usuario.correo); return usuario; },
+    solicitarGoogle: async (id, sub, correo) => {
+      solicitudes++;
+      assert.deepEqual([id, sub, correo], [7, "google-123", usuario.correo]);
+      return true;
+    },
+  });
+  for (let i = 0; i < 2; i++) await assert.rejects(servicio.iniciarSesionGoogle({ credential: "credencial" }),
+    (error) => error.codigo === "GOOGLE_PENDIENTE" && error.message === "Solicitud enviada, espera la aprobación del administrador");
+  assert.equal(solicitudes, 1);
+  assert.equal(sesiones.length, 0);
+  usuario.google_estado = "APROBADO";
+  await servicio.iniciarSesionGoogle({ credential: "credencial" });
+  assert.equal(sesiones.length, 1);
+});
+
+test("Google no sustituye un sub diferente aunque coincida el correo", async () => {
+  const { servicio, sesiones } = construirServicioGoogle({
+    buscarPorGoogleSub: async () => null,
+    buscarParaAutenticacion: async () => ({ id: 7, google_sub: "otro", google_estado: "APROBADO" }),
+    solicitarGoogle: async () => assert.fail("No debe reemplazar el sub"),
+  });
+  await assert.rejects(servicio.iniciarSesionGoogle({ credential: "credencial" }), (error) => error.codigo === "GOOGLE_NO_VINCULADO");
+  assert.equal(sesiones.length, 0);
 });
 
 test("una credencial Google inválida no llega a consultar ni vincular usuarios", async () => {

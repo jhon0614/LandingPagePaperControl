@@ -39,7 +39,11 @@ también solicita aprobación (`403 GOOGLE_PENDIENTE`); no habilita Google por s
 { "accion": "aprobar" }
 ```
 
-Acciones: `aprobar` → `APROBADO`, `rechazar` → `RECHAZADO`, `revocar` → `NINGUNO`.
+Acciones: `aprobar` → `APROBADO`, `rechazar` → `RECHAZADO`, `revocar` → `NINGUNO`,
+`reabrir` → `PENDIENTE` (solo desde `RECHAZADO`; otro estado devuelve `409 GOOGLE_SOLICITUD_NO_DISPONIBLE`).
+Para reabrir, enviar `{ "accion": "reabrir" }` al mismo endpoint. Conserva el `sub`
+y el correo de la solicitud y registra la acción en auditoría. No concede acceso:
+el usuario debe esperar una nueva aprobación. Reabrir también cierra las sesiones existentes.
 Rechazar y revocar cierran las sesiones existentes. Revocar también elimina `google_sub`
 y `google_correo`, permitiendo enviar posteriormente una nueva solicitud desde el login.
 Se exige una solicitud/vinculación existente; de lo contrario se devuelve `409`.

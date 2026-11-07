@@ -26,3 +26,6 @@ dist-ssr
 # Variables de entorno
 frontend/.env
 frontend/.env.*
+
+# Configuración local de Docker con contraseñas.
+.env.docker

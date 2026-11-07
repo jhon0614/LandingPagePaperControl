@@ -1,7 +1,7 @@
 -- PaperControl - Esquema inicial para MySQL 8.0+
 -- Ejecutar con un usuario que tenga permisos para crear bases de datos.
-
-CREATE DATABASE paper_control
+-- Docker puede haber creado la base antes de ejecutar este archivo.
+CREATE DATABASE IF NOT EXISTS paper_control
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_general_ci;
 

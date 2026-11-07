@@ -1,0 +1,10 @@
+# Se instalan o generan dentro de Docker.
+node_modules
+dist
+
+# La configuración se proporciona mediante argumentos de compilación.
+.env
+.env.*
+
+.git
+*.log

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { GoogleLogin } from "@react-oauth/google";
 import { apiFetch } from "../services/api";
 import Layout from "../components/Layout";
 
@@ -69,10 +68,6 @@ function Usuarios() {
 
     const [desbloqueandoUsuario, setDesbloqueandoUsuario] =
         useState(null);
-    const [mensajeGoogle, setMensajeGoogle] = useState("");
-    const [errorGoogle, setErrorGoogle] = useState(false);
-    const [vinculandoGoogle, setVinculandoGoogle] = useState(false);
-    const [googleVinculado, setGoogleVinculado] = useState(false);
 
     /*
      * CARGAR DATOS
@@ -120,14 +115,10 @@ function Usuarios() {
 
     useEffect(() => {
 
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        cargarDatos();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cargarDatos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    /*
-     * MANEJO DE ERRORES
-     */
 
     function manejarError(error) {
 
@@ -738,6 +729,47 @@ function Usuarios() {
 
     }
 
+    const [cambiandoGoogle, setCambiandoGoogle] = useState(null);
+
+    const ESTADO_GOOGLE_POR_ACCION = {
+        aprobar: "APROBADO",
+        rechazar: "RECHAZADO",
+        revocar: "NINGUNO",
+    };
+
+    async function gestionarGoogle(usuario, accion) {
+
+        const textos = {
+            aprobar: `¿Aprobar que ${usuario.nombres} ${usuario.apellidos} entre con su cuenta de Google?`,
+            rechazar: `¿Rechazar la solicitud de Google de ${usuario.nombres} ${usuario.apellidos}?`,
+            revocar: `¿Quitar el acceso con Google a ${usuario.nombres} ${usuario.apellidos}?`,
+        };
+
+        if (!window.confirm(textos[accion])) return;
+
+        try {
+            setError("");
+            setCambiandoGoogle(usuario.id);
+
+            await apiFetch(`/api/usuarios/${usuario.id}/google`, {
+                method: "PATCH",
+                body: JSON.stringify({ accion }),
+            });
+
+            setUsuarios((actuales) =>
+                actuales.map((u) =>
+                    u.id === usuario.id
+                        ? { ...u, google_estado: ESTADO_GOOGLE_POR_ACCION[accion] }
+                        : u
+                )
+            );
+        } catch (error) {
+            manejarError(error);
+        } finally {
+            setCambiandoGoogle(null);
+        }
+    }
+
     /*
     =========================================================
     ENVIAR RESTABLECIMIENTO DE CONTRASEÑA
@@ -862,42 +894,6 @@ function Usuarios() {
             usuarioEditando
         );
 
-    async function vincularGoogle(respuesta) {
-        if (!respuesta?.credential) {
-            setErrorGoogle(true);
-            setMensajeGoogle(
-                "Google no proporcionó una credencial válida."
-            );
-            return;
-        }
-
-        try {
-            setVinculandoGoogle(true);
-            setMensajeGoogle("");
-            setErrorGoogle(false);
-
-            await apiFetch("/api/auth/google/vincular", {
-                method: "POST",
-                body: JSON.stringify({
-                    credential: respuesta.credential,
-                }),
-            });
-
-            setMensajeGoogle(
-                "Tu cuenta de Google se vinculó correctamente."
-            );
-            setGoogleVinculado(true);
-        } catch (error) {
-            setErrorGoogle(true);
-            setMensajeGoogle(
-                error.message ||
-                "No fue posible vincular tu cuenta de Google."
-            );
-        } finally {
-            setVinculandoGoogle(false);
-        }
-    }
-
     return (
 
         <Layout>
@@ -932,51 +928,6 @@ function Usuarios() {
                 </button>
 
             </div>
-
-            <section className="usuarios-google">
-            <h2>Vincular cuenta de Google</h2>
-
-            <p>
-                Vincula tu cuenta de Google para utilizarla en futuros inicios
-                de sesión en PaperControl.
-            </p>
-
-            {mensajeGoogle && (
-                <div
-                    className={
-                        errorGoogle
-                            ? "usuarios-error"
-                            : "usuarios-google-exito"
-                    }
-                    role="status"
-                >
-                    {mensajeGoogle}
-                </div>
-            )}
-
-        
-            {googleVinculado ? (
-                <div className="usuarios-google-exito" role="status">
-                    <i className="fa-solid fa-circle-check"></i>
-                    Tu cuenta de Google ya está vinculada correctamente.
-                </div>
-            ) : vinculandoGoogle ? (
-                <p>Vinculando cuenta...</p>
-            ) : (
-                <GoogleLogin
-                    onSuccess={vincularGoogle}
-                    onError={() => {
-                        setErrorGoogle(true);
-                        setMensajeGoogle(
-                            "No fue posible completar la autorización de Google."
-                        );
-                    }}
-                    text="continue_with"
-                    shape="rectangular"
-                />
-            )}
-
-        </section>
 
             {/* ERROR */}
 
@@ -1315,6 +1266,73 @@ function Usuarios() {
                                                                     <i className="fa-solid fa-key"></i>
                                                                 </button>
 
+                                                                {(() => {
+                                                                    const estadoGoogle = usuario.google_estado || "NINGUNO";
+                                                                    const ocupado = cambiandoGoogle === usuario.id;
+
+                                                                    if (estadoGoogle === "PENDIENTE") {
+                                                                        return (
+                                                                            <>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="btn-google btn-google-pendiente"
+                                                                                    title="Aprobar acceso con Google"
+                                                                                    disabled={ocupado}
+                                                                                    onClick={() => gestionarGoogle(usuario, "aprobar")}
+                                                                                >
+                                                                                    {ocupado ? (
+                                                                                        <i className="fa-solid fa-spinner fa-spin"></i>
+                                                                                    ) : (
+                                                                                        <i className="fa-brands fa-google"></i>
+                                                                                    )}
+                                                                                </button>
+
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="btn-google btn-google-rechazar"
+                                                                                    title="Rechazar solicitud de Google"
+                                                                                    disabled={ocupado}
+                                                                                    onClick={() => gestionarGoogle(usuario, "rechazar")}
+                                                                                >
+                                                                                    <i className="fa-solid fa-xmark"></i>
+                                                                                </button>
+                                                                            </>
+                                                                        );
+                                                                    }
+
+                                                                    if (estadoGoogle === "APROBADO") {
+                                                                        return (
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn-google btn-google-activo"
+                                                                                title="Google aprobado. Clic para revocar"
+                                                                                disabled={ocupado}
+                                                                                onClick={() => gestionarGoogle(usuario, "revocar")}
+                                                                            >
+                                                                                {ocupado ? (
+                                                                                    <i className="fa-solid fa-spinner fa-spin"></i>
+                                                                                ) : (
+                                                                                    <i className="fa-brands fa-google"></i>
+                                                                                )}
+                                                                            </button>
+                                                                        );
+                                                                    }
+
+                                                                    return (
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn-google"
+                                                                            title={
+                                                                                estadoGoogle === "RECHAZADO"
+                                                                                    ? "Solicitud de Google rechazada"
+                                                                                    : "Sin solicitud de Google"
+                                                                            }
+                                                                            disabled
+                                                                        >
+                                                                            <i className="fa-brands fa-google"></i>
+                                                                        </button>
+                                                                    );
+                                                                })()}
 
                                                                 {bloqueado ? (
 
@@ -1489,6 +1507,10 @@ function Usuarios() {
                                             Rol
                                         </th>
 
+                                        <th>
+                                            Intentos
+                                        </th>
+                                        
                                         <th>
                                             Estado
                                         </th>

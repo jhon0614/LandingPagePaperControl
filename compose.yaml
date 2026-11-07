@@ -76,6 +76,7 @@ services:
         # El navegador accede al backend mediante el puerto publicado.
         VITE_API_URL: http://localhost:3000
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Falta GOOGLE_CLIENT_ID}
+        VITE_RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:?Falta RECAPTCHA_SITE_KEY}
 
     ports:
       - "127.0.0.1:8080:80"

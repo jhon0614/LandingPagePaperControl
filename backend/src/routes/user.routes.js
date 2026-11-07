@@ -64,7 +64,7 @@ export function crearRutasUsuarios({
     "/:id/google",
     autenticar,
     permitirRoles("ADMINISTRADOR", "DUENO"),
-    validar(z.object({ accion: z.enum(["aprobar", "rechazar", "revocar"]) })),
+    validar(z.object({ accion: z.enum(["aprobar", "rechazar", "revocar", "reabrir"]) })),
     controladorUsuario.cambiarGoogle,
   );
 

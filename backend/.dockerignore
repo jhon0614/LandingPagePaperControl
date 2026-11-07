@@ -1,0 +1,10 @@
+# Las dependencias se instalan dentro de la imagen.
+node_modules
+
+# Las credenciales se proporcionan al iniciar el contenedor.
+.env
+.env.*
+
+.git
+*.log
+coverage

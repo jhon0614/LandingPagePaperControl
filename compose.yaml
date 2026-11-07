@@ -1,0 +1,87 @@
+name: papercontrol
+
+services:
+  db:
+    image: mysql:8.4
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Falta MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: paper_control
+      MYSQL_USER: paper_control_app
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Falta MYSQL_PASSWORD}
+
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --default-time-zone=-05:00
+
+    volumes:
+      # Conserva los datos aunque se elimine el contenedor.
+      - mysql_data:/var/lib/mysql
+
+      # Inicializa una base nueva: primero tablas y después datos iniciales.
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+
+    healthcheck:
+      # Comprueba que el usuario de la aplicación puede conectarse.
+      test:
+        - CMD-SHELL
+        - >-
+          MYSQL_PWD="$${MYSQL_PASSWORD}"
+          mysql --host=127.0.0.1 --user=paper_control_app
+          --database=paper_control --execute="SELECT 1"
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  backend:
+    build:
+      context: ./backend
+
+    # Carga JWT, Google y correo desde tu configuración local.
+    # Este archivo no se copia dentro de la imagen.
+    env_file:
+      - ./backend/.env
+
+    environment:
+      # Configuración para ejecutar Docker localmente mediante HTTP.
+      NODE_ENV: development
+      PORT: "3000"
+      FRONTEND_ORIGIN: http://localhost:8080
+      FRONTEND_RESET_PASSWORD_URL: http://localhost:8080/#/restablecer-contrasena
+      TRUST_PROXY: "false"
+
+      # Dentro de Docker, MySQL se encuentra por el nombre del servicio.
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: paper_control
+      DB_USER: paper_control_app
+      DB_PASSWORD: ${MYSQL_PASSWORD:?Falta MYSQL_PASSWORD}
+      DB_TLS: "false"
+      DB_TIMEZONE: "-05:00"
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    depends_on:
+      db:
+        condition: service_healthy
+  
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # El navegador accede al backend mediante el puerto publicado.
+        VITE_API_URL: http://localhost:3000
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Falta GOOGLE_CLIENT_ID}
+
+    ports:
+      - "127.0.0.1:8080:80"
+
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

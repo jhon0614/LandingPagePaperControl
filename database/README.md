@@ -39,6 +39,21 @@ anterior, ejecutar:
 mysql -u root -p < database/migrations/2026-08-10-sesion-persistente.sql
 ```
 
+### Vinculación con Google
+
+El esquema nuevo ya incluye `usuarios.google_sub`. Para comprobar si una
+instalación anterior necesita la migración, ejecutar:
+
+```sql
+SHOW COLUMNS FROM paper_control.usuarios LIKE 'google_sub';
+```
+
+Si no devuelve filas, ejecutar una sola vez
+`migrations/2026-11-06-google-sub.sql`.
+
+Si la columna ya existe, no ejecutar esa migración. No es necesario recrear
+la base de datos.
+
 ## Relaciones principales
 
 - Un usuario pertenece a un rol.

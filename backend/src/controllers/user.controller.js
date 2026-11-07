@@ -120,6 +120,17 @@ export class ControladorUsuario {
     }
   };
 
+  cambiarGoogle = async (solicitud, respuesta, siguiente) => {
+    try {
+      const usuario = await this.servicioUsuario.cambiarGoogle(
+        solicitud.params.id, solicitud.body.accion, solicitud.usuario.id, solicitud.ip,
+      );
+      return respuesta.status(200).json({ exito: true, datos: { usuario } });
+    } catch (error) {
+      return siguiente(error);
+    }
+  };
+
   eliminar = async (solicitud, respuesta, siguiente) => {
     try {
       await this.servicioUsuario.eliminar(

@@ -400,18 +400,14 @@ export class ServicioAutenticacion {
 
   async vincularGoogle({ usuarioId, credential }) {
     const datosGoogle = await this.#verificarGoogle(credential);
-    const vinculado = await this.modeloUsuario.vincularGoogle(
-      usuarioId,
-      datosGoogle.sub,
-    );
-
-    if (!vinculado) {
-      throw new ErrorAplicacion(
-        "No se pudo vincular Google. Revisa si alguna cuenta ya está vinculada.",
-        409,
-        "GOOGLE_VINCULACION_NO_DISPONIBLE",
-      );
+    const usuario = await this.modeloUsuario.buscarParaAutenticacion(datosGoogle.email.trim().toLowerCase());
+    if (!usuario || String(usuario.id) !== String(usuarioId)) {
+      throw new ErrorAplicacion("El correo de Google no coincide con el usuario.", 409, "GOOGLE_CORREO_NO_COINCIDE");
     }
+    if (!await this.modeloUsuario.solicitarGoogle(usuario.id, datosGoogle.sub, datosGoogle.email.trim().toLowerCase())) {
+      throw new ErrorAplicacion("No se pudo solicitar la vinculación de Google.", 409, "GOOGLE_VINCULACION_NO_DISPONIBLE");
+    }
+    throw new ErrorAplicacion("Solicitud enviada, espera la aprobación del administrador", 403, "GOOGLE_PENDIENTE");
   }
 
   
@@ -437,11 +433,23 @@ export class ServicioAutenticacion {
     agenteUsuario,
   }) {
     const datosGoogle = await this.#verificarGoogle(credential);
-    const usuario = await this.modeloUsuario.buscarPorGoogleSub(datosGoogle.sub);
+    let usuario = await this.modeloUsuario.buscarPorGoogleSub(datosGoogle.sub);
+    if (!usuario) {
+      usuario = await this.modeloUsuario.buscarParaAutenticacion(datosGoogle.email.trim().toLowerCase());
+      if (usuario && !usuario.google_sub && usuario.google_estado === "NINGUNO" && usuario.esta_activo) {
+        const creada = await this.modeloUsuario.solicitarGoogle(usuario.id, datosGoogle.sub, datosGoogle.email.trim().toLowerCase());
+        if (!creada) {
+          throw new ErrorAplicacion("La solicitud cambió. Intenta nuevamente.", 409, "GOOGLE_SOLICITUD_CONFLICTO");
+        }
+        usuario.google_estado = "PENDIENTE";
+        usuario.google_sub = datosGoogle.sub;
+      }
+      if (usuario?.google_sub !== datosGoogle.sub) usuario = null;
+    }
 
     if (!usuario) {
       throw new ErrorAplicacion(
-        "Primero inicia sesión con tu contraseña y vincula Google.",
+        "El correo de Google no tiene una cuenta registrada disponible.",
         401,
         "GOOGLE_NO_VINCULADO",
       );
@@ -465,6 +473,16 @@ export class ServicioAutenticacion {
           : "La cuenta no está habilitada.",
         usuario.esta_activo ? 423 : 403,
         motivo,
+      );
+    }
+
+    if (usuario.google_estado !== "APROBADO") {
+      const rechazado = usuario.google_estado === "RECHAZADO";
+      const codigo = rechazado ? "GOOGLE_RECHAZADO" : "GOOGLE_PENDIENTE";
+      await this.#registrarIntento(usuario.id, usuario.correo, false, codigo, direccionIp, agenteUsuario);
+      throw new ErrorAplicacion(
+        rechazado ? "El administrador rechazó tu solicitud de acceso con Google." : "Solicitud enviada, espera la aprobación del administrador",
+        403, codigo,
       );
     }
 
@@ -494,7 +512,7 @@ export class ServicioAutenticacion {
       );
     }
 
-    if (!datos?.sub || datos.email_verified !== true) {
+    if (!datos?.sub || typeof datos.email !== "string" || !datos.email.trim() || datos.email_verified !== true) {
       throw new ErrorAplicacion(
         "La cuenta de Google no está verificada.",
         401,

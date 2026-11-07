@@ -147,7 +147,7 @@ export class ControladorAutenticacion {
       respuesta.status(200).json({
         exito: true,
         datos: {
-          mensaje: "Cuenta de Google vinculada correctamente.",
+          mensaje: "Solicitud enviada, espera la aprobación del administrador",
         },
       });
     } catch (error) {

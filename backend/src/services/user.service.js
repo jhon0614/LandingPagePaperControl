@@ -13,6 +13,8 @@ function presentarUsuario(fila) {
     nombres: fila.nombres,
     apellidos: fila.apellidos,
     correo: fila.correo,
+    google_estado: fila.google_estado ?? "NINGUNO",
+    google_correo: fila.google_correo ?? null,
     estaActivo: Boolean(fila.esta_activo),
     debeCambiarContrasena: Boolean(fila.debe_cambiar_contrasena),
     // Estos campos permiten mostrar si la cuenta necesita ser desbloqueada.
@@ -39,6 +41,7 @@ export class ServicioUsuario {
         "crear",
         "actualizar",
         "cambiarEstado",
+        "cambiarGoogle",
         "eliminar",
       ]) {
         this[metodo] = async (...argumentos) => {
@@ -432,6 +435,22 @@ export class ServicioUsuario {
 
     // 8. Presentar y devolver el usuario actualizado.
     return presentarUsuario(fila);
+  }
+
+  async cambiarGoogle(id, accion, administradorId, direccionIp) {
+    const usuario = await this.buscarPorId(id);
+    const estado = { aprobar: "APROBADO", rechazar: "RECHAZADO", revocar: "NINGUNO" }[accion];
+    if (!estado) throw new ErrorAplicacion("La acción de Google es inválida.", 400, "GOOGLE_ACCION_INVALIDA");
+    if (!await this.modeloUsuario.cambiarEstadoGoogle(usuario.id, estado)) {
+      throw new ErrorAplicacion("El usuario no tiene una solicitud de Google disponible.", 409, "GOOGLE_SOLICITUD_NO_DISPONIBLE");
+    }
+    if (estado !== "APROBADO") await this.modeloSesion.revocarPorUsuario(usuario.id);
+    await this.modeloAuditoria.registrar({
+      usuarioId: Number(administradorId), accion: "CAMBIAR_GOOGLE_USUARIO",
+      tipoEntidad: "USUARIO", entidadId: usuario.id,
+      detalles: { accion, estadoAnterior: usuario.google_estado, estadoNuevo: estado }, direccionIp,
+    });
+    return this.buscarPorId(usuario.id);
   }
 
   async eliminar(id, administradorId, direccionIp) {

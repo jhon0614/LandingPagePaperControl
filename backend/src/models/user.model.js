@@ -10,6 +10,7 @@ export class ModeloUsuario {
     // Busca el usuario y su rol usando el correo recibido en el login.
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.correo, u.nombres, u.apellidos, u.hash_contrasena,
+              u.google_sub, u.google_correo, u.google_estado,
               u.debe_cambiar_contrasena, u.esta_activo,
               u.intentos_acceso_fallidos, DATE_FORMAT(u.bloqueado_hasta, '%Y-%m-%dT%H:%i:%s.000Z') AS bloqueado_hasta,
               r.nombre AS rol
@@ -60,6 +61,7 @@ export class ModeloUsuario {
     // Busca el usuario por ID y su rol, solo si no está eliminado.
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.nombres, u.apellidos, u.correo,
+              u.google_sub, u.google_correo, u.google_estado,
               u.debe_cambiar_contrasena, u.esta_activo,
               u.intentos_acceso_fallidos, DATE_FORMAT(u.bloqueado_hasta, '%Y-%m-%dT%H:%i:%s.000Z') AS bloqueado_hasta, u.creado_en,
               r.id AS rol_id, r.nombre AS rol
@@ -75,6 +77,7 @@ export class ModeloUsuario {
   async listar(filtros = {}) {
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.nombres, u.apellidos, u.correo,
+            u.google_correo, u.google_estado,
             u.esta_activo, u.debe_cambiar_contrasena,
             u.intentos_acceso_fallidos, DATE_FORMAT(u.bloqueado_hasta, '%Y-%m-%dT%H:%i:%s.000Z') AS bloqueado_hasta, u.creado_en,
             r.id AS rol_id, r.nombre AS rol
@@ -295,12 +298,12 @@ export class ModeloUsuario {
     return filas[0] ?? null;
   }
 
-  
-async buscarPorGoogleSub(googleSub) {
+  async buscarPorGoogleSub(googleSub) {
     // Busca un usuario por su identificador de Google (sub)
     // Retorna el primer registro encontrado o null si no existe
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.correo, u.nombres, u.apellidos,
+            u.google_sub, u.google_correo, u.google_estado,
             u.hash_contrasena, u.debe_cambiar_contrasena,
             u.esta_activo,
             DATE_FORMAT(
@@ -319,26 +322,30 @@ async buscarPorGoogleSub(googleSub) {
     return filas[0] ?? null;
   }
 
-  async vincularGoogle(usuarioId, googleSub) {
-    // Vincula un identificador de Google a un usuario existente
-    // Solo se permite si el usuario está activo, no eliminado,
-    // no requiere cambio de contraseña y aún no tiene google_sub asignado
+  async solicitarGoogle(usuarioId, googleSub, googleCorreo) {
     try {
       const [resultado] = await this.conexiones.execute(
-        `UPDATE usuarios
-          SET google_sub = ?
-        WHERE id = ?
-          AND esta_activo = TRUE
-          AND eliminado_en IS NULL
-          AND debe_cambiar_contrasena = FALSE
-          AND google_sub IS NULL`,
-        [googleSub, usuarioId],
+        `UPDATE usuarios SET google_sub = ?, google_correo = ?, google_estado = 'PENDIENTE'
+         WHERE id = ? AND correo = ? AND eliminado_en IS NULL
+           AND esta_activo = TRUE AND google_sub IS NULL AND google_estado = 'NINGUNO'`,
+        [googleSub, googleCorreo, usuarioId, googleCorreo],
       );
-
       return resultado.affectedRows > 0;
     } catch (error) {
       if (error.code === "ER_DUP_ENTRY") return false;
       throw error;
     }
+  }
+
+  async cambiarEstadoGoogle(id, estado) {
+    const [resultado] = await this.conexiones.execute(
+      `UPDATE usuarios SET google_estado = ?,
+         google_sub = IF(? = 'NINGUNO', NULL, google_sub),
+         google_correo = IF(? = 'NINGUNO', NULL, google_correo)
+       WHERE id = ? AND eliminado_en IS NULL
+         AND google_sub IS NOT NULL AND google_correo IS NOT NULL`,
+      [estado, estado, estado, id],
+    );
+    return resultado.affectedRows > 0;
   }
 }

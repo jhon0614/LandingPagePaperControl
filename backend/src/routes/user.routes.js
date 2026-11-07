@@ -61,6 +61,14 @@ export function crearRutasUsuarios({
   );
 
   router.patch(
+    "/:id/google",
+    autenticar,
+    permitirRoles("ADMINISTRADOR", "DUENO"),
+    validar(z.object({ accion: z.enum(["aprobar", "rechazar", "revocar"]) })),
+    controladorUsuario.cambiarGoogle,
+  );
+
+  router.patch(
     "/:id/estado",
     autenticar,
     permitirRoles("ADMINISTRADOR", "DUENO"),

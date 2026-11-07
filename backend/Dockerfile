@@ -1,3 +1,14 @@
+# Entorno de desarrollo con observación por polling para Windows/Docker.
+FROM node:24-bookworm-slim AS development
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY --chown=node:node src ./src
+COPY --chown=node:node scripts ./scripts
+USER node
+EXPOSE 3000
+CMD ["npm", "run", "dev:docker"]
+
 FROM node:24-bookworm-slim
 
 WORKDIR /app

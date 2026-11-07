@@ -190,3 +190,35 @@ En el backend, configura `NODE_ENV=production`, el origen HTTPS del frontend y l
 - [Dashboard](backend/docs/dashboard-api.md)
 - [Controles de seguridad y despliegue](backend/docs/seguridad-backend.md)
 - [Cambios del backend y compatibilidad de migraciones](backend/docs/correcciones-backend-2026-09-09.md)
+
+## Docker con recarga automática
+
+Desde la raíz del repositorio, con Docker Desktop iniciado y `.env.docker`
+y `backend/.env` configurados:
+
+```sh
+docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml up -d --build
+```
+
+Abre http://localhost:8080. Vite actualiza la interfaz al guardar archivos y
+Nodemon reinicia la API al cambiar su código. Se conserva la base MySQL local y su
+volumen; este entorno no utiliza Aiven. Los observadores del frontend y backend usan polling
+para detectar cambios en los archivos compartidos desde Windows.
+
+Los directorios de código se montan como solo lectura dentro de los contenedores;
+las dependencias se instalan en Linux dentro de las imágenes.
+Al modificar `package.json`, `package-lock.json` o los Dockerfile, vuelve a ejecutar
+el comando anterior. Los cambios en variables de entorno requieren recrear el
+servicio con el mismo comando. Las migraciones SQL se aplican por separado.
+
+Para detener el entorno conservando sus datos:
+
+```sh
+docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml stop
+```
+
+Para volver a las imágenes compiladas, sin recarga automática:
+
+```sh
+docker compose --env-file .env.docker up -d --build
+```

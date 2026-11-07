@@ -1,0 +1,23 @@
+# Usar junto con compose.yaml; conserva la misma base y volumen MySQL.
+services:
+  backend:
+    build:
+      target: development
+    command: ["npm", "run", "dev:docker"]
+    volumes:
+      - ./backend/src:/app/src:ro
+      - ./backend/scripts:/app/scripts:ro
+
+  frontend:
+    build:
+      target: development
+    environment:
+      VITE_API_URL: http://localhost:3000
+      VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Falta GOOGLE_CLIENT_ID}
+      VITE_RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:?Falta RECAPTCHA_SITE_KEY}
+      DOCKER_WATCH_POLLING: "true"
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend/vite.config.js:/app/vite.config.js:ro

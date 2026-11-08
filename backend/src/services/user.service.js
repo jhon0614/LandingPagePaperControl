@@ -439,8 +439,11 @@ export class ServicioUsuario {
 
   async cambiarGoogle(id, accion, administradorId, direccionIp) {
     const usuario = await this.buscarPorId(id);
-    const estado = { aprobar: "APROBADO", rechazar: "RECHAZADO", revocar: "NINGUNO" }[accion];
+    const estado = { aprobar: "APROBADO", rechazar: "RECHAZADO", revocar: "NINGUNO", reabrir: "PENDIENTE" }[accion];
     if (!estado) throw new ErrorAplicacion("La acción de Google es inválida.", 400, "GOOGLE_ACCION_INVALIDA");
+    if (accion === "reabrir" && usuario.google_estado !== "RECHAZADO") {
+      throw new ErrorAplicacion("Solo se puede reabrir una solicitud de Google rechazada.", 409, "GOOGLE_SOLICITUD_NO_DISPONIBLE");
+    }
     if (!await this.modeloUsuario.cambiarEstadoGoogle(usuario.id, estado)) {
       throw new ErrorAplicacion("El usuario no tiene una solicitud de Google disponible.", 409, "GOOGLE_SOLICITUD_NO_DISPONIBLE");
     }

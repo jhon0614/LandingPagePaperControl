@@ -361,8 +361,9 @@ export class ModeloUsuario {
          google_sub = IF(? = 'NINGUNO', NULL, google_sub),
          google_correo = IF(? = 'NINGUNO', NULL, google_correo)
        WHERE id = ? AND eliminado_en IS NULL
-         AND google_sub IS NOT NULL AND google_correo IS NOT NULL`,
-      [estado, estado, estado, id],
+         AND google_sub IS NOT NULL AND google_correo IS NOT NULL
+         AND (? <> 'PENDIENTE' OR google_estado = 'RECHAZADO')`,
+      [estado, estado, estado, id, estado],
     );
     return resultado.affectedRows > 0;
   }

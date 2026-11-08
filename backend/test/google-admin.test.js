@@ -38,10 +38,11 @@ test("Google administrativo HTTP: permisos, acciones, listado y errores", async 
   const patch = (accion, rol = "ADMINISTRADOR", id = 7) => fetch(`${base}/${id}/google`, {
     method: "PATCH", headers: { "content-type": "application/json", "x-rol": rol }, body: JSON.stringify({ accion }),
   });
-  for (const accion of ["aprobar", "rechazar", "revocar"]) {
+  for (const accion of ["aprobar", "rechazar", "revocar", "reabrir"]) {
     assert.equal((await patch(accion, "VENDEDOR")).status, 403);
   }
   assert.equal(fila.google_estado, "PENDIENTE");
+  assert.equal((await patch("reabrir")).status, 409);
   assert.equal((await patch("invalida")).status, 400);
   assert.equal((await patch("aprobar", "ADMINISTRADOR", "abc")).status, 400);
   assert.equal((await patch("aprobar", "DUENO", 99)).status, 404);
@@ -49,14 +50,20 @@ test("Google administrativo HTTP: permisos, acciones, listado y errores", async 
   const datos = await listado.json();
   assert.equal(datos.datos.usuarios[0].google_estado, "PENDIENTE");
   assert.equal(datos.datos.usuarios[0].google_correo, fila.google_correo);
-  for (const [accion, rol, esperado] of [["aprobar", "ADMINISTRADOR", "APROBADO"], ["rechazar", "DUENO", "RECHAZADO"], ["aprobar", "DUENO", "APROBADO"], ["revocar", "ADMINISTRADOR", "NINGUNO"]]) {
+  for (const [accion, rol, esperado] of [["aprobar", "ADMINISTRADOR", "APROBADO"], ["rechazar", "DUENO", "RECHAZADO"], ["reabrir", "ADMINISTRADOR", "PENDIENTE"], ["rechazar", "ADMINISTRADOR", "RECHAZADO"], ["reabrir", "DUENO", "PENDIENTE"], ["aprobar", "DUENO", "APROBADO"], ["revocar", "ADMINISTRADOR", "NINGUNO"]]) {
     const respuesta = await patch(accion, rol);
     assert.equal(respuesta.status, 200);
     assert.equal((await respuesta.json()).datos.usuario.google_estado, esperado);
+    if (accion === "reabrir") {
+      assert.equal(fila.google_correo, "ana@example.com");
+      assert.equal((await patch("reabrir", rol)).status, 409);
+    }
   }
   assert.equal(fila.google_correo, null);
-  assert.deepEqual(revocadas, [7, 7]);
-  assert.equal(auditorias.length, 4);
+  assert.deepEqual(revocadas, [7, 7, 7, 7, 7]);
+  assert.equal(auditorias.length, 7);
+  assert.deepEqual(auditorias[2].detalles, { accion: "reabrir", estadoAnterior: "RECHAZADO", estadoNuevo: "PENDIENTE" });
+  assert.equal((await patch("reabrir")).status, 409);
   assert.equal((await patch("aprobar")).status, 409);
 });
 
@@ -71,8 +78,11 @@ test("modelo Google: solicitud condicionada, conflictos y limpieza al revocar", 
   assert.match(consultas[0].sql, /google_sub IS NULL/);
   assert.match(consultas[0].sql, /correo = \?/);
   await modelo.cambiarEstadoGoogle(7, "NINGUNO");
-  assert.deepEqual(consultas[1].parametros, ["NINGUNO", "NINGUNO", "NINGUNO", 7]);
+  assert.deepEqual(consultas[1].parametros, ["NINGUNO", "NINGUNO", "NINGUNO", 7, "NINGUNO"]);
   assert.match(consultas[1].sql, /NULL, google_sub/);
+  await modelo.cambiarEstadoGoogle(7, "PENDIENTE");
+  assert.match(consultas[2].sql, /google_estado = 'RECHAZADO'/);
+  assert.deepEqual(consultas[2].parametros, ["PENDIENTE", "PENDIENTE", "PENDIENTE", 7, "PENDIENTE"]);
   modelo.conexiones.execute = async () => { throw Object.assign(new Error(), { code: "ER_DUP_ENTRY" }); };
   assert.equal(await modelo.solicitarGoogle(7, "sub", "ana@example.com"), false);
 });

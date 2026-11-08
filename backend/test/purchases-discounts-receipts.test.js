@@ -12,6 +12,21 @@ test("SCRUM-26: porcentaje, fijo, redondeo y descuento ausente", () => {
   assert.equal(calcularDescuento(10000n, null), 0n);
 });
 
+test("descuento máximo: acepta 70 % y rechaza excesos en ambas modalidades", () => {
+  assert.equal(calcularDescuento(10000n, "PORCENTAJE", 70), 7000n);
+  assert.equal(calcularDescuento(10000n, "VALOR_FIJO", 70), 7000n);
+  for (const tipo of ["PORCENTAJE", "VALOR_FIJO"]) {
+    for (const valor of [70.01, 71, 100]) {
+      assert.throws(() => calcularDescuento(10000n, tipo, valor), {
+        estadoHttp: 400, codigo: "DESCUENTO_INVALIDO",
+        message: "El descuento no puede superar el 70 % del subtotal.",
+      });
+    }
+  }
+  assert.throws(() => calcularDescuento(1n, "PORCENTAJE", 70), { codigo: "DESCUENTO_INVALIDO" });
+  assert.equal(calcularDescuento(0n, null), 0n);
+});
+
 test("SCRUM-26: entradas internas no pueden eludir las reglas del descuento", async () => {
   const servicio = new ServicioVenta({ crear: assert.fail });
   for (const [tipoDescuento, valorDescuento] of [["OTRO", 1], [null, 1], ["PORCENTAJE", 101],

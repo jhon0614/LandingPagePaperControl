@@ -4,6 +4,7 @@ import { validar } from "../middleware/validate.js";
 import { permitirRoles } from "../middleware/roles.middleware.js";
 
 import { dinero } from "../utils/money.js";
+import { MAX_PORCENTAJE_DESCUENTO } from "../utils/discount.js";
 // Valida la venta completa antes de iniciar la transacción de inventario y pago.
 const itemVenta = z.object({
   productoId: z.number().int().positive(),
@@ -45,11 +46,11 @@ const esquemaCrear = z
         message: "Es obligatorio cuando hay descuento.",
       });
     }
-    if (datos.tipoDescuento === "PORCENTAJE" && datos.valorDescuento > 100) {
+    if (datos.tipoDescuento === "PORCENTAJE" && datos.valorDescuento > MAX_PORCENTAJE_DESCUENTO) {
       contexto.addIssue({
         code: "custom",
         path: ["valorDescuento"],
-        message: "No puede superar 100.",
+        message: `No puede superar ${MAX_PORCENTAJE_DESCUENTO}.`,
       });
     }
     if (

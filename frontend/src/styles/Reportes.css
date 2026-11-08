@@ -58,6 +58,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 14px;
+    margin-top: 16px;
     margin-bottom: 26px;
 }
 
@@ -157,9 +158,8 @@
 }
 
 .reportes-productos-grafico {
-    width: 100%;
-    min-height: 360px;
-    margin-top: 20px;
+    height: auto;
+    min-height: 0;
 }
 
 .reportes-filtro select,

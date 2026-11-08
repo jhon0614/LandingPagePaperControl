@@ -3,7 +3,7 @@ import Layout from "../components/Layout";
 import AlertaStockBajo from "../components/AlertaStockBajo";
 import ProductosMasVendidos from "../components/ProductosMasVendidos";
 import "../styles/Dashboard.css";
-
+import GraficasDashboard from "../components/graficas/GraficasDashboard";
 import { obtenerResumenDashboard } from "../services/dashboard.service";
 
 function Dueno() {
@@ -72,6 +72,8 @@ function Dueno() {
 
             </section>
 
+            <GraficasDashboard />
+            
             <section className="dashboard-panels">
 
                 <AlertaStockBajo />

@@ -1,26 +1,18 @@
-import {useState} from "react";
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-} from "recharts";
-
+import {useEffect, useState} from "react";
 import Layout from "../components/Layout";
 import "../styles/Dashboard.css";
 import "../styles/Reportes.css";
-
 import {
     obtenerReporteCaja,
     obtenerProductosMasVendidos,
 } from "../services/reportes.service";
-
 import { obtenerUsuarios } from "../services/usuarios.service";
 import CampoFecha from "../components/CampoFecha";
-import { useEffect } from "react";
+import "../styles/Graficas.css";
+import TarjetaGrafica from "../components/graficas/TarjetaGrafica";
+import GraficaVentasGastos from "../components/graficas/GraficaVentasGastos";
+import GraficaMetodosPago from "../components/graficas/GraficaMetodosPago";
+import GraficaProductosMasVendidos from "../components/graficas/GraficaProductosMasVendidos";
 
 
 function formatoMoneda(valor) {
@@ -472,37 +464,9 @@ function Reportes() {
                 {!cargandoProductos &&
                     productosMasVendidos.length > 0 && (
                         <div className="reportes-productos-grafico">
-                            <ResponsiveContainer width="100%" height={360}>
-                                <BarChart
-                                    data={productosMasVendidos}
-                                    margin={{
-                                        top: 20,
-                                        right: 20,
-                                        left: 10,
-                                        bottom: 70,
-                                    }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-
-                                    <XAxis
-                                        dataKey="nombre"
-                                        angle={-35}
-                                        textAnchor="end"
-                                        interval={0}
-                                        height={80}
-                                    />
-
-                                    <YAxis allowDecimals={false} />
-
-                                    <Tooltip />
-
-                                    <Bar
-                                        dataKey="cantidadVendida"
-                                        name="Unidades vendidas"
-                                        fill="#05788a"
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <GraficaProductosMasVendidos
+                                productos={productosMasVendidos}
+                            />
                         </div>
                     )}
 
@@ -573,6 +537,30 @@ function Reportes() {
 
                     </section>
 
+                        <div className="graficas-fila graficas-fila-amplia">
+
+                            <TarjetaGrafica
+                                titulo="Ventas y gastos"
+                                subtitulo="Movimiento diario del período consultado"
+                            >
+                                <GraficaVentasGastos
+                                    dias={reporte.dias}
+                                    desde={reporte.desde}
+                                    hasta={reporte.hasta}
+                                />
+                            </TarjetaGrafica>
+
+                            <TarjetaGrafica
+                                titulo="Métodos de pago"
+                                subtitulo="Ventas del período"
+                            >
+                                <GraficaMetodosPago
+                                    ventasPorMetodo={reporte.resumen.ventasPorMetodo}
+                                />
+                            </TarjetaGrafica>
+
+                        </div>
+                        
                     {/* =============================================
                         TABLA DIARIA
                     ============================================= */}

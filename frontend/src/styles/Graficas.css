@@ -1,0 +1,318 @@
+/* =========================================================
+    GRÁFICAS (dashboard y reportes)
+   ========================================================= */
+
+.graficas-fila {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+/* Tarjeta ancha + tarjeta angosta */
+.graficas-fila-amplia {
+    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+}
+
+@media (max-width: 1100px) {
+    .graficas-fila-amplia {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+
+/* ---------- Tarjeta ---------- */
+
+.grafica-tarjeta {
+    min-width: 0;
+    padding: 18px 20px 20px;
+
+    background: #ffffff;
+    border: 1px solid #e6edf1;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(6, 47, 61, 0.05);
+}
+
+.grafica-tarjeta-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.grafica-tarjeta-header h3 {
+    margin: 0;
+    color: #062f3d;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.grafica-tarjeta-header p {
+    margin: 3px 0 0;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.grafica-select {
+    height: 36px;
+    padding: 0 12px;
+    min-width: 150px;
+    border: 1px solid #dbe3eb;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #1e293b;
+    font-size: 13px;
+}
+
+
+/* ---------- Estados ---------- */
+
+.grafica-vacia {
+    margin: 0;
+    padding: 36px 12px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+
+/* ---------- Leyenda y puntos ---------- */
+
+.grafica-punto {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.grafica-leyenda {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin: 0 0 8px;
+    padding: 0;
+    list-style: none;
+    color: #475569;
+    font-size: 13px;
+}
+
+.grafica-leyenda li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+
+/* ---------- Tooltip ---------- */
+
+.grafica-tooltip {
+    display: grid;
+    gap: 5px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border: 1px solid #dbe3eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+    font-size: 13px;
+    color: #334155;
+}
+
+.grafica-tooltip-titulo {
+    color: #062f3d;
+}
+
+.grafica-tooltip-fila {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.grafica-tooltip-fila b {
+    margin-left: auto;
+    padding-left: 12px;
+    color: #062f3d;
+}
+
+
+/* ---------- Dona ---------- */
+
+.grafica-dona {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+}
+
+.grafica-dona-lienzo {
+    position: relative;
+    width: 100%;
+}
+
+/* Dona a la izquierda, leyenda a la derecha */
+.grafica-dona-horizontal {
+    grid-template-columns: 130px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+}
+
+.grafica-dona-horizontal .grafica-dona-centro strong {
+    font-size: 16px;
+}
+
+.grafica-dona-horizontal .grafica-dona-leyenda li {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.grafica-dona-horizontal .grafica-dona-leyenda small {
+    display: none;
+}
+
+.grafica-dona-centro {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    text-align: center;
+}
+
+.grafica-dona-centro strong {
+    color: #062f3d;
+    font-size: 18px;
+    line-height: 1.1;
+}
+
+.grafica-dona-centro span {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.grafica-dona-leyenda {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: #475569;
+}
+
+.grafica-dona-leyenda li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto 42px;
+    align-items: center;
+    gap: 8px;
+}
+
+.grafica-dona-nombre {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.grafica-dona-leyenda b {
+    color: #062f3d;
+}
+
+.grafica-dona-leyenda small {
+    text-align: right;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+
+/* ---------- Nivel de stock (barras + dona) ---------- */
+
+.grafica-stock {
+    display: grid;
+    gap: 14px;
+}
+
+.grafica-stock-barras {
+    min-width: 0;
+}
+
+
+/* ---------- Tabla de ventas recientes ---------- */
+
+.grafica-tabla {
+    overflow-x: auto;
+}
+
+.grafica-tabla table {
+    width: 100%;
+    min-width: 520px;
+    border-collapse: collapse;
+}
+
+.grafica-tabla th {
+    padding: 8px 10px;
+    text-align: left;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+    border-bottom: 1px solid #e6edf1;
+    white-space: nowrap;
+}
+
+.grafica-tabla td {
+    padding: 11px 10px;
+    color: #475569;
+    font-size: 13px;
+    border-bottom: 1px solid #f1f5f8;
+    white-space: nowrap;
+}
+
+.grafica-tabla tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.grafica-tabla td strong {
+    color: #05788a;
+}
+
+.grafica-tabla td b {
+    color: #062f3d;
+}
+
+.grafica-estado {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #eef2f6;
+    color: #64748b;
+}
+
+.grafica-estado-confirmada,
+.grafica-estado-completada {
+    background: #e6f7fa;
+    color: #05788a;
+}
+
+.grafica-estado-anulada,
+.grafica-estado-cancelada {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+
+@media (max-width: 600px) {
+
+    .grafica-tarjeta {
+        padding: 14px 14px 16px;
+    }
+
+    .grafica-select {
+        width: 100%;
+    }
+
+}

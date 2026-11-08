@@ -15,6 +15,7 @@ import {
     obtenerComprasCliente,
 } from "../services/clientes.service";
 import { obtenerComprobante } from "../services/ventas.service";
+import CampoFecha from "../components/CampoFecha";
 
 function Clientes() {
     const usuarioActual = JSON.parse(
@@ -1153,8 +1154,8 @@ function Clientes() {
                         </div>
 
                         <div className="historial-compras-filtros">
-                            <input type="date" value={filtrosCompras.fechaInicio} onChange={(e) => setFiltrosCompras((actual) => ({ ...actual, fechaInicio: e.target.value }))} />
-                            <input type="date" value={filtrosCompras.fechaFin} onChange={(e) => setFiltrosCompras((actual) => ({ ...actual, fechaFin: e.target.value }))} />
+                            <CampoFecha value={filtrosCompras.fechaInicio} onChange={(e) => setFiltrosCompras((actual) => ({ ...actual, fechaInicio: e.target.value }))} />
+                            <CampoFecha value={filtrosCompras.fechaFin} onChange={(e) => setFiltrosCompras((actual) => ({ ...actual, fechaFin: e.target.value }))} />
                             <select value={filtrosCompras.estado} onChange={(e) => setFiltrosCompras((actual) => ({ ...actual, estado: e.target.value }))}>
                                 <option value="TODAS">Todas</option>
                                 <option value="CONFIRMADA">Confirmadas</option>

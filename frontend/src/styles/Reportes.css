@@ -161,3 +161,10 @@
     min-height: 360px;
     margin-top: 20px;
 }
+
+.reportes-filtro select,
+.reportes-filtro input.campo-fecha-entrada.campo-fecha-entrada {
+    height: 42px;
+    padding-top: 0;
+    padding-bottom: 0;
+}

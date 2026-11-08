@@ -1825,3 +1825,19 @@
     font-size: 18px;
     color: #05788a;
 }
+/* ===== Filtros del historial: que se adapten al ancho ===== */
+.historial-ventas-filtros {
+    flex-wrap: wrap;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.historial-filtro {
+    flex: 1 1 170px;
+    min-width: 0;
+}
+
+.historial-filtro select {
+    height: 42px;
+    padding: 0 12px;
+}

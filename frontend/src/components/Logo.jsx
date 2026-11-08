@@ -1,8 +1,8 @@
-function Logo() {
+function Logo({ ajustado = false }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 800 350"
+      viewBox= {ajustado ? "68 62 588 171" : "0 0 800 350"}
       className="logo-svg"
     >
       <defs>

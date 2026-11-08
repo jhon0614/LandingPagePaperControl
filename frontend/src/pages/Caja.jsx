@@ -16,6 +16,7 @@ import {
     cerrarCaja,
    obtenerHistorialTurnos,
 } from "../services/caja.service";
+import CampoFecha from "../components/CampoFecha";
 
 
 function formatoMoneda(valor) {
@@ -808,16 +809,14 @@ function Caja() {
 
                             <div className="caja-gasto-form">
 
-                                <input
-                                    type="date"
+                                <CampoFecha
                                     value={fechaDesdeHistorial}
                                     onChange={(e) =>
                                         setFechaDesdeHistorial(e.target.value)
                                     }
                                 />
 
-                                <input
-                                    type="date"
+                                <CampoFecha
                                     value={fechaHastaHistorial}
                                     onChange={(e) =>
                                         setFechaHastaHistorial(e.target.value)

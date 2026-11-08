@@ -191,6 +191,10 @@
         0 10px 25px rgba(0, 0, 0, .08);
 }
 
+.clientes-seccion:not(.clientes-seccion-inactivos) {
+    border-top: 4px solid #15803d;
+}
+
 .clientes-seccion-inactivos {
     border-top: 4px solid #dc2626;
 }

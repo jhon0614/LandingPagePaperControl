@@ -4,6 +4,13 @@ import { obtenerProductosMasVendidos } from "../services/reportes.service";
 
 import "../styles/ProductosMasVendidos.css";
 
+import CampoFecha from "./CampoFecha";
+
+function sumarDias(fecha, dias) {
+    const [a, m, d] = fecha.split("-").map(Number);
+    const f = new Date(a, m - 1, d + dias);
+    return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+}
 
 function ProductosMasVendidos() {
 
@@ -127,17 +134,28 @@ function ProductosMasVendidos() {
 
                 <div className="mas-vendidos-rango">
 
-                    <input
-                        type="date"
+                    <CampoFecha
                         value={desde}
-                        onChange={(e) => setDesde(e.target.value)}
+                        max={hasta || undefined}
+                        onChange={(e) => {
+                            const nuevo = e.target.value;
+                            setDesde(nuevo);
+                            if (
+                                nuevo &&
+                                hasta &&
+                                (hasta < nuevo || hasta > sumarDias(nuevo, 365))
+                            ) {
+                                setHasta("");
+                            }
+                        }}
                     />
 
                     <span>hasta</span>
 
-                    <input
-                        type="date"
+                    <CampoFecha
                         value={hasta}
+                        min={desde || undefined}
+                        max={desde ? sumarDias(desde, 365) : undefined}
                         onChange={(e) => setHasta(e.target.value)}
                     />
 

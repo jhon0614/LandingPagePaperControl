@@ -20,6 +20,7 @@ import { obtenerProductos } from "../services/productos.service";
 import { obtenerMetodosPago, cambiarEstadoMetodoPago } from "../services/ventas.service";
 import { obtenerClientes, obtenerCliente } from "../services/clientes.service";
 import { aNumeroMonto, formatearMontoEntrada, limpiarMontoEntrada } from "../utils/moneda";
+import CampoFecha from "../components/CampoFecha";
 
 function Dropdown({
     value,
@@ -2429,9 +2430,8 @@ function Ventas() {
                             Desde
                         </label>
 
-                        <input
+                        <CampoFecha
                             id="fechaInicio"
-                            type="date"
                             value={fechaInicio}
                             onChange={(e) =>
                                 setFechaInicio(e.target.value)
@@ -2447,9 +2447,8 @@ function Ventas() {
                             Hasta
                         </label>
 
-                        <input
+                        <CampoFecha
                             id="fechaFin"
-                            type="date"
                             value={fechaFin}
                             onChange={(e) =>
                                 setFechaFin(e.target.value)

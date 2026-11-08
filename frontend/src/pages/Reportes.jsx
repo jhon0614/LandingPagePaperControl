@@ -19,7 +19,7 @@ import {
 } from "../services/reportes.service";
 
 import { obtenerUsuarios } from "../services/usuarios.service";
-
+import CampoFecha from "../components/CampoFecha";
 import { useEffect } from "react";
 
 
@@ -227,10 +227,10 @@ function Reportes() {
                     return;
                 }
 
-                if (new Date(hasta) < new Date(desde)) {
+                if ((new Date(hasta) - new Date(desde)) / (1000 * 60 * 60 * 24) > 366) {
 
                     setErrorProductos(
-                        "La fecha final no puede ser anterior a la inicial."
+                        "El rango máximo permitido es de 366 días."
                     );
 
                     return;
@@ -302,9 +302,8 @@ function Reportes() {
 
                     <label htmlFor="reporte-desde">Desde</label>
 
-                    <input
+                    <CampoFecha
                         id="reporte-desde"
-                        type="date"
                         value={desde}
                         onChange={(e) => setDesde(e.target.value)}
                         disabled={cargando}
@@ -316,9 +315,8 @@ function Reportes() {
 
                     <label htmlFor="reporte-hasta">Hasta</label>
 
-                    <input
+                    <CampoFecha
                         id="reporte-hasta"
-                        type="date"
                         value={hasta}
                         onChange={(e) => setHasta(e.target.value)}
                         disabled={cargando}
@@ -435,9 +433,8 @@ function Reportes() {
                         <div className="reportes-filtro">
                             <label htmlFor="productos-desde">Desde</label>
 
-                            <input
+                            <CampoFecha
                                 id="productos-desde"
-                                type="date"
                                 value={desde}
                                 onChange={(e) => setDesde(e.target.value)}
                                 disabled={cargandoProductos}
@@ -447,9 +444,8 @@ function Reportes() {
                         <div className="reportes-filtro">
                             <label htmlFor="productos-hasta">Hasta</label>
 
-                            <input
+                            <CampoFecha
                                 id="productos-hasta"
-                                type="date"
                                 value={hasta}
                                 onChange={(e) => setHasta(e.target.value)}
                                 disabled={cargandoProductos}

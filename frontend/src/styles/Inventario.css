@@ -1323,3 +1323,30 @@ RESPONSIVE
     display: flex;
     gap: 10px;
 }
+/* ===== Filtros del inventario: columnas que se acomodan solas ===== */
+.inventario-filtros {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.inventario-filtros > * {
+    min-width: 0;
+}
+
+/* El buscador ocupa toda la fila; los filtros quedan debajo */
+.inventario-filtros > .inventario-buscador {
+    grid-column: 1 / -1;
+}
+
+.inventario-seccion:has(.titulo-verde) {
+    border-top: 4px solid #059669;
+}
+
+.inventario-seccion:has(.titulo-rojo) {
+    border-top: 4px solid #dc2626;
+}
+
+.inventario-seccion:has(.titulo-gris) {
+    border-top: 4px solid #64748b;
+}

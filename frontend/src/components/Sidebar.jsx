@@ -25,7 +25,7 @@ function Sidebar({ contraido, onAlternar }) {
 
             <div className="sidebar-logo">
 
-                <Logo />
+                <Logo ajustado/>
 
             </div>
 

@@ -735,6 +735,7 @@ function Usuarios() {
         aprobar: "APROBADO",
         rechazar: "RECHAZADO",
         revocar: "NINGUNO",
+        reabrir: "PENDIENTE",
     };
 
     async function gestionarGoogle(usuario, accion) {
@@ -743,6 +744,7 @@ function Usuarios() {
             aprobar: `¿Aprobar que ${usuario.nombres} ${usuario.apellidos} entre con su cuenta de Google?`,
             rechazar: `¿Rechazar la solicitud de Google de ${usuario.nombres} ${usuario.apellidos}?`,
             revocar: `¿Quitar el acceso con Google a ${usuario.nombres} ${usuario.apellidos}?`,
+            reabrir: `¿Reabrir la solicitud de Google de ${usuario.nombres} ${usuario.apellidos}? Quedará pendiente y necesitará una nueva aprobación para entrar.`,
         };
 
         if (!window.confirm(textos[accion])) return;
@@ -1318,15 +1320,29 @@ function Usuarios() {
                                                                         );
                                                                     }
 
+                                                                    if (estadoGoogle === "RECHAZADO") {
+                                                                        return (
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn-google btn-google-reabrir"
+                                                                                title="Solicitud rechazada. Clic para reabrirla"
+                                                                                disabled={ocupado}
+                                                                                onClick={() => gestionarGoogle(usuario, "reabrir")}
+                                                                            >
+                                                                                {ocupado ? (
+                                                                                    <i className="fa-solid fa-spinner fa-spin"></i>
+                                                                                ) : (
+                                                                                    <i className="fa-solid fa-rotate-left"></i>
+                                                                                )}
+                                                                            </button>
+                                                                        );
+                                                                    }
+                                                                    
                                                                     return (
                                                                         <button
                                                                             type="button"
                                                                             className="btn-google"
-                                                                            title={
-                                                                                estadoGoogle === "RECHAZADO"
-                                                                                    ? "Solicitud de Google rechazada"
-                                                                                    : "Sin solicitud de Google"
-                                                                            }
+                                                                            title="Sin solicitud de Google"
                                                                             disabled
                                                                         >
                                                                             <i className="fa-brands fa-google"></i>

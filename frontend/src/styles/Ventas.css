@@ -1841,3 +1841,9 @@
     height: 42px;
     padding: 0 12px;
 }
+
+.pos-descuento-error {
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 600;
+}

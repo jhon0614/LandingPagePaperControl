@@ -1321,3 +1321,12 @@
         padding: 16px;
     }
 }
+
+.btn-google-reabrir {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.btn-google-reabrir:hover:not(:disabled) {
+    background: #fed7aa;
+}

@@ -21,6 +21,7 @@ import { obtenerMetodosPago, cambiarEstadoMetodoPago } from "../services/ventas.
 import { obtenerClientes, obtenerCliente } from "../services/clientes.service";
 import { aNumeroMonto, formatearMontoEntrada, limpiarMontoEntrada } from "../utils/moneda";
 import CampoFecha from "../components/CampoFecha";
+const DESCUENTO_MAXIMO_PORCENTAJE = 70;
 
 function Dropdown({
     value,
@@ -917,6 +918,27 @@ function Ventas() {
     }, [subtotal, tipoDescuento, valorDescuento]);
 
     const total = Math.max(0, subtotal - montoDescuentoEstimado);
+
+    const errorDescuento = useMemo(() => {
+        if (!tipoDescuento || valorDescuento === "") return "";
+
+        const valor = aNumeroMonto(valorDescuento);
+
+        if (tipoDescuento === "PORCENTAJE" && valor > DESCUENTO_MAXIMO_PORCENTAJE) {
+            return `El descuento máximo permitido es del ${DESCUENTO_MAXIMO_PORCENTAJE} %.`;
+        }
+
+        if (tipoDescuento === "VALOR_FIJO") {
+            const maximoFijo =
+                Math.round(subtotal * DESCUENTO_MAXIMO_PORCENTAJE) / 100;
+
+            if (valor > maximoFijo) {
+                return `El descuento máximo permitido es del ${DESCUENTO_MAXIMO_PORCENTAJE} % del subtotal ($${maximoFijo.toLocaleString("es-CO")}).`;
+            }
+        }
+
+        return "";
+    }, [tipoDescuento, valorDescuento, subtotal]);
 
     function manejarValorDescuento(valor) {
         const limpio = limpiarMontoEntrada(valor);
@@ -2093,13 +2115,19 @@ function Ventas() {
                                 <option value="VALOR_FIJO">Valor fijo</option>
                             </select>
                             {tipoDescuento && (
-                                <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    value={formatearMontoEntrada(valorDescuento)}
-                                    onChange={(e) => manejarValorDescuento(e.target.value)}
-                                    placeholder={tipoDescuento === "PORCENTAJE" ? "Ej: 10" : "Ej: 5000"}
-                                />
+                                <>
+                                    <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={formatearMontoEntrada(valorDescuento)}
+                                        onChange={(e) => manejarValorDescuento(e.target.value)}
+                                        placeholder={tipoDescuento === "PORCENTAJE" ? `Ej: 10 (máx. ${DESCUENTO_MAXIMO_PORCENTAJE} %)` : "Ej: 5000"}
+                                    />
+
+                                    {errorDescuento && (
+                                        <small className="pos-descuento-error">{errorDescuento}</small>
+                                    )}
+                                </>
                             )}
                             <div className="pos-descuento-resumen">
                                 <span>Subtotal: ${subtotal.toLocaleString("es-CO")}</span>
@@ -2367,7 +2395,8 @@ function Ventas() {
                         onClick={registrarVenta}
                         disabled={
                             carrito.length === 0 ||
-                            registrandoVenta
+                            registrandoVenta ||
+                            Boolean(errorDescuento)
                         }
                     >
 

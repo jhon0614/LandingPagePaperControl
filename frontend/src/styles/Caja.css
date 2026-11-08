@@ -435,3 +435,42 @@
 .caja-gastos-tabla {
     overflow-x: auto;
 }
+
+.caja-header {
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.btn-cerrar-caja {
+    white-space: nowrap;
+}
+
+.caja-gasto-form {
+    flex-wrap: wrap;
+}
+
+.caja-gasto-form input {
+    flex: 1 1 160px;
+    min-width: 0;
+    width: auto;
+}
+
+.btn-agregar-gasto {
+    flex: 0 0 auto;
+    min-height: 42px;
+    justify-content: center;
+}
+
+.caja-gastos-tabla {
+    overflow-x: auto;
+}
+
+@media (max-width: 600px) {
+    .caja-gastos-panel {
+        padding: 16px;
+    }
+
+    .btn-agregar-gasto {
+        flex: 1 1 100%;
+    }
+}

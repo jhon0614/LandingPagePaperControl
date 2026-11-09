@@ -22,6 +22,11 @@ import { obtenerClientes, obtenerCliente } from "../services/clientes.service";
 import { aNumeroMonto, formatearMontoEntrada, limpiarMontoEntrada } from "../utils/moneda";
 import CampoFecha from "../components/CampoFecha";
 const DESCUENTO_MAXIMO_PORCENTAJE = 70;
+const ICONOS_METODO_PAGO = {
+    EFECTIVO: "fa-money-bill-wave",
+    TARJETA: "fa-credit-card",
+    TRANSFERENCIA: "fa-building-columns",
+};
 
 function Dropdown({
     value,
@@ -1683,34 +1688,6 @@ function Ventas() {
 
         }, [clientes]);
 
-
-    /*
-     * =========================================================
-     * OPCIONES DROPDOWN MÉTODOS
-     * =========================================================
-     */
-
-    const opcionesMetodosPago =
-        useMemo(() => {
-
-            return [
-
-                {
-                    value: "",
-                    label: "Selecciona un método",
-                },
-
-                ...metodosPagoActivos.map(
-                    (metodo) => ({
-                        value: metodo.codigo,
-                        label: metodo.nombre,
-                    })
-                ),
-
-            ];
-
-        }, [metodosPagoActivos]);
-
         if (verificandoCaja || cargandoProductos) {
 
         return (
@@ -2109,34 +2086,56 @@ function Ventas() {
 
                         <div className="pos-descuento-panel">
                             <label htmlFor="tipoDescuento">Descuento</label>
-                            <select id="tipoDescuento" value={tipoDescuento} onChange={(e) => { setTipoDescuento(e.target.value); setValorDescuento(""); }}>
-                                <option value="">Sin descuento</option>
-                                <option value="PORCENTAJE">Porcentaje</option>
-                                <option value="VALOR_FIJO">Valor fijo</option>
-                            </select>
-                            {tipoDescuento && (
-                                <>
-                                    <input
-                                        type="text"
-                                        inputMode="decimal"
-                                        value={formatearMontoEntrada(valorDescuento)}
-                                        onChange={(e) => manejarValorDescuento(e.target.value)}
-                                        placeholder={tipoDescuento === "PORCENTAJE" ? `Ej: 10 (máx. ${DESCUENTO_MAXIMO_PORCENTAJE} %)` : "Ej: 5000"}
-                                    />
+                            <div className="pos-descuento-fila">
+                                <select id="tipoDescuento" value={tipoDescuento} onChange={(e) => { setTipoDescuento(e.target.value); setValorDescuento(""); }}>
+                                    <option value="">Sin descuento</option>
+                                    <option value="PORCENTAJE">Porcentaje</option>
+                                    <option value="VALOR_FIJO">Valor fijo</option>
+                                </select>
+                                {tipoDescuento && (
+                                    <>
+                                        <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            aria-label="Valor del descuento"
+                                            value={formatearMontoEntrada(valorDescuento)}
+                                            onChange={(e) => manejarValorDescuento(e.target.value)}
+                                            placeholder={tipoDescuento === "PORCENTAJE" ? "Ej: 10" : "Ej: 5000"}
+                                        />
+                                        <span className="pos-descuento-ayuda">
+                                            {tipoDescuento === "PORCENTAJE"
+                                                ? `Máximo ${DESCUENTO_MAXIMO_PORCENTAJE} %`
+                                                : `Máx. $${(
+                                                    Math.round(subtotal * DESCUENTO_MAXIMO_PORCENTAJE) / 100
+                                                ).toLocaleString("es-CO")}`}
+                                        </span>
+                                    </>
+                                )}
 
-                                    {errorDescuento && (
-                                        <small className="pos-descuento-error">{errorDescuento}</small>
-                                    )}
-                                </>
+                            </div>
+                            {errorDescuento && (
+                                <small className="pos-descuento-error">{errorDescuento}</small>
                             )}
                             <div className="pos-descuento-resumen">
-                                <span>Subtotal: ${subtotal.toLocaleString("es-CO")}</span>
-                                <span>Descuento: -${montoDescuentoEstimado.toLocaleString("es-CO")}</span>
-                                <strong>Total estimado: ${total.toLocaleString("es-CO")}</strong>
+
+                                <div className="pos-resumen-fila">
+                                    <span>Subtotal</span>
+                                    <span>${subtotal.toLocaleString("es-CO")}</span>
+                                </div>
+
+                                <div className="pos-resumen-fila">
+                                    <span>Descuento</span>
+                                    <span>-${montoDescuentoEstimado.toLocaleString("es-CO")}</span>
+                                </div>
+
+                                <div className="pos-resumen-total">
+                                    <span>Total</span>
+                                    <strong>${total.toLocaleString("es-CO")}</strong>
+                                </div>
+
                             </div>
+
                         </div>
-
-
                         <div className="pos-carrito-pago-header">
 
                             <label>
@@ -2168,17 +2167,59 @@ function Ventas() {
 
                         {/* MÉTODO */}
 
-                        <Dropdown
-                            value={metodoPago}
-                            options={
-                                opcionesMetodosPago
-                            }
-                            placeholder="Selecciona un método"
-                            onChange={
-                                setMetodoPago
-                            }
-                            className="pos-dropdown-pago"
-                        />
+                        {metodosPagoActivos.length === 0 ? (
+
+                            <p className="pos-bancos-vacio">
+                                No hay métodos de pago activos.
+                            </p>
+
+                        ) : (
+
+                            <div className="pos-metodos-botones">
+
+                                {metodosPagoActivos.map((metodo) => {
+
+                                    const seleccionado =
+                                        metodoPago === metodo.codigo;
+
+                                    return (
+
+                                        <button
+                                            type="button"
+                                            key={metodo.id}
+                                            className={
+                                                seleccionado
+                                                    ? "pos-metodo-btn seleccionado"
+                                                    : "pos-metodo-btn"
+                                            }
+                                            onClick={() =>
+                                                setMetodoPago(metodo.codigo)
+                                            }
+                                            aria-pressed={seleccionado}
+                                        >
+
+                                            <i
+                                                className={`fa-solid ${
+                                                    ICONOS_METODO_PAGO[metodo.codigo] ||
+                                                    "fa-wallet"
+                                                }`}
+                                            ></i>
+
+                                            <span>{metodo.nombre}</span>
+
+                                            {seleccionado && (
+                                                <i className="fa-solid fa-circle-check pos-metodo-check"></i>
+                                            )}
+
+                                        </button>
+
+                                    );
+
+                                })}
+
+                            </div>
+
+                        )}
 
                         {/* =================================================
                             MONTO RECIBIDO (EFECTIVO)
@@ -2186,37 +2227,33 @@ function Ventas() {
 
                         {metodoPago === "EFECTIVO" && (
 
-                            <div className="pos-bancos-selector">
+                            <div className="pos-efectivo-fila">
+                                <div className="pos-efectivo-campo">
+                                    <label htmlFor="pos-monto-recibido">
+                                        Monto recibido
+                                    </label>
 
-                                <label>
-                                    Monto recibido
-                                </label>
+                                    <input
+                                        id="pos-monto-recibido"
+                                        type="text"
+                                        inputMode="decimal"
+                                        placeholder={`Mínimo $${total.toLocaleString("es-CO")}`}
+                                        value={formatearMontoEntrada(montoRecibido)}
+                                        onChange={(e) =>
+                                            setMontoRecibido(limpiarMontoEntrada(e.target.value))
+                                        }
+                                        className="pos-monto-recibido-input"
+                                    />
+                                </div>
 
-                                <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    placeholder={`Mínimo $${total.toLocaleString("es-CO")}`}
-                                    value={formatearMontoEntrada(montoRecibido)}
-                                    onChange={(e) =>
-                                        setMontoRecibido(limpiarMontoEntrada(e.target.value))
-                                    }
-                                    className="pos-monto-recibido-input"
-                                />
-
-                                {montoRecibido &&
-                                    aNumeroMonto(montoRecibido) >= total && (
-
-                                        <small className="pos-cambio-estimado">
-                                            Cambio estimado: $
-                                            {(
-                                                aNumeroMonto(montoRecibido) - total
-                                            ).toLocaleString("es-CO")}
-                                        </small>
-
-                                    )}
-
+                                <div className="pos-efectivo-campo">
+                                    <label>Cambio</label>
+                                    <div className="pos-cambio-caja">
+                                        {montoRecibido && aNumeroMonto(montoRecibido) >= total 
+                                            ? `$${(aNumeroMonto(montoRecibido) - total).toLocaleString("es-CO")}`:"$0"}
+                                    </div>
+                                </div>
                             </div>
-
                         )}
 
                         {/* =================================================
@@ -2365,28 +2402,6 @@ function Ventas() {
 
                     </div>
 
-
-                    {/* TOTAL */}
-
-                    <div className="pos-carrito-total">
-
-                        <span>
-                            Total
-                        </span>
-
-
-                        <strong>
-
-                            $
-                            {total.toLocaleString(
-                                "es-CO"
-                            )}
-
-                        </strong>
-
-                    </div>
-
-
                     {/* REGISTRAR */}
 
                     <button
@@ -2413,7 +2428,7 @@ function Ventas() {
 
                         <i className="fa-solid fa-check"></i>
 
-                        Registrar venta
+                        Registrar venta · ${total.toLocaleString("es-CO")}
                         </>
 
                         )}

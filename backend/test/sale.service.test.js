@@ -69,10 +69,10 @@ test("informa cuando el método de pago no existe", async () => {
   );
 });
 
-test("rechaza un descuento porcentual superior al 100", async () => {
+test("rechaza un descuento porcentual superior al 70", async () => {
   const servicio = new ServicioVenta({ crear: async () => { throw new Error("no debe ejecutarse"); } });
   await assert.rejects(
-    servicio.crear({ tipoDescuento: "PORCENTAJE", valorDescuento: 101 }, 7),
+    servicio.crear({ tipoDescuento: "PORCENTAJE", valorDescuento: 71 }, 7),
     (error) => error.codigo === "DESCUENTO_INVALIDO" && error.estadoHttp === 400,
   );
 });

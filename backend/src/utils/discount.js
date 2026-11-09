@@ -1,10 +1,12 @@
 import { centavos, MAX_CENTAVOS } from "./money.js";
 import { ErrorAplicacion } from "../errors/app-error.js";
 
+export const MAX_PORCENTAJE_DESCUENTO = 70;
+
 export function validarDescuento(tipo, valor = 0) {
   const invalido = () =>
     new ErrorAplicacion(
-      "Descuento inválido: usa PORCENTAJE (0 a 100) o VALOR_FIJO no negativo, con hasta dos decimales.",
+      `Descuento inválido: usa PORCENTAJE (0 a ${MAX_PORCENTAJE_DESCUENTO}) o VALOR_FIJO no negativo, con hasta dos decimales.`,
       400,
       "DESCUENTO_INVALIDO",
     );
@@ -20,10 +22,15 @@ export function validarDescuento(tipo, valor = 0) {
   if (
     unidades < 0n ||
     unidades > MAX_CENTAVOS ||
-    (tipo == null && unidades !== 0n) ||
-    (tipo === "PORCENTAJE" && unidades > 10000n)
+    (tipo == null && unidades !== 0n)
   )
     throw invalido();
+  if (tipo === "PORCENTAJE" && unidades > BigInt(MAX_PORCENTAJE_DESCUENTO) * 100n)
+    throw new ErrorAplicacion(
+      `El descuento no puede superar el ${MAX_PORCENTAJE_DESCUENTO} % del subtotal.`,
+      400,
+      "DESCUENTO_INVALIDO",
+    );
   return unidades;
 }
 
@@ -36,9 +43,9 @@ export function calcularDescuento(subtotal, tipo, valor = 0) {
       : tipo === "VALOR_FIJO"
         ? unidades
         : 0n;
-  if (descuento > subtotal)
+  if (descuento * 100n > subtotal * BigInt(MAX_PORCENTAJE_DESCUENTO))
     throw new ErrorAplicacion(
-      "El descuento no puede superar el subtotal.",
+      `El descuento no puede superar el ${MAX_PORCENTAJE_DESCUENTO} % del subtotal.`,
       400,
       "DESCUENTO_INVALIDO",
     );

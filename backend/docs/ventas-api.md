@@ -48,6 +48,13 @@ Si no hay descuento, omitir `tipoDescuento` y enviar u omitir
 `valorDescuento: 0`. Los métodos admitidos son `EFECTIVO`, `TARJETA` y
 `TRANSFERENCIA`. El servidor obtiene precios y calcula todos los totales.
 
+El descuento máximo es el 70 % del subtotal en ambas modalidades. Un porcentaje
+superior a 70 se rechaza en la validación de entrada ("No puede superar 70.").
+El cálculo en centavos también comprueba el importe final después de redondear:
+si supera el límite, responde `400 DESCUENTO_INVALIDO` con el mensaje
+"El descuento no puede superar el 70 % del subtotal.". Un valor fijo equivalente
+exactamente al 70 % se acepta; un descuento del 100 % se rechaza.
+
 Respuesta `201`: `{ "exito": true, "datos": { "venta": { ... } } }`.
 
 ## Ventas propias

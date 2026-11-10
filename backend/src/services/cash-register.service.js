@@ -3,6 +3,7 @@ import { centavos, importeNumero } from "../utils/money.js";
 import { ErrorAplicacion } from "../errors/app-error.js";
 
 const numero = (valor) => Number(valor ?? 0);
+const MONTO_MINIMO_APERTURA = 300000;
 
 // Convierte columnas de MySQL al contrato público utilizado por la API.
 function presentarTurno(fila) {
@@ -89,7 +90,14 @@ export class ServicioTurnoCaja {
   }
 
   async abrir(montoInicial, usuarioId) {
-    const resultado = await this.modelo.abrir({ montoInicial, usuarioId });
+    const monto = Number(montoInicial);
+    if (!Number.isFinite(monto) || monto < MONTO_MINIMO_APERTURA)
+      throw new ErrorAplicacion(
+        "El monto de apertura debe ser mínimo $300.000.",
+        400,
+        "MONTO_APERTURA_MINIMO",
+      );
+    const resultado = await this.modelo.abrir({ montoInicial: monto, usuarioId });
     if (resultado.existente)
       throw new ErrorAplicacion(
         "Ya hay un turno de caja abierto.",

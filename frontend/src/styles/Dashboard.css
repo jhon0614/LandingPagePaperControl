@@ -521,3 +521,10 @@ select:focus {
     transition: background .2s, border-color .2s, color .2s;
 }
 .btn-tema:hover { background: #e6f7fa; border-color: #05788a; }
+/* Tema oscuro: al pasar el mouse, toda fila de tabla usa un fondo sólido oscuro */
+[data-theme="dark"] tbody tr:hover,
+[data-theme="dark"] tbody tr:hover > td,
+[data-theme="dark"] tbody tr:hover > th {
+    background: #16313c !important;
+    color: #e6f1f4;
+}

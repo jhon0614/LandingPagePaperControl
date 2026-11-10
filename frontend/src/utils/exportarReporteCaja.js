@@ -24,7 +24,10 @@ function fechaCalendario(texto) {
 }
 
 function pesos(valor) {
-    return `$${Number(valor || 0).toLocaleString("es-CO")}`;
+    const numero = Number(valor || 0);
+    const texto = `$${Math.abs(numero).toLocaleString("es-CO")}`;
+
+    return numero < 0 ? `-${texto}` : texto;
 }
 
 // Gastos se muestran con signo menos, salvo cuando son cero.

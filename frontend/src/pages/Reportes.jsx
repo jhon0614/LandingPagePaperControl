@@ -19,9 +19,10 @@ import {
 } from "../utils/exportarReporteCaja";
 
 function formatoMoneda(valor) {
+    const numero = Number(valor || 0);
+    const texto = `$${Math.abs(numero).toLocaleString("es-CO")}`;
 
-    return `$${Number(valor || 0).toLocaleString("es-CO")}`;
-
+    return numero < 0 ? `-${texto}` : texto;
 }
 
 

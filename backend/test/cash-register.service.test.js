@@ -16,8 +16,31 @@ const resumen = {
 
 test("rechaza abrir una segunda caja", async () => {
   const servicio = new ServicioTurnoCaja({ abrir: async () => ({ existente: turno }) });
-  await assert.rejects(servicio.abrir(10, 2),
+  await assert.rejects(servicio.abrir(300000, 2),
     (error) => error.estadoHttp === 409 && error.codigo === "TURNO_CAJA_YA_ABIERTO");
+});
+
+test("rechaza montos de apertura inválidos sin llamar al modelo", async () => {
+  let llamadas = 0;
+  const servicio = new ServicioTurnoCaja({ abrir: async () => { llamadas++; } });
+  for (const monto of [299999.99, 0, -1, null, undefined, "", "abc", NaN, Infinity]) {
+    await assert.rejects(servicio.abrir(monto, 2),
+      (error) => error.estadoHttp === 400 && error.codigo === "MONTO_APERTURA_MINIMO");
+  }
+  assert.equal(llamadas, 0);
+});
+
+test("permite abrir con el mínimo o más y normaliza el monto", async () => {
+  for (const monto of [300000, "300000", 350000]) {
+    const servicio = new ServicioTurnoCaja({
+      abrir: async (datos) => {
+        assert.deepEqual(datos, { montoInicial: Number(monto), usuarioId: 2 });
+        return { creado: { ...turno, monto_apertura: datos.montoInicial } };
+      },
+    });
+    const resultado = await servicio.abrir(monto, 2);
+    assert.equal(resultado.montoInicial, Number(monto));
+  }
 });
 
 test("calcula el efectivo esperado con ventas en efectivo menos gastos", async () => {

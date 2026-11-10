@@ -474,3 +474,7 @@
         flex: 1 1 100%;
     }
 }
+/* Tema oscuro: la fila de diferencia del cuadre necesita su propio fondo */
+[data-theme="dark"] .caja-cuadre-diferencia {
+    background: rgba(5, 120, 138, 0.3) !important;
+}

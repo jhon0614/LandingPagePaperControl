@@ -1538,6 +1538,15 @@
     color: #b3c6cd;
 }
 
+[data-theme="dark"] .btn-exportar {
+    background: #10252e;
+    color: #7fd6e6;
+}
+
+[data-theme="dark"] .btn-exportar:hover:not(:disabled) {
+    background: rgba(5,120,138,.18);
+}
+
 /* ----- RestablecerContrasena.css ----- */
 
 [data-theme="dark"] .password-toggle {

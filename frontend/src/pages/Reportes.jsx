@@ -13,7 +13,10 @@ import TarjetaGrafica from "../components/graficas/TarjetaGrafica";
 import GraficaVentasGastos from "../components/graficas/GraficaVentasGastos";
 import GraficaMetodosPago from "../components/graficas/GraficaMetodosPago";
 import GraficaProductosMasVendidos from "../components/graficas/GraficaProductosMasVendidos";
-
+import {
+    exportarReporteCajaExcel,
+    exportarReporteCajaPDF,
+} from "../utils/exportarReporteCaja";
 
 function formatoMoneda(valor) {
 
@@ -101,7 +104,8 @@ function Reportes() {
     const [errorProductos, setErrorProductos] = useState("");
 
     const [consultadoProductos, setConsultadoProductos] = useState(false);
-
+    
+    const [exportando, setExportando] = useState("");
 
     useEffect(() => {
 
@@ -273,6 +277,41 @@ function Reportes() {
 
     }
 
+    async function exportarReporte(tipo) {
+
+        if (!reporte) return;
+
+        const usuario = usuarios.find((u) => String(u.id) === String(vendedorId));
+
+        const filtros = {
+            desde: reporte.desde || desde,
+            hasta: reporte.hasta || hasta,
+            vendedor: usuario
+                ? `${usuario.nombres} ${usuario.apellidos}`
+                : "Todos",
+        };
+
+        try {
+
+            setExportando(tipo);
+
+            if (tipo === "excel") {
+                await exportarReporteCajaExcel(reporte, filtros);
+            } else {
+                await exportarReporteCajaPDF(reporte, filtros);
+            }
+
+        } catch {
+
+            setError("No fue posible exportar el reporte.");
+
+        } finally {
+
+            setExportando("");
+
+        }
+
+    }
 
     return (
 
@@ -567,7 +606,35 @@ function Reportes() {
 
                     <section className="reportes-tabla-panel">
 
-                        <h2>Detalle diario</h2>
+                        <div className="reportes-tabla-encabezado">
+
+                            <h2>Detalle diario</h2>
+
+                            <div className="reportes-exportar">
+
+                                <button
+                                    type="button"
+                                    className="btn-exportar"
+                                    onClick={() => exportarReporte("excel")}
+                                    disabled={exportando !== ""}
+                                >
+                                    <i className="fa-solid fa-file-excel"></i>
+                                    {exportando === "excel" ? "Generando..." : "Exportar Excel"}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="btn-exportar"
+                                    onClick={() => exportarReporte("pdf")}
+                                    disabled={exportando !== ""}
+                                >
+                                    <i className="fa-solid fa-file-pdf"></i>
+                                    {exportando === "pdf" ? "Generando..." : "Exportar PDF"}
+                                </button>
+
+                            </div>
+
+                        </div>
 
                         {(!reporte.dias || reporte.dias.length === 0) ? (
 

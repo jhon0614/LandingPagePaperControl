@@ -24,7 +24,7 @@ function formatoMoneda(valor) {
     return `$${Number(valor || 0).toLocaleString("es-CO")}`;
 
 }
-
+const MONTO_MINIMO_APERTURA = 300000;
 function Caja() {
 
     /*
@@ -179,11 +179,11 @@ function Caja() {
 
         if (
             montoInicial === "" ||
-            aNumeroMonto(montoInicial) < 0
+            aNumeroMonto(montoInicial) < MONTO_MINIMO_APERTURA
         ) {
 
             setError(
-                "Ingresa un monto inicial válido."
+                `El monto mínimo para abrir la caja es ${formatoMoneda(MONTO_MINIMO_APERTURA)}.`
             );
 
             return;
@@ -475,7 +475,7 @@ function Caja() {
 
                     <p>
                         Ingresa el monto inicial de efectivo con el que
-                        comienzas el turno.
+                        comienzas el turno (mínimo {formatoMoneda(MONTO_MINIMO_APERTURA)}).
                     </p>
 
                     {error && (
@@ -496,7 +496,7 @@ function Caja() {
                         <input
                             type="text"
                             inputMode="numeric"
-                            placeholder="Ej: 100.000"
+                            placeholder="Ej: 300.000"
                         value={formatearMontoEntrada(montoInicial)}
                         onChange={(e) =>
                             setMontoInicial(limpiarMontoEntrada(e.target.value))

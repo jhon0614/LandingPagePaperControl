@@ -229,6 +229,7 @@
 }
 
 .dashboard-panels {
+    margin-bottom: 16px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 20px;
@@ -509,3 +510,14 @@ select:focus {
         font-weight: 600;
     }
 }
+
+.header-acciones { display: flex; align-items: center; gap: 12px; }
+
+.btn-tema {
+    width: 40px; height: 40px;
+    border: 1px solid #dbe3eb; border-radius: 10px;
+    background: #ffffff; color: #05788a; font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s, border-color .2s, color .2s;
+}
+.btn-tema:hover { background: #e6f7fa; border-color: #05788a; }

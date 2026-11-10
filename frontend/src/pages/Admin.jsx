@@ -71,7 +71,6 @@ function Admin() {
                 </div>
 
             </section>
-            <GraficasDashboard />
             <section className="dashboard-panels">
 
                 <AlertaStockBajo />
@@ -79,6 +78,7 @@ function Admin() {
                 <ProductosMasVendidos />
 
             </section>
+            <GraficasDashboard />
         </Layout>
     );
 }

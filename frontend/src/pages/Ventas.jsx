@@ -21,6 +21,9 @@ import { obtenerMetodosPago, cambiarEstadoMetodoPago } from "../services/ventas.
 import { obtenerClientes, obtenerCliente } from "../services/clientes.service";
 import { aNumeroMonto, formatearMontoEntrada, limpiarMontoEntrada } from "../utils/moneda";
 import CampoFecha from "../components/CampoFecha";
+import ComprobanteVenta from "../components/ventas/ComprobanteVenta";
+import "../styles/Comprobante.css";
+import comprobanteCss from "../styles/Comprobante.css?raw";
 const DESCUENTO_MAXIMO_PORCENTAJE = 70;
 const ICONOS_METODO_PAGO = {
     EFECTIVO: "fa-money-bill-wave",
@@ -457,6 +460,7 @@ function Ventas() {
         useState(null);
 
     const [comprobante, setComprobante] = useState(null);
+    const comprobanteRef = useRef(null);
     const [cargandoComprobante, setCargandoComprobante] = useState(false);
     const [htmlComprobante, setHtmlComprobante] = useState("");
     const [cargandoHtmlComprobante, setCargandoHtmlComprobante] = useState(false);
@@ -524,18 +528,8 @@ function Ventas() {
     }
 
     function imprimirComprobante() {
-        if (!comprobante) return;
+        if (!comprobante || !comprobanteRef.current) return;
 
-        const escaparHtml = (texto) => String(texto ?? "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-        const productos = comprobante.productos.map((producto) => `
-            <tr><td>${escaparHtml(producto.nombre)}</td><td>${producto.cantidad}</td><td>$${producto.precioUnitario.toLocaleString("es-CO")}</td><td>$${producto.total.toLocaleString("es-CO")}</td></tr>
-        `).join("");
-        const pagos = escaparHtml(comprobante.pagos.map((pago) => pago.nombre || pago.metodo).join(", "));
         const ventana = window.open("", "_blank");
 
         if (!ventana) {
@@ -544,7 +538,9 @@ function Ventas() {
         }
 
         ventana.opener = null;
-        ventana.document.write(`<!doctype html><html lang="es"><head><title>Recibo ${comprobante.numeroVenta}</title><style>body{font-family:Arial,sans-serif;color:#17313a;padding:24px}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{padding:8px;border-bottom:1px solid #dce6e8;text-align:left}h1{color:#05788a}.total{font-size:18px;font-weight:bold}</style></head><body><h1>PaperControl</h1><p><strong>Recibo:</strong> ${comprobante.numeroVenta}<br><strong>Fecha:</strong> ${new Date(comprobante.fecha).toLocaleString("es-CO", { timeZone: "America/Bogota" })}</p><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Total</th></tr></thead><tbody>${productos}</tbody></table><p>Subtotal: $${comprobante.subtotal.toLocaleString("es-CO")}<br>Descuento: $${comprobante.descuento.monto.toLocaleString("es-CO")}<br>Método de pago: ${pagos}</p><p class="total">Total: $${comprobante.total.toLocaleString("es-CO")}</p></body></html>`);
+        ventana.document.write(
+            `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Recibo ${comprobante.numeroVenta}</title><style>${comprobanteCss}</style></head><body class="comprobante-impresion">${comprobanteRef.current.innerHTML}</body></html>`
+        );
         ventana.document.close();
         ventana.focus();
         ventana.print();
@@ -2911,22 +2907,14 @@ function Ventas() {
                     <div className="pos-modal recibo-modal">
                         <div className="pos-modal-header">
                             <div>
-                                <h2>Recibo {comprobante.numeroVenta}</h2>
-                                <p>{new Date(comprobante.fecha).toLocaleString("es-CO", { timeZone: "America/Bogota" })}</p>
+                                <h2>Comprobante de pago</h2>
+                                <p>{comprobante.numeroVenta}</p>
                             </div>
                             <button type="button" className="pos-modal-cerrar" onClick={() => setComprobante(null)}><i className="fa-solid fa-xmark"></i></button>
                         </div>
                         <div className="config-pagos-body recibo-contenido">
-                            <p><strong>Cliente:</strong> {comprobante.cliente?.nombre || "Venta sin cliente"}</p>
-                            {comprobante.estado === "ANULADA" && <p className="caja-error"><strong>Venta anulada:</strong> {comprobante.motivoAnulacion || "Sin motivo registrado."}</p>}
-                            <div className="recibo-tabla"><table><thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>
-                                {comprobante.productos.map((producto) => <tr key={producto.productoId}><td>{producto.nombre}</td><td>{producto.cantidad}</td><td>${producto.precioUnitario.toLocaleString("es-CO")}</td><td>${producto.total.toLocaleString("es-CO")}</td></tr>)}
-                            </tbody></table></div>
-                            <div className="recibo-totales">
-                                <p>Subtotal <strong>${comprobante.subtotal.toLocaleString("es-CO")}</strong></p>
-                                <p>Descuento <strong>-${comprobante.descuento.monto.toLocaleString("es-CO")}</strong></p>
-                                <p>Método de pago <strong>{comprobante.pagos.map((pago) => pago.nombre || pago.metodo).join(", ")}</strong></p>
-                                <p className="recibo-total">Total <strong>${comprobante.total.toLocaleString("es-CO")}</strong></p>
+                            <div ref={comprobanteRef}>
+                                <ComprobanteVenta comprobante={comprobante} />
                             </div>
                         </div>
                         <div className="pos-modal-footer"><button type="button" className="btn-cerrar-pos-modal" onClick={imprimirComprobante}><i className="fa-solid fa-print"></i> Imprimir</button><button type="button" className="btn-cerrar-pos-modal" onClick={mostrarHtmlComprobante} disabled={cargandoHtmlComprobante}>{cargandoHtmlComprobante ? "Cargando..." : "Ver HTML"}</button><button type="button" className="btn-cerrar-pos-modal" onClick={imprimirHtmlComprobante} disabled={cargandoHtmlComprobante}>Imprimir HTML</button><button type="button" className="btn-cerrar-pos-modal" onClick={descargarHtmlComprobante}>Descargar HTML</button></div>

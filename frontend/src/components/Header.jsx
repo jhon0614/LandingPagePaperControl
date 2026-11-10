@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import "../styles/Dashboard.css";
-
+import useTema from "../hooks/useTema";
 import { cerrarSesion } from "../services/auth.service";
 
 function Header() {
 
     const navigate = useNavigate();
+    const { tema, alternarTema } = useTema();
 
     const usuario = JSON.parse(localStorage.getItem("usuario"));
 
@@ -29,12 +30,21 @@ function Header() {
 
         </div>
 
-        <button
-            className="logout-button"
-            onClick={manejarCerrarSesion}
-        >
-            Cerrar sesión
-        </button>
+        <div className="header-acciones">
+            <button
+                type="button"
+                className="btn-tema"
+                onClick={alternarTema}
+                title={tema === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+                aria-label={tema === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+            >
+                <i className={tema === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon"}></i>
+            </button>
+
+            <button className="logout-button" onClick={manejarCerrarSesion}>
+                Cerrar sesión
+            </button>
+        </div>
 
         </header>
 

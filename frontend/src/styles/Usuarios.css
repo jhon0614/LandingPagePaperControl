@@ -1330,3 +1330,7 @@
 .btn-google-reabrir:hover:not(:disabled) {
     background: #fed7aa;
 }
+
+[data-theme="dark"] .tabla-usuarios tbody tr:hover td:last-child {
+    background: #16313c !important;
+}

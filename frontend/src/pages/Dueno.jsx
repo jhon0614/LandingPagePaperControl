@@ -71,9 +71,6 @@ function Dueno() {
                 </div>
 
             </section>
-
-            <GraficasDashboard />
-            
             <section className="dashboard-panels">
 
                 <AlertaStockBajo />
@@ -81,6 +78,7 @@ function Dueno() {
                 <ProductosMasVendidos />
 
             </section>
+            <GraficasDashboard />
         </Layout>
     );
 }

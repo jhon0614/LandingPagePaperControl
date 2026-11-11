@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { restaurarSesion } from "./services/api";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -24,6 +24,14 @@ import RestablecerContrasena from "./pages/RestablecerContrasena";
 import CambiarContrasena from "./pages/CambiarContrasena";
 
 function App() {
+    const { pathname } = useLocation();
+
+    // La landing pública no necesita restaurar una sesión ni esperar a la API.
+    // Al entrar al sistema se monta su verificación antes de mostrar las rutas.
+    return pathname === "/" ? <Landing /> : <AplicacionConSesion />;
+}
+
+function AplicacionConSesion() {
 
     const [estadoSesion, setEstadoSesion] = useState("verificando");
 
@@ -122,12 +130,6 @@ function App() {
             {/* =========================================
                 RUTAS PÚBLICAS
             ========================================= */}
-
-            <Route
-                path="/"
-                element={<Landing />}
-            />
-
 
             <Route
                 path="/login"

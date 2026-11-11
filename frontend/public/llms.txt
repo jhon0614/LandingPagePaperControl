@@ -1,11 +1,11 @@
 # PaperControl
 
-Sistema de gestión de inventario y ventas.
+> Aplicación web para gestionar inventario, ventas y caja de una papelería.
 
-https://www.papercontrol.online
+## Sitio web
 
-## Recursos
+- [Página principal](https://www.papercontrol.online/): Información sobre PaperControl, sus funcionalidades y formulario de contacto.
 
-https://www.papercontrol.online/
-https://www.papercontrol.online/#/login
-https://www.papercontrol.online/#/register
+## Contacto
+
+- [Correo de contacto](mailto:notificaciones@papercontrol.online): Consultas sobre el producto.

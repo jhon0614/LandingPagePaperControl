@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 // Resuelve la ubicación del logo a partir de este archivo, sin depender de la
@@ -13,23 +13,11 @@ const rutaLogo = fileURLToPath(
 // Prepara y envía los mensajes de recuperación mediante la cuenta configurada
 // en las variables de entorno.
 export class ServicioCorreo {
-  constructor(configuracionCorreo, configuracionRestablecimiento) {
+  constructor(configuracionCorreo, configuracionRestablecimiento, solicitar = fetch) {
     this.configuracionRestablecimiento = configuracionRestablecimiento;
 
-    // Con el puerto 587, requireTLS obliga a actualizar la conexión a STARTTLS.
-    this.transportador = nodemailer.createTransport({
-      host: configuracionCorreo.servidor,
-      port: configuracionCorreo.puerto,
-      secure: configuracionCorreo.seguro,
-      requireTLS: !configuracionCorreo.seguro,
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 30000,
-      auth: {
-        user: configuracionCorreo.usuario,
-        pass: configuracionCorreo.contrasena,
-      },
-    });
+    this.apiKey = configuracionCorreo.apiKey;
+    this.solicitar = solicitar;
 
     this.remitente = configuracionCorreo.remitente;
   }
@@ -100,21 +88,39 @@ export class ServicioCorreo {
       </html>
     `;
 
-    await this.transportador.sendMail({
-      from: this.remitente,
-      to: correoDestino,
-      subject: asunto,
-      text: texto,
-      html,
-      attachments: [
-        {
-          // cid permite mostrar el logo dentro del mensaje sin una URL pública.
+    const logo = await readFile(rutaLogo);
+    const respuesta = await this.solicitar("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: AbortSignal.timeout(30000),
+      body: JSON.stringify({
+        from: this.remitente,
+        to: [correoDestino],
+        subject: asunto,
+        text: texto,
+        html,
+        attachments: [{
           filename: "papercontrol.jpeg",
-          path: rutaLogo,
-          cid: "logo-papercontrol",
-        },
-      ],
+          content: logo.toString("base64"),
+          content_id: "logo-papercontrol",
+        }],
+      }),
     });
+    if (!respuesta.ok) {
+      // No incluir respuestas del proveedor: pueden contener datos personales.
+      throw Object.assign(new Error("Resend rechazó el envío del correo."), {
+        code: `RESEND_HTTP_${respuesta.status}`,
+      });
+    }
+    const resultado = await respuesta.json();
+    if (!resultado.id) {
+      throw Object.assign(new Error("Resend no confirmó el envío del correo."), {
+        code: "RESEND_RESPUESTA_INVALIDA",
+      });
+    }
   }
 
   #crearEnlaceRestablecimiento(token) {

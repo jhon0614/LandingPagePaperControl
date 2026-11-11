@@ -123,12 +123,7 @@ export function cargarConfiguracion() {
       urlFrontend: obligatoria("FRONTEND_RESET_PASSWORD_URL"),
     }),
     correo: Object.freeze({
-      servidor: obligatoria("MAIL_HOST"),
-      puerto: enteroPositivo("MAIL_PORT", 587),
-      // Convierte el texto del archivo .env en un booleano real.
-      seguro: process.env.MAIL_SECURE === "true",
-      usuario: obligatoria("MAIL_USER"),
-      contrasena: obligatoria("MAIL_PASSWORD"),
+      apiKey: obligatoria("RESEND_API_KEY"),
       remitente: obligatoria("MAIL_FROM"),
     }),
   });

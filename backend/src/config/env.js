@@ -104,13 +104,17 @@ export function cargarConfiguracion() {
       googleClientId: obligatoria("GOOGLE_CLIENT_ID"),
       minutosAcceso: enteroPositivo("JWT_ACCESS_MINUTES", 15),
       diasRenovacion: enteroPositivo("REFRESH_TOKEN_DAYS", 7),
-    
+
       // Configuración de Google reCAPTCHA v2
       recaptchaSecretKey: obligatoria("RECAPTCHA_SECRET_KEY"),
       recaptchaHostnames: Object.freeze(
         entorno === "production"
-          ? ["papercontrol.vercel.app"]
-          : ["localhost"]
+          ? [
+              "papercontrol.vercel.app",
+              "papercontrol.online",
+              "www.papercontrol.online",
+            ]
+          : ["localhost"],
       ),
     }),
     restablecimientoContrasena: Object.freeze({

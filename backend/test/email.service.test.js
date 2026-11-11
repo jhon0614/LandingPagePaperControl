@@ -40,3 +40,20 @@ test("no confirma envío sin identificador del proveedor", async () => {
     code: "RESEND_RESPUESTA_INVALIDA",
   });
 });
+
+test("contacto usa destinatario interno y reply_to del visitante", async () => {
+  const correo = new ServicioCorreo(
+    { apiKey: "re_prueba", remitente: "PaperControl <notificaciones@papercontrol.online>", destinatarioContacto: "notificaciones@papercontrol.online" },
+    {},
+    async (_url, opciones) => {
+      const cuerpo = JSON.parse(opciones.body);
+      assert.deepEqual(cuerpo.to, ["notificaciones@papercontrol.online"]);
+      assert.equal(cuerpo.reply_to, "ana@example.com");
+      assert.equal(cuerpo.from, "PaperControl <notificaciones@papercontrol.online>");
+      assert.ok(cuerpo.text.includes("<script>mensaje</script>"));
+      assert.equal(cuerpo.html, undefined);
+      return { ok: true, json: async () => ({ id: "contact-id" }) };
+    },
+  );
+  await correo.enviarContacto({ nombre: "Ana", apellido: "Pérez", email: "ana@example.com", mensaje: "<script>mensaje</script>" });
+});

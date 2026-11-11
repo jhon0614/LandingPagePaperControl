@@ -25,7 +25,7 @@ Los roles disponibles son `VENDEDOR`, `ADMINISTRADOR` y `DUENO`. El backend comp
 | API | Node.js, Express 5 y Zod |
 | Datos | MySQL 8 y mysql2 |
 | Autenticación | JWT, bcryptjs y cookies HttpOnly para renovación de sesión |
-| Correo | Nodemailer y cola de recuperación en MySQL |
+| Correo | API HTTPS de Resend y cola de recuperación en MySQL |
 | Validación del proyecto | Node Test Runner y ESLint |
 
 ## Estructura
@@ -62,7 +62,7 @@ database/
 
 ### 1. Preparar el entorno
 
-Entorno de referencia: **Node.js 24.12**, npm y **MySQL 8.0 o superior**. Para enviar enlaces de recuperación necesitas acceso a un servidor SMTP.
+Entorno de referencia: **Node.js 24.12**, npm y **MySQL 8.0 o superior**. Para enviar enlaces de recuperación necesitas un dominio verificado y una API key de Resend.
 
 Desde la raíz del repositorio, instala las dependencias de ambas aplicaciones:
 
@@ -97,7 +97,7 @@ Completa los valores del archivo:
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Conexión a MySQL |
 | `JWT_ACCESS_SECRET` | Secreto aleatorio de al menos 32 bytes para firmar tokens |
 | `ADMIN_FIRST_NAME`, `ADMIN_LAST_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Datos del primer administrador |
-| `MAIL_HOST`, `MAIL_PORT`, `MAIL_SECURE`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | Envío de correos de recuperación |
+| `RESEND_API_KEY`, `MAIL_FROM` | Envío de correos de recuperación |
 | `FRONTEND_ORIGIN` | Origen autorizado; localmente `http://localhost:5173` |
 | `FRONTEND_RESET_PASSWORD_URL` | Recuperación; localmente `http://localhost:5173/#/restablecer-contrasena` |
 

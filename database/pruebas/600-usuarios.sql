@@ -2,6 +2,10 @@
 -- Ejecutar solo en desarrollo. Repetible: inserta faltantes y reactiva el lote.
 USE paper_control;
 
+-- Workbench: permitir el UPDATE del lote solo en esta conexion.
+SET @pc600_sql_safe_updates_anterior = @@SESSION.SQL_SAFE_UPDATES;
+SET SESSION SQL_SAFE_UPDATES = 0;
+
 START TRANSACTION;
 
 -- Requiere el rol VENDEDOR de database/seed.sql; no crea roles nuevos.
@@ -30,6 +34,8 @@ WHERE apellidos = 'PCU600-20261110'
   AND correo REGEXP '^pcu600-20261110-0[0-9]{3}@example[.]invalid$';
 
 COMMIT;
+
+SET SESSION SQL_SAFE_UPDATES = @pc600_sql_safe_updates_anterior;
 
 SELECT IF(@pcu600_rol IS NULL, 'Falta el rol VENDEDOR: aplicar database/seed.sql antes de cargar.', 'Rol VENDEDOR disponible.') AS comprobacion_rol;
 SELECT COUNT(*) AS usuarios_prueba_activos

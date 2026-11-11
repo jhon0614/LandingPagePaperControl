@@ -2,6 +2,10 @@
 -- Ejecutar solo en desarrollo. Repetible: inserta faltantes y reactiva el lote.
 USE paper_control;
 
+-- Workbench: permitir el UPDATE del lote solo en esta conexion.
+SET @pc600_sql_safe_updates_anterior = @@SESSION.SQL_SAFE_UPDATES;
+SET SESSION SQL_SAFE_UPDATES = 0;
+
 START TRANSACTION;
 
 
@@ -27,6 +31,8 @@ WHERE nombre_contacto = 'Lote PCP600-20261110'
   AND numero_documento REGEXP '^PCP600-20261110-0[0-9]{3}$';
 
 COMMIT;
+
+SET SESSION SQL_SAFE_UPDATES = @pc600_sql_safe_updates_anterior;
 
 SELECT COUNT(*) AS proveedores_prueba_activos
 FROM proveedores

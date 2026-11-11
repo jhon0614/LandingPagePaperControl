@@ -1,3 +1,4 @@
+import { crearRutasContacto } from "./routes/contact.routes.js";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -266,6 +267,12 @@ export function crearAplicacion({ conexiones, configuracion }) {
     "/api/dashboard",
     crearRutasDashboard({ autenticar, controlador: controladorDashboard }),
   );
+
+  aplicacion.use("/api/contacto", crearRutasContacto({
+    servicioCorreo,
+    verificarCaptcha: (token) => servicioAutenticacion.verificarRecaptcha(token),
+    limitar,
+  }));
 
   // Estos manejadores deben permanecer al final de todas las rutas.
   aplicacion.use(manejarNoEncontrado);

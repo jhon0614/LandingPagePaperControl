@@ -123,6 +123,7 @@ export function cargarConfiguracion() {
       urlFrontend: obligatoria("FRONTEND_RESET_PASSWORD_URL"),
     }),
     correo: Object.freeze({
+      destinatarioContacto: process.env.CONTACT_TO || "notificaciones@papercontrol.online",
       apiKey: obligatoria("RESEND_API_KEY"),
       remitente: obligatoria("MAIL_FROM"),
     }),

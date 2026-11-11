@@ -20,6 +20,7 @@ export class ServicioCorreo {
     this.solicitar = solicitar;
 
     this.remitente = configuracionCorreo.remitente;
+    this.destinatarioContacto = configuracionCorreo.destinatarioContacto;
   }
 
   async enviarRestablecimiento(correoDestino, token) {
@@ -118,6 +119,35 @@ export class ServicioCorreo {
     const resultado = await respuesta.json();
     if (!resultado.id) {
       throw Object.assign(new Error("Resend no confirmó el envío del correo."), {
+        code: "RESEND_RESPUESTA_INVALIDA",
+      });
+    }
+  }
+
+  async enviarContacto({ nombre, apellido, email, mensaje }) {
+    const respuesta = await this.solicitar("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: AbortSignal.timeout(30000),
+      body: JSON.stringify({
+        from: this.remitente,
+        to: [this.destinatarioContacto],
+        reply_to: email,
+        subject: "Nueva solicitud de contacto de PaperControl",
+        text: `Nombre: ${nombre} ${apellido}\nCorreo: ${email}\n\n${mensaje}`,
+      }),
+    });
+    if (!respuesta.ok) {
+      throw Object.assign(new Error("Resend rechazó el correo de contacto."), {
+        code: `RESEND_HTTP_${respuesta.status}`,
+      });
+    }
+    const resultado = await respuesta.json();
+    if (!resultado.id) {
+      throw Object.assign(new Error("Resend no confirmó el correo de contacto."), {
         code: "RESEND_RESPUESTA_INVALIDA",
       });
     }

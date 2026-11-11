@@ -270,7 +270,6 @@ export function crearAplicacion({ conexiones, configuracion }) {
 
   aplicacion.use("/api/contacto", crearRutasContacto({
     servicioCorreo,
-    verificarCaptcha: (token) => servicioAutenticacion.verificarRecaptcha(token),
     limitar,
   }));
 

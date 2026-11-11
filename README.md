@@ -225,8 +225,8 @@ docker compose --env-file .env.docker up -d --build
 
 ## Solicitudes de contacto de la landing
 
-El formulario envía `POST /api/contacto` con nombre, apellido, email, mensaje y
-captchaToken. El backend valida reCAPTCHA y permite cinco intentos por IP cada
+El formulario envía `POST /api/contacto` con nombre, apellido, email y mensaje.
+El contacto no requiere CAPTCHA y permite cinco intentos por IP cada
 15 minutos. Solo confirma el envío cuando Resend devuelve un identificador.
 
 Configura `CONTACT_TO=notificaciones@papercontrol.online` en `backend/.env` y en
@@ -237,5 +237,6 @@ destinatario. La solicitud se entrega como texto para no interpretar HTML del
 visitante. No se guarda en la base de datos. Si falla el proveedor, se conserva
 el formulario para reintentar y se devuelve HTTP 503.
 
-Vercel necesita `VITE_API_URL` y `VITE_RECAPTCHA_SITE_KEY` al compilar. Publica el
-frontend y backend juntos para activar el formulario real.
+El frontend debe enviar estos cuatro campos a `${VITE_API_URL}/api/contacto`.
+La clave `VITE_RECAPTCHA_SITE_KEY` sigue siendo necesaria para el login, pero
+no para contacto. Publica el backend y la integración del frontend para activarlo.

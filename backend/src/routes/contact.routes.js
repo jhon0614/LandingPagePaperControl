@@ -10,13 +10,11 @@ const esquema = z.object({
   apellido: nombre,
   email: z.string().trim().email().max(191),
   mensaje: z.string().trim().min(1).max(5000),
-  captchaToken: z.string().trim().min(1).max(4096),
 });
 
-export function crearRutasContacto({ servicioCorreo, verificarCaptcha, limitar = crearLimite }) {
+export function crearRutasContacto({ servicioCorreo, limitar = crearLimite }) {
   const rutas = Router();
   rutas.post("/", limitar(5, 15 * 60 * 1000), validar(esquema), async (req, res) => {
-    await verificarCaptcha(req.body.captchaToken);
     try {
       await servicioCorreo.enviarContacto(req.body);
     } catch (error) {

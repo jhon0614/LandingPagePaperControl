@@ -51,9 +51,17 @@ test("contacto usa destinatario interno y reply_to del visitante", async () => {
       assert.equal(cuerpo.reply_to, "ana@example.com");
       assert.equal(cuerpo.from, "PaperControl <notificaciones@papercontrol.online>");
       assert.ok(cuerpo.text.includes("<script>mensaje</script>"));
-      assert.equal(cuerpo.html, undefined);
+      assert.ok(cuerpo.html.includes("&lt;script&gt;mensaje&lt;/script&gt;"));
+      assert.ok(!cuerpo.html.includes("<script>"));
+      assert.ok(cuerpo.html.includes("Ana &lt;img src=x&gt; Pérez &amp; &#39;Socios&#39;"));
+      assert.ok(cuerpo.html.includes("<br>Segunda línea"));
+      assert.ok(cuerpo.html.includes('href="mailto:ana%40example.com?subject='));
+      assert.ok(cuerpo.html.includes("Responder al interesado"));
+      assert.ok(cuerpo.html.includes("cid:logo-papercontrol"));
+      assert.equal(cuerpo.attachments[0].content_id, "logo-papercontrol");
+      assert.ok(Buffer.from(cuerpo.attachments[0].content, "base64").length > 0);
       return { ok: true, json: async () => ({ id: "contact-id" }) };
     },
   );
-  await correo.enviarContacto({ nombre: "Ana", apellido: "Pérez", email: "ana@example.com", mensaje: "<script>mensaje</script>" });
+  await correo.enviarContacto({ nombre: "Ana <img src=x>", apellido: "Pérez & 'Socios'", email: "ana@example.com", mensaje: "<script>mensaje</script>\nSegunda línea" });
 });

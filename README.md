@@ -233,8 +233,9 @@ Configura `CONTACT_TO=notificaciones@papercontrol.online` en `backend/.env` y en
 Render (ese buzón es también el destino predeterminado). `MAIL_FROM` debe usar
 un dominio verificado en Resend y `RESEND_API_KEY` permanece solo en el backend.
 El correo del visitante se utiliza como `reply_to`, nunca como remitente ni
-destinatario. La solicitud se entrega como texto para no interpretar HTML del
-visitante. No se guarda en la base de datos. Si falla el proveedor, se conserva
+destinatario. La solicitud incluye una plantilla HTML con logo, datos, mensaje y botón de
+respuesta, además de una versión de texto. El contenido del visitante se escapa
+para no interpretar su HTML. No se guarda en la base de datos. Si falla el proveedor, se conserva
 el formulario para reintentar y se devuelve HTTP 503.
 
 El frontend debe enviar estos cuatro campos a `${VITE_API_URL}/api/contacto`.

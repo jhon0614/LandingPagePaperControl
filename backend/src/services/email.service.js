@@ -10,6 +10,13 @@ const rutaLogo = fileURLToPath(
   ),
 );
 
+// El texto del formulario se muestra como contenido, nunca como marcado HTML.
+function escaparHtml(valor) {
+  return valor.replace(/[&<>"']/g, (caracter) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[caracter]);
+}
+
 // Prepara y envía los mensajes de recuperación mediante la cuenta configurada
 // en las variables de entorno.
 export class ServicioCorreo {
@@ -125,6 +132,54 @@ export class ServicioCorreo {
   }
 
   async enviarContacto({ nombre, apellido, email, mensaje }) {
+    const logo = await readFile(rutaLogo);
+    const nombreCompleto = escaparHtml(`${nombre} ${apellido}`);
+    const correoSeguro = escaparHtml(email);
+    const mensajeSeguro = escaparHtml(mensaje).replace(/\r\n|\r|\n/g, "<br>");
+    const enlaceRespuesta = escaparHtml(`mailto:${encodeURIComponent(email)}?subject=Consulta%20sobre%20PaperControl`);
+    const html = `<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f3f6f7;font-family:Arial,Helvetica,sans-serif;color:#17313a;">
+  <div style="display:none;max-height:0;overflow:hidden;">Una persona quiere conocer más sobre PaperControl. Revisa su solicitud y responde.</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f6f7;">
+    <tr><td align="center" style="padding:28px 12px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border:1px solid #dce6e8;border-radius:12px;overflow:hidden;">
+        <tr><td align="center" style="padding:24px;border-bottom:1px solid #e5edef;">
+          <img src="cid:logo-papercontrol" alt="PaperControl, inventario y ventas" width="240" style="display:block;width:240px;max-width:100%;height:auto;">
+        </td></tr>
+        <tr><td style="padding:28px 24px 12px;">
+          <p style="margin:0 0 10px;font-size:12px;font-weight:bold;letter-spacing:1px;color:#007887;">CONTACTO DESDE LA WEB</p>
+          <h1 style="margin:0 0 12px;font-size:26px;line-height:1.25;color:#002f38;">Nueva solicitud de contacto</h1>
+          <p style="margin:0;font-size:15px;line-height:1.6;color:#52666d;">Alguien quiere dar el siguiente paso con PaperControl. Estos son sus datos:</p>
+        </td></tr>
+        <tr><td style="padding:12px 24px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#edf7f8;border:1px solid #cfe5e8;border-radius:8px;">
+            <tr><td style="padding:18px;word-break:break-word;overflow-wrap:anywhere;">
+              <p style="margin:0 0 6px;color:#52666d;font-size:12px;">NOMBRE Y APELLIDO</p>
+              <p style="margin:0 0 18px;font-size:18px;font-weight:bold;line-height:1.4;">${nombreCompleto}</p>
+              <p style="margin:0 0 6px;color:#52666d;font-size:12px;">CORREO ELECTRÓNICO</p>
+              <a href="${enlaceRespuesta}" style="color:#006b78;font-size:15px;line-height:1.5;text-decoration:underline;">${correoSeguro}</a>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:12px 24px;">
+          <h2 style="margin:0 0 12px;font-size:16px;color:#002f38;">Mensaje del interesado</h2>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fafcfc;border:1px solid #e5edef;border-radius:8px;">
+            <tr><td style="padding:18px;font-size:15px;line-height:1.7;word-break:break-word;overflow-wrap:anywhere;">${mensajeSeguro}</td></tr>
+          </table>
+        </td></tr>
+        <tr><td align="center" style="padding:20px 24px 28px;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="background:#007887;border-radius:8px;">
+            <a href="${enlaceRespuesta}" style="display:inline-block;padding:15px 22px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;">Responder al interesado</a>
+          </td></tr></table>
+          <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#52666d;">También puedes usar «Responder» en tu correo: la respuesta irá directamente al interesado.</p>
+        </td></tr>
+        <tr><td align="center" style="padding:18px 24px;background:#002f38;color:#d8e8ea;font-size:12px;line-height:1.6;">PaperControl · Inventario y ventas<br>Solicitud recibida desde el formulario de contacto de la web.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
     const respuesta = await this.solicitar("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -137,6 +192,12 @@ export class ServicioCorreo {
         to: [this.destinatarioContacto],
         reply_to: email,
         subject: "Nueva solicitud de contacto de PaperControl",
+        html,
+        attachments: [{
+          filename: "papercontrol.jpeg",
+          content: logo.toString("base64"),
+          content_id: "logo-papercontrol",
+        }],
         text: `Nombre: ${nombre} ${apellido}\nCorreo: ${email}\n\n${mensaje}`,
       }),
     });

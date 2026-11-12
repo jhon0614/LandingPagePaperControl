@@ -12,6 +12,8 @@ import {
     eliminarProveedor,
 } from "../services/proveedores.service";
 
+import usePaginacion from "../hooks/usePaginacion";
+import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
 
 function Proveedores() {
 
@@ -27,6 +29,7 @@ function Proveedores() {
 
     const [guardando, setGuardando] = useState(false);
 
+    const paginacion = usePaginacion(proveedores);
 
     async function cargarProveedores() {
 
@@ -202,6 +205,8 @@ function Proveedores() {
                 <div className="caja-error">{error}</div>
             )}
 
+            <SelectorRegistros paginacion={paginacion} />
+
             <div className="proveedores-tabla-wrapper">
 
                 {proveedores.length === 0 ? (
@@ -229,7 +234,7 @@ function Proveedores() {
                             </tr>
                         </thead>
                         <tbody>
-                            {proveedores.map((proveedor) => (
+                            {paginacion.items.map((proveedor) => (
                                 <tr key={proveedor.id}>
                                     <td>
                                         <strong>{proveedor.nombre}</strong>
@@ -272,6 +277,8 @@ function Proveedores() {
                 )}
 
             </div>
+
+            <NavegacionPaginas paginacion={paginacion} />
 
             {modalAbierto && (
 

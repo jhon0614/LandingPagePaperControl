@@ -528,3 +528,162 @@ select:focus {
     background: #16313c !important;
     color: #e6f1f4;
 }
+
+.paginacion-barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 12px 0;
+    font-size: 14px;
+    color: #475569;
+}
+
+.paginacion-mostrar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.paginacion-mostrar select {
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: #0f172a;
+}
+
+.paginacion-rango {
+    white-space: nowrap;
+}
+
+.paginacion-botones {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    white-space: nowrap;
+}
+
+.paginacion-botones button {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 8px;
+    background: #0b8a9a;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.paginacion-botones button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.paginacion-navegacion {
+    display: flex;
+    justify-content: center;
+    margin: 12px 0;
+    font-size: 14px;
+    color: #475569;
+}
+
+[data-theme="dark"] .paginacion-barra,
+[data-theme="dark"] .paginacion-navegacion {
+    color: #b7ccd3;
+}
+
+[data-theme="dark"] .paginacion-mostrar select {
+    background: #0f232b;
+    border-color: #1f4350;
+    color: #e6f1f4;
+    color-scheme: dark;
+}
+
+/* Tema oscuro: campos sin fondo propio toman el azul verdoso de la app.
+:where() deja la regla con la prioridad más baja, así cualquier campo
+que ya tenga su fondo en su propia clase lo conserva. */
+:where([data-theme="dark"]) :where(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    textarea,
+    select
+) {
+    background-color: rgba(5, 120, 138, .18);
+}
+
+/* Buscador de Clientes: caja azul verdosa y campo transparente */
+[data-theme="dark"] .clientes-buscador {
+    background: rgba(5, 120, 138, .18) !important;
+}
+
+[data-theme="dark"] .clientes-buscador input {
+    background: transparent !important;
+}
+
+.cards {
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.card {
+    min-height: 94px;
+    padding: 18px 22px;
+    border-radius: 16px;
+    text-align: left;
+
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    grid-template-areas:
+        "icono numero"
+        "icono titulo";
+    column-gap: 16px;
+    row-gap: 4px;
+    align-items: center;
+}
+
+.card i {
+    grid-area: icono;
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    border-radius: 11px;
+    background: #e6f7fa;
+    font-size: 21px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card span {
+    grid-area: numero;
+    font-size: 25px;
+    line-height: 1;
+    align-self: end;
+}
+
+.card h2 {
+    grid-area: titulo;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    align-self: start;
+}
+
+[data-theme="dark"] .card i {
+    background: rgba(5, 120, 138, .18);
+}
+/* ─── Colores de las tarjetas del dashboard ─── */
+
+.cards .card:nth-child(1) i { background: #dbeafe; color: #2563eb; }
+.cards .card:nth-child(2) i { background: #dcfce7; color: #15803d; }
+.cards .card:nth-child(3) i { background: #fef3c7; color: #d97706; }
+.cards .card:nth-child(4) i { background: #fee2e2; color: #dc2626; }
+
+/* Tema oscuro */
+[data-theme="dark"] .cards .card:nth-child(1) i { background: rgba(5, 120, 138, .18);  color: #9db4bc; }
+[data-theme="dark"] .cards .card:nth-child(2) i { background: rgba(34, 160, 90, .18);  color: #86efac; }
+[data-theme="dark"] .cards .card:nth-child(3) i { background: rgba(245, 158, 11, .18); color: #fbbf24; }
+[data-theme="dark"] .cards .card:nth-child(4) i { background: rgba(229, 72, 77, .18);  color: #f87171; }

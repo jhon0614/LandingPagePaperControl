@@ -1,28 +1,27 @@
 import { apiFetch } from "./api";
+import { obtenerTodasLasPaginas } from "./paginacion";
 
 export async function obtenerProductos({ incluirInactivos = false, categoriaId } = {}) {
 
-    const parametros = new URLSearchParams();
+    const parametros = {};
 
     if (incluirInactivos) {
 
-        parametros.append("incluirInactivos", "true");
+        parametros.incluirInactivos = "true";
 
     }
 
     if (categoriaId) {
 
-        parametros.append("categoriaId", categoriaId);
+        parametros.categoriaId = categoriaId;
 
     }
 
-    const query = parametros.toString();
-
-    const respuesta = await apiFetch(
-        `/api/productos${query ? `?${query}` : ""}`
+    return obtenerTodasLasPaginas(
+        "/api/productos",
+        "productos",
+        parametros
     );
-
-    return respuesta.datos.productos;
 
 }
 

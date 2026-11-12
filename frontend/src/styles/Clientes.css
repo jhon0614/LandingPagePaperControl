@@ -838,12 +838,17 @@
 
 .cliente-modal-footer {
     padding: 16px 24px;
-
+    align-items: center;
+    gap: 12px;
     background: #f8fafc;
-
     display: flex;
-
     justify-content: flex-end;
+}
+
+.cliente-modal-footer .btn-guardar-cliente {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .btn-cerrar-cliente {
@@ -1108,7 +1113,7 @@
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    padding: 0 24px 18px;
+    padding: 20px 24px 18px;
 }
 
 .historial-compras-filtros input,
@@ -1121,7 +1126,7 @@
 
 .historial-compras-tabla {
     overflow-x: auto;
-    margin: 0 24px;
+    margin: 0 24px 20px;
     border: 1px solid #edf2f7;
     border-radius: 10px;
 }
@@ -1149,4 +1154,44 @@
 .historial-compras-tabla li,
 .compras-comprobante li {
     margin-bottom: 4px;
+}
+
+.clientes-seccion .paginacion-barra,
+.clientes-seccion .paginacion-navegacion {
+    padding: 0 22px;
+}
+
+.clientes-seccion .paginacion-navegacion {
+    margin-bottom: 16px;
+}
+
+.formulario-cliente .cliente-modal-footer {
+    margin: 22px -24px 0;
+    gap: 12px;
+}
+
+.historial-compras-modal .cliente-modal-footer {
+    align-items: center;
+    gap: 14px;
+}
+
+.cliente-modal-footer .btn-cancelar-cliente {
+    margin-right: 0;
+}
+
+.historial-compras-modal {
+    max-height: calc(100vh - 40px);
+}
+
+.historial-compras-tabla {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* La lista de productos de cada compra crece solo hasta cierto punto y luego hace scroll */
+.historial-compras-tabla td ul {
+    max-height: 130px;
+    overflow-y: auto;
+    padding-right: 6px;
 }

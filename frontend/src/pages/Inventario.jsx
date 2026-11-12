@@ -27,6 +27,9 @@ import {
     eliminarCategoria,
 } from "../services/categorias.service";
 
+import usePaginacion from "../hooks/usePaginacion";
+import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
+
 // =========================================================
     // COMPONENTE DROPDOWN
     // =========================================================
@@ -637,6 +640,10 @@ function Inventario() {
     const productosDesactivados = productosFiltrados.filter(
         (p) => !p.estaActivo
     );
+
+    const paginacionActivos = usePaginacion(productosActivos);
+    const paginacionAgotados = usePaginacion(productosAgotados);
+    const paginacionDesactivados = usePaginacion(productosDesactivados);
 
     // =========================================================
     // ESTADÍSTICAS
@@ -1557,15 +1564,18 @@ function Inventario() {
                         </span>
                     </div>
 
+                    <SelectorRegistros paginacion={paginacionActivos} />
                     <TablaProductos 
-                    lista={productosActivos} 
+                    lista={paginacionActivos.items} 
                     tipo="activos"
                     formatoPrecio={formatoPrecio}
                     formatoFechaHora={formatoFechaHora}
                     abrirHistorial={abrirHistorial}
                     manejarCambiarEstado={manejarCambiarEstado}
                     abrirEditarProducto={abrirEditarProducto}
-                    manejarEliminarProducto={manejarEliminarProducto} />
+                    manejarEliminarProducto={manejarEliminarProducto} 
+                    />
+                    <NavegacionPaginas paginacion={paginacionActivos} />
                 </section>
 
                 {/* TABLA AGOTADOS */}
@@ -1589,16 +1599,18 @@ function Inventario() {
                         </span>
                     </div>
 
+                    <SelectorRegistros paginacion={paginacionAgotados} />
                     <TablaProductos
-                        lista={productosAgotados}
-                        tipo="agotados"
-                        formatoPrecio={formatoPrecio}
-                        formatoFechaHora={formatoFechaHora}
-                        abrirHistorial={abrirHistorial}
-                        manejarCambiarEstado={manejarCambiarEstado}
-                        abrirEditarProducto={abrirEditarProducto}
-                        manejarEliminarProducto={manejarEliminarProducto}
+                    lista={paginacionAgotados.items}
+                    tipo="agotados"
+                    formatoPrecio={formatoPrecio}
+                    formatoFechaHora={formatoFechaHora}
+                    abrirHistorial={abrirHistorial}
+                    manejarCambiarEstado={manejarCambiarEstado}
+                    abrirEditarProducto={abrirEditarProducto}
+                    manejarEliminarProducto={manejarEliminarProducto}
                     />
+                    <NavegacionPaginas paginacion={paginacionAgotados} />
                 </section>
 
                 {/* TABLA DESACTIVADOS */}
@@ -1623,16 +1635,18 @@ function Inventario() {
                             </span>
                         </div>
 
+                        <SelectorRegistros paginacion={paginacionDesactivados} />
                         <TablaProductos
-                            lista={productosDesactivados}
-                            tipo="desactivados"
-                            formatoPrecio={formatoPrecio}
-                            formatoFechaHora={formatoFechaHora}
-                            abrirHistorial={abrirHistorial}
-                            manejarCambiarEstado={manejarCambiarEstado}
-                            abrirEditarProducto={abrirEditarProducto}
-                            manejarEliminarProducto={manejarEliminarProducto}
+                        lista={paginacionDesactivados.items}
+                        tipo="desactivados"
+                        formatoPrecio={formatoPrecio}
+                        formatoFechaHora={formatoFechaHora}
+                        abrirHistorial={abrirHistorial}
+                        manejarCambiarEstado={manejarCambiarEstado}
+                        abrirEditarProducto={abrirEditarProducto}
+                        manejarEliminarProducto={manejarEliminarProducto}
                         />
+                        <NavegacionPaginas paginacion={paginacionDesactivados} />
                     </section>
                 )}
 

@@ -1958,3 +1958,109 @@
     font-size: 17px;
     color: #062f3d;
 }
+
+/* Catálogo compacto con paginación */
+.pos-productos-grid {
+    gap: 10px;
+}
+
+.pos-producto-card {
+    padding: 10px 12px;
+    gap: 4px;
+    border-radius: 10px;
+}
+
+.pos-producto-info {
+    min-width: 0;
+}
+
+.pos-producto-info strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pos-productos .paginacion-barra {
+    margin: 0 0 14px;
+}
+
+/* Bloquea el scroll de la página mientras hay un modal abierto */
+body:has(.pos-modal-overlay),
+body:has(.cliente-modal-overlay) {
+    overflow: hidden;
+}
+
+.pos-modal-overlay,
+.cliente-modal-overlay {
+    overscroll-behavior: contain;
+}
+
+/* El modal nunca es más alto que la pantalla */
+.pos-modal,
+.cliente-modal {
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Encabezado y pie fijos; solo el contenido hace scroll */
+.pos-modal-header,
+.pos-modal-footer,
+.cliente-modal-header,
+.cliente-modal-footer {
+    flex-shrink: 0;
+}
+
+.pos-modal > .config-pagos-body,
+.pos-modal > .comprobante-impresion,
+.pos-modal > .recibo-html-frame,
+.cliente-modal > .cliente-detalle,
+.cliente-modal > .formulario-cliente {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* Botones del pie: que se acomoden en varias líneas en pantallas angostas */
+.pos-modal-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+}
+/* ─── Historial: productos contraídos ─── */
+
+.historial-ventas-tabla td:nth-child(4) {
+    min-width: 230px;
+}
+
+.historial-productos ul {
+    margin: 0;
+    padding-left: 16px;
+}
+
+.historial-productos li {
+    margin-bottom: 3px;
+    line-height: 1.4;
+}
+
+.historial-ver-mas {
+    margin-top: 4px;
+    padding: 3px 10px;
+    border: 1px solid #05788a;
+    border-radius: 999px;
+    background: #e6f7fa;
+    color: #05788a;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.historial-ver-mas:hover {
+    background: #d3f0f5;
+}
+
+[data-theme="dark"] .historial-ver-mas {
+    border-color: rgba(79, 195, 214, .5);
+    background: rgba(5, 120, 138, .18);
+    color: #7fd6e6;
+}

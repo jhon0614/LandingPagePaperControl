@@ -18,7 +18,8 @@ import { excedeLimiteBytesUtf8 } from "../utils/contrasena";
 
 import "../styles/Dashboard.css";
 import "../styles/Usuarios.css";
-
+import usePaginacion from "../hooks/usePaginacion";
+import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
 
 function Usuarios() {
 
@@ -876,7 +877,9 @@ function Usuarios() {
             (usuario) =>
                 !usuario.estaActivo
         );
-
+    
+    const paginacionActivos = usePaginacion(usuariosActivos);
+    const paginacionInactivos = usePaginacion(usuariosInactivos);
 
     const usuariosBloqueados =
         usuarios.filter(
@@ -1076,6 +1079,7 @@ function Usuarios() {
 
                         </div>
 
+                        <SelectorRegistros paginacion={paginacionActivos} />
 
                         <div className="tabla-usuarios-container">
 
@@ -1131,7 +1135,7 @@ function Usuarios() {
 
                                     ) : (
 
-                                        usuariosActivos.map(
+                                        paginacionActivos.items.map(
                                             (usuario) => {
 
                                                 const esPropia =
@@ -1337,7 +1341,7 @@ function Usuarios() {
                                                                             </button>
                                                                         );
                                                                     }
-                                                                    
+
                                                                     return (
                                                                         <button
                                                                             type="button"
@@ -1464,8 +1468,9 @@ function Usuarios() {
 
                         </div>
 
-                    </div>
+                        <NavegacionPaginas paginacion={paginacionActivos} />
 
+                    </div>
 
                     {/* USUARIOS INACTIVOS */}
 
@@ -1502,6 +1507,7 @@ function Usuarios() {
 
                         </div>
 
+                        <SelectorRegistros paginacion={paginacionInactivos} />
 
                         <div className="tabla-usuarios-container">
 
@@ -1557,7 +1563,7 @@ function Usuarios() {
 
                                     ) : (
 
-                                        usuariosInactivos.map(
+                                        paginacionInactivos.items.map(
                                             (usuario) => (
 
                                                 <tr
@@ -1692,6 +1698,8 @@ function Usuarios() {
                             </table>
 
                         </div>
+
+                        <NavegacionPaginas paginacion={paginacionInactivos} />
 
                     </div>
 

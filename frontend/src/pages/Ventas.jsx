@@ -21,6 +21,8 @@ import { obtenerMetodosPago, cambiarEstadoMetodoPago } from "../services/ventas.
 import { obtenerClientes, obtenerCliente } from "../services/clientes.service";
 import { aNumeroMonto, formatearMontoEntrada, limpiarMontoEntrada } from "../utils/moneda";
 import CampoFecha from "../components/CampoFecha";
+import usePaginacion from "../hooks/usePaginacion";
+import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
 import ComprobanteVenta from "../components/ventas/ComprobanteVenta";
 import "../styles/Comprobante.css";
 import comprobanteCss from "../styles/Comprobante.css?raw";
@@ -30,6 +32,51 @@ const ICONOS_METODO_PAGO = {
     TARJETA: "fa-credit-card",
     TRANSFERENCIA: "fa-building-columns",
 };
+const PRODUCTOS_VISIBLES = 2;
+
+function ProductosVenta({ texto }) {
+
+    const [verTodos, setVerTodos] = useState(false);
+
+    if (!texto) return "—";
+
+    const lista = String(texto)
+        .split(" | ")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    const hayMas = lista.length > PRODUCTOS_VISIBLES;
+
+    const visibles =
+        hayMas && !verTodos
+            ? lista.slice(0, PRODUCTOS_VISIBLES)
+            : lista;
+
+    return (
+        <div className="historial-productos">
+
+            <ul>
+                {visibles.map((item, indice) => (
+                    <li key={indice}>{item}</li>
+                ))}
+            </ul>
+
+            {hayMas && (
+                <button
+                    type="button"
+                    className="historial-ver-mas"
+                    onClick={() => setVerTodos((actual) => !actual)}
+                >
+                    {verTodos
+                        ? "Ver menos"
+                        : `Ver ${lista.length - PRODUCTOS_VISIBLES} más`}
+                </button>
+            )}
+
+        </div>
+    );
+
+}
 
 function Dropdown({
     value,
@@ -808,6 +855,8 @@ function Ventas() {
         });
 
     }, [productos, busqueda]);
+
+    const paginacionProductos = usePaginacion(productosFiltrados, 24, [12, 24, 48, 96]);
 
     /* =========================================================
      * VENDEDORES DISPONIBLES
@@ -1759,16 +1808,15 @@ function Ventas() {
                             type="text"
                             placeholder="Buscar producto por nombre..."
                             value={busqueda}
-                            onChange={(e) =>
-                                setBusqueda(
-                                    e.target.value
-                                )
-                            }
+                            onChange={(e) => {
+                                setBusqueda(e.target.value);
+                                paginacionProductos.irPrimera();
+                            }}
                         />
 
                     </div>
 
-
+                    <SelectorRegistros paginacion={paginacionProductos} etiqueta="productos" />
                     {/* PRODUCTOS */}
 
                     <div className="pos-productos-grid">
@@ -1787,56 +1835,28 @@ function Ventas() {
 
                         ) : (
 
-                            productosFiltrados.map(
+                            paginacionProductos.items.map(
                                 (producto) => (
 
                                     <div
                                         className="pos-producto-card"
                                         key={producto.id}
-                                        onClick={() =>
-                                            agregarAlCarrito(
-                                                producto
-                                            )
-                                        }
+                                        onClick={() => agregarAlCarrito(producto)}
                                     >
-
-                                        <div className="pos-producto-icono">
-
-                                            <i className="fa-solid fa-box"></i>
-
-                                        </div>
-
-
                                         <div className="pos-producto-info">
-
-                                            <strong>
+                                            <strong title={producto.nombre}>
                                                 {producto.nombre}
                                             </strong>
-
-                                            <span>
-                                                {producto.categoria}
-                                            </span>
-
                                         </div>
-
 
                                         <div className="pos-producto-precio">
-
-                                            <span>
-
-                                                $
-                                                {producto.precio.toLocaleString(
-                                                    "es-CO"
-                                                )}
-
-                                            </span>
-
                                             <small>
-                                                Stock: {producto.stock}
+                                                {producto.categoria} · Stock: {producto.stock}
                                             </small>
-
+                                            <span>
+                                                ${producto.precio.toLocaleString("es-CO")}
+                                            </span>
                                         </div>
-
                                     </div>
 
                                 )
@@ -1845,7 +1865,7 @@ function Ventas() {
                         )}
 
                     </div>
-
+                    <NavegacionPaginas paginacion={paginacionProductos} />
                 </div>
 
 
@@ -2663,16 +2683,10 @@ function Ventas() {
 
                                             {/* PRODUCTOS */}
 
+                                            {/* PRODUCTOS */}
+
                                             <td>
-
-                                                <span
-                                                    title={
-                                                        venta.productos || ""
-                                                    }
-                                                >
-                                                    {venta.productos || "—"}
-                                                </span>
-
+                                                <ProductosVenta texto={venta.productos} />
                                             </td>
 
 

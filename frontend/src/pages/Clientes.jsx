@@ -1,11 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
-
 import Layout from "../components/Layout";
-
 import "../styles/Dashboard.css";
 import "../styles/Clientes.css";
 import "../styles/Caja.css";
-
 import {
     obtenerClientes,
     crearCliente,
@@ -16,6 +13,10 @@ import {
 } from "../services/clientes.service";
 import { obtenerComprobante } from "../services/ventas.service";
 import CampoFecha from "../components/CampoFecha";
+import usePaginacion from "../hooks/usePaginacion";
+import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
+import ComprobanteVenta from "../components/ventas/ComprobanteVenta";
+import "../styles/Comprobante.css";
 
 function Clientes() {
     const usuarioActual = JSON.parse(
@@ -188,6 +189,12 @@ function Clientes() {
 
     const frecuentesFiltrados =
         filtrarClientes(clientesFrecuentes);
+
+    const paginacionActivos = 
+        usePaginacion(activosFiltrados);
+
+    const paginacionInactivos = 
+        usePaginacion(inactivosFiltrados);
 
     function abrirDetalle(cliente) {
         setClienteSeleccionado(cliente);
@@ -872,10 +879,12 @@ function Clientes() {
                     </span>
                 </div>
 
+                <SelectorRegistros paginacion={paginacionActivos} />
                 {renderTablaClientes(
-                    activosFiltrados,
+                    paginacionActivos.items,
                     "activos"
                 )}
+                <NavegacionPaginas paginacion={paginacionActivos} />
             </section>
 
             <section className="clientes-seccion clientes-seccion-inactivos">
@@ -899,10 +908,12 @@ function Clientes() {
                     </span>
                 </div>
 
+                <SelectorRegistros paginacion={paginacionInactivos} />
                 {renderTablaClientes(
-                    inactivosFiltrados,
+                    paginacionInactivos.items,
                     "inactivos"
                 )}
+                <NavegacionPaginas paginacion={paginacionInactivos} />
             </section>
 
             <section className="clientes-frecuentes">
@@ -1120,7 +1131,7 @@ function Clientes() {
                         <div className="cliente-modal-footer">
                             <button
                                 type="button"
-                                className="btn-ver-cliente"
+                                className="btn-guardar-cliente"
                                 onClick={() => cargarComprasCliente(clienteSeleccionado)}
                             >
                                 <i className="fa-solid fa-receipt"></i>
@@ -1184,10 +1195,23 @@ function Clientes() {
             )}
 
             {comprobanteCompra && (
-                <div className="cliente-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setComprobanteCompra(null); }}>
-                    <div className="cliente-modal historial-compras-modal">
-                        <div className="cliente-modal-header"><h2>Comprobante {comprobanteCompra.numeroVenta}</h2><button type="button" className="cliente-modal-cerrar" onClick={() => setComprobanteCompra(null)}><i className="fa-solid fa-xmark"></i></button></div>
-                        <div className="cliente-detalle compras-comprobante"><p><strong>Fecha:</strong> {new Date(comprobanteCompra.fecha).toLocaleString("es-CO", { timeZone: "America/Bogota" })}</p>{comprobanteCompra.estado === "ANULADA" && <p className="caja-error"><strong>Venta anulada:</strong> {comprobanteCompra.motivoAnulacion || "Sin motivo registrado."}</p>}<ul>{(comprobanteCompra.productos || []).map((item) => <li key={item.productoId}>{item.nombre} ({item.sku || "sin SKU"}) × {item.cantidad} — ${Number(item.precioUnitario || 0).toLocaleString("es-CO")}</li>)}</ul><p><strong>Descuento:</strong> ${Number(comprobanteCompra.descuento?.monto || 0).toLocaleString("es-CO")}</p><p><strong>Total:</strong> ${Number(comprobanteCompra.total || 0).toLocaleString("es-CO")}</p></div>
+                <div className="pos-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setComprobanteCompra(null); }}>
+                    <div className="pos-modal recibo-modal">
+                        <div className="pos-modal-header">
+                            <div>
+                                <h2>Comprobante de pago</h2>
+                                <p>{comprobanteCompra.numeroVenta}</p>
+                            </div>
+                            <button type="button" className="pos-modal-cerrar" onClick={() => setComprobanteCompra(null)}>
+                                <i className="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div className="config-pagos-body recibo-contenido">
+                            <ComprobanteVenta comprobante={comprobanteCompra} />
+                        </div>
+                        <div className="pos-modal-footer">
+                            <button type="button" className="btn-cerrar-pos-modal" onClick={() => setComprobanteCompra(null)}>Cerrar</button>
+                        </div>
                     </div>
                 </div>
             )}

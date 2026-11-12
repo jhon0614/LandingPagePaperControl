@@ -1,5 +1,5 @@
 import { apiFetch } from "./api";
-
+import { obtenerTodasLasPaginas } from "./paginacion";
 /*
 =========================================================
 ROLES
@@ -23,11 +23,10 @@ USUARIOS
 
 export async function obtenerUsuarios() {
 
-    const respuesta = await apiFetch(
-        "/api/usuarios"
+    return obtenerTodasLasPaginas(
+        "/api/usuarios",
+        "usuarios"
     );
-
-    return respuesta.datos.usuarios;
 }
 
 export async function obtenerUsuario(id) {

@@ -156,9 +156,9 @@ FILTROS
 
     grid-template-columns:
         minmax(300px, 1fr)
-        145px
         175px
-        155px
+        175px
+        175px
         auto;
 
     align-items: center;
@@ -1349,4 +1349,23 @@ RESPONSIVE
 
 .inventario-seccion:has(.titulo-gris) {
     border-top: 4px solid #64748b;
+}
+
+.inventario-seccion .paginacion-barra,
+.inventario-seccion .paginacion-navegacion {
+    padding: 0 22px;
+}
+
+.inventario-seccion .paginacion-navegacion {
+    margin-bottom: 16px;
+}
+
+.campo select {
+    width: 100%;
+    box-sizing: border-box;
+    height: 38px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 12px;
 }

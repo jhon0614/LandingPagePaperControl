@@ -1,10 +1,12 @@
 import { apiFetch } from "./api";
+import { obtenerTodasLasPaginas } from "./paginacion";
 
 export async function obtenerProveedores() {
 
-    const respuesta = await apiFetch("/api/proveedores");
-
-    return respuesta.datos.proveedores;
+    return obtenerTodasLasPaginas(
+        "/api/proveedores",
+        "proveedores"
+    );
 
 }
 

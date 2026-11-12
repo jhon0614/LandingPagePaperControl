@@ -1,3 +1,7 @@
+import { useState } from "react";
+
+const LIMITE_PRODUCTOS = 5;
+
 const NOMBRES_METODO = {
     EFECTIVO: "Efectivo",
     TARJETA: "Tarjeta",
@@ -34,6 +38,8 @@ function fechaHora(fecha) {
  */
 
 function ComprobanteVenta({ comprobante }) {
+
+    const [verTodos, setVerTodos] = useState(false);
 
     if (!comprobante) return null;
 
@@ -131,33 +137,66 @@ function ComprobanteVenta({ comprobante }) {
                 </div>
 
 
-                <table className="comprobante-tabla">
+                {(() => {
 
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th className="d">Cant.</th>
-                            <th className="d">Precio</th>
-                            <th className="d">Total</th>
-                        </tr>
-                    </thead>
+                    const productos = comprobante.productos || [];
+                    const hayMuchos = productos.length > LIMITE_PRODUCTOS;
 
-                    <tbody>
+                    return (
+                        <>
+                            <table
+                                className={
+                                    hayMuchos && !verTodos
+                                        ? "comprobante-tabla comprobante-colapsado"
+                                        : "comprobante-tabla"
+                                }
+                            >
 
-                        {(comprobante.productos || []).map((producto) => (
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th className="d">Cant.</th>
+                                        <th className="d">Precio</th>
+                                        <th className="d">Total</th>
+                                    </tr>
+                                </thead>
 
-                            <tr key={producto.productoId}>
-                                <td>{producto.nombre}</td>
-                                <td className="d">{producto.cantidad}</td>
-                                <td className="d">{moneda(producto.precioUnitario)}</td>
-                                <td className="d">{moneda(producto.total)}</td>
-                            </tr>
+                                <tbody>
 
-                        ))}
+                                    {productos.map((producto, indice) => (
 
-                    </tbody>
+                                        <tr
+                                            key={producto.productoId}
+                                            className={indice >= LIMITE_PRODUCTOS ? "comprobante-fila-extra" : undefined}
+                                        >
+                                            <td>{producto.nombre}</td>
+                                            <td className="d">{producto.cantidad}</td>
+                                            <td className="d">{moneda(producto.precioUnitario)}</td>
+                                            <td className="d">{moneda(producto.total)}</td>
+                                        </tr>
 
-                </table>
+                                    ))}
+
+                                </tbody>
+
+                            </table>
+
+                            {hayMuchos && (
+                                <button
+                                    type="button"
+                                    className="comprobante-ver-mas"
+                                    onClick={() => setVerTodos((actual) => !actual)}
+                                >
+                                    <i className={verTodos ? "fa-solid fa-chevron-up" : "fa-solid fa-chevron-down"}></i>
+                                    {verTodos
+                                        ? " Ver menos"
+                                        : ` Ver todos los productos (${productos.length})`}
+                                </button>
+                            )}
+                        </>
+                    );
+
+                })()}
 
 
                 <div className="comprobante-totales">

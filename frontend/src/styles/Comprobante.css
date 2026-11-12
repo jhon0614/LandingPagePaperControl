@@ -242,3 +242,51 @@
     }
 
 }
+/* ─── Lista de productos contraída ─── */
+
+.comprobante-colapsado .comprobante-fila-extra {
+    display: none;
+}
+
+.comprobante-ver-mas {
+    display: block;
+    width: 100%;
+    margin: 4px 0 10px;
+    padding: 9px 12px;
+    border: 1px dashed #05788a;
+    border-radius: 8px;
+    background: #e6f7fa;
+    color: #05788a;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.comprobante-ver-mas:hover {
+    background: #d3f0f5;
+}
+
+[data-theme="dark"] .comprobante-ver-mas {
+    border-color: rgba(79, 195, 214, .5);
+    background: rgba(5, 120, 138, .18);
+    color: #7fd6e6;
+}
+
+.comprobante-impresion .comprobante-fila-extra,
+.comprobante-colapsado .comprobante-fila-extra.mostrar-impresion {
+    display: table-row !important;
+}
+
+.comprobante-impresion .comprobante-ver-mas {
+    display: none !important;
+}
+
+@media print {
+    .comprobante-fila-extra {
+        display: table-row !important;
+    }
+
+    .comprobante-ver-mas {
+        display: none !important;
+    }
+}

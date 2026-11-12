@@ -4,8 +4,10 @@ import vistaPrevia from "../assets/VistaPreviaPaperControl.png";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "../App.css";
+import useTema from "../hooks/useTema";
 
 function Landing() {
+  const { tema, alternarTema } = useTema();
   // Estado principal del formulario de contacto
   const [formData, setFormData] = useState({
     nombre: "",
@@ -58,9 +60,11 @@ function Landing() {
     return Object.keys(newError).length === 0;
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // Detiene el envío si algún campo no cumple las validaciones
+
+    if (loading) return;
+
     if (!validate()) {
       Swal.fire({
         icon: "error",
@@ -70,14 +74,43 @@ function Landing() {
         background: "#ffffff",
         color: "#062f3d",
       });
-
       return;
     }
 
     setLoading(true);
-    // Simulación de envío mientras no exista conexión con backend
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const respuesta = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/contacto`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            nombre: formData.nombre.trim(),
+            apellido: formData.apellido.trim(),
+            email: formData.email.trim(),
+            mensaje: formData.mensaje.trim(),
+          }),
+        }
+      );
+
+      const resultado = await respuesta.json().catch(() => null);
+
+      if (!respuesta.ok || resultado?.exito !== true) {
+        throw new Error(
+          resultado?.error?.mensaje ||
+            "No se pudo enviar la solicitud. Inténtalo nuevamente."
+        );
+      }
+
+      setFormData({
+        nombre: "",
+        apellido: "",
+        email: "",
+        mensaje: "",
+      });
 
       Swal.fire({
         icon: "success",
@@ -85,25 +118,29 @@ function Landing() {
         text: "Gracias por contactarnos. Te responderemos pronto.",
         confirmButtonText: "Continuar",
         confirmButtonColor: "#05788a",
-
         background: "#ffffff",
-
         showClass: {
           popup: "animate__animated animate__fadeInDown",
         },
-
         hideClass: {
           popup: "animate__animated animate__fadeOutUp",
         },
       });
-      // Limpia el formulario después del envío exitoso
-      setFormData({
-        nombre: "",
-        apellido: "",
-        email: "",
-        mensaje: "",
+    } catch (errorEnvio) {
+      Swal.fire({
+        icon: "error",
+        title: "No se pudo enviar",
+        text:
+          errorEnvio instanceof TypeError
+            ? "No se pudo conectar con el servicio. Inténtalo nuevamente."
+            : errorEnvio.message,
+        confirmButtonColor: "#05788a",
+        background: "#ffffff",
+        color: "#062f3d",
       });
-    }, 1200);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function scrollTo(id) {
@@ -115,7 +152,7 @@ function Landing() {
       {/* Navbar */}
       <header className="navbar">
         <div className="logo">
-          <Logo />
+          <Logo ajustado/>
         </div>
 
         <nav className="nav-menu">
@@ -127,9 +164,21 @@ function Landing() {
           <button onClick={() => scrollTo("contacto")}>Contacto</button>
         </nav>
 
-        <Link to="/login" className="btn btn-primary">
-          Iniciar Sesión
-        </Link>
+        <div className="nav-acciones">
+          <button
+            type="button"
+            className="btn-tema"
+            onClick={alternarTema}
+            title={tema === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+            aria-label={tema === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+          >
+            <i className={tema === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon"}></i>
+          </button>
+
+          <Link to="/login" className="btn btn-primary">
+            Iniciar Sesión
+          </Link>
+        </div>
       </header>
 
       {/* Hero */}
@@ -398,7 +447,10 @@ function Landing() {
 
               <div className="contacto-card">
                 <i className="fa-solid fa-envelope"></i>
-                <p>paper.control2026@gmail.com</p>
+                <p><a href="mailto:notificaciones@papercontrol.online">
+                    notificaciones@papercontrol.online
+                  </a>
+                </p>
               </div>
 
               <div className="contacto-card">
@@ -420,6 +472,7 @@ function Landing() {
                   <input
                     type="text"
                     name="nombre"
+                    maxLength={100}
                     placeholder="Tu nombre"
                     value={formData.nombre}
                     onChange={handleChange}
@@ -434,6 +487,7 @@ function Landing() {
                   <input
                     type="text"
                     name="apellido"
+                    maxLength={100}
                     placeholder="Apellido"
                     value={formData.apellido}
                     onChange={handleChange}
@@ -449,6 +503,7 @@ function Landing() {
                 <input
                   type="email"
                   name="email"
+                  maxLength={191}
                   placeholder="email@empresa.com"
                   value={formData.email}
                   onChange={handleChange}
@@ -460,6 +515,7 @@ function Landing() {
                 <label>Mensaje</label>
                 <textarea
                   name="mensaje"
+                  maxLength={5000}
                   placeholder="Cuéntanos sobre tu negocio..."
                   value={formData.mensaje}
                   onChange={handleChange}
@@ -480,7 +536,7 @@ function Landing() {
       {/* Footer */}
       <footer className="footer">
         <div className="footer-logo">
-          <Logo />
+          <Logo ajustado/>
           <p>© 2026 PaperControl. Todos los derechos reservados. Colombia.</p>
         </div>
 

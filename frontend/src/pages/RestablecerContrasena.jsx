@@ -258,7 +258,7 @@ function RestablecerContrasena() {
 
                 <div className="auth-logo">
 
-                    <Logo />
+                    <Logo ajustado/>
 
                 </div>
 

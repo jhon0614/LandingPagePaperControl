@@ -75,7 +75,7 @@ a {
 }
 
 .logo-svg {
-  width: 130px;
+  width: 190px;
   height: auto;
   display: block;
 }
@@ -195,7 +195,7 @@ a {
   font-size: clamp(34px, 4vw, 54px);
   line-height: 1.1;
   margin-bottom: 24px;
-  color: var(--ligth-blue);
+  color: var(--light-blue);
 }
 
 .hero p {
@@ -480,6 +480,7 @@ a {
 .faq summary {
   cursor: pointer;
   font-weight: 700;
+  color: var(--dark-blue);
 }
 
 .faq details p {
@@ -528,7 +529,7 @@ a {
 
 .contacto-info h2 {
   font-size: 2rem;
-  color: var(--ligth-blue);
+  color: var(--light-blue);
   margin-bottom: 18px;
 }
 
@@ -832,7 +833,7 @@ a {
   }
 
   .footer {
-    display: column;
+    flex-direction: column;
     padding: 40px 24px;
     text-align: center;
     gap: 24px;
@@ -885,4 +886,155 @@ a {
 
 .app-cargando-temporal .auth-button {
     max-width: 220px;
+}
+
+[data-theme="dark"] .hero h1,
+[data-theme="dark"] .contacto-info h2 {
+  color: #7fd6e6 !important;
+}
+
+[data-theme="dark"] .faq summary {
+  color: #e6f1f4 !important;
+}
+
+.nav-acciones {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-tema {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #dbe3eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #05788a;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn-tema:hover {
+  background: #e6f7fa;
+  border-color: #05788a;
+}
+
+[data-theme="dark"] .btn-tema {
+  border: 1px solid rgba(79, 195, 214, .35);
+  background: #10252e;
+  color: #7fd6e6;
+}
+
+[data-theme="dark"] .btn-tema:hover {
+  background: rgba(5, 120, 138, .18);
+}
+
+/* ─── LANDING · TEMA OSCURO ─── */
+
+[data-theme="dark"] .landing { background: #0b1a21; }
+
+[data-theme="dark"] .navbar {
+  background: #10252e;
+  border-bottom: 1px solid rgba(79, 195, 214, .35);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
+[data-theme="dark"] .navbar a,
+[data-theme="dark"] .nav-menu,
+[data-theme="dark"] .nav-menu button { color: #e6f1f4; }
+[data-theme="dark"] .navbar a:hover,
+[data-theme="dark"] .nav-menu button:hover { color: #7fd6e6; }
+[data-theme="dark"] .logo-text h1 { color: #7fd6e6; }
+[data-theme="dark"] .logo-text span { color: #9db4bc; }
+
+[data-theme="dark"] .btn-outline { color: #7fd6e6; border-color: #7fd6e6; }
+[data-theme="dark"] .btn-outline:hover { background: #7fd6e6; color: #0b1a21; }
+
+[data-theme="dark"] .hero { background: linear-gradient(135deg, #0d1e26 0%, #0b1a21 55%, #10252e 100%); }
+[data-theme="dark"] .hero-content h2,
+[data-theme="dark"] .hero h1 { color: #7fd6e6 !important; }
+[data-theme="dark"] .hero-content p,
+[data-theme="dark"] .hero p { color: #b3c6cd; }
+
+[data-theme="dark"] .estadisticas { background: #0b1a21; }
+[data-theme="dark"] .beneficios { background: #0d1e26; }
+[data-theme="dark"] .funcionalidades { background: #0b1a21; }
+[data-theme="dark"] .testimonios { background: #10252e; }
+[data-theme="dark"] .faq { background: #0b1a21; }
+[data-theme="dark"] .contacto { background: linear-gradient(135deg, #0d1e26, #10252e); }
+
+[data-theme="dark"] .estadistica,
+[data-theme="dark"] .beneficio-card,
+[data-theme="dark"] .funcionalidad-card,
+[data-theme="dark"] .testimonio-card,
+[data-theme="dark"] .contacto-form {
+  background: #10252e;
+  border-color: rgba(79, 195, 214, .35);
+}
+[data-theme="dark"] .beneficio-card,
+[data-theme="dark"] .funcionalidad-card { border-left: 3px solid #4fc3d6; }
+
+[data-theme="dark"] .estadisticas h2,
+[data-theme="dark"] .beneficios h2,
+[data-theme="dark"] .funcionalidades h2,
+[data-theme="dark"] .testimonios h2,
+[data-theme="dark"] .faq h2,
+[data-theme="dark"] .contacto-header h2,
+[data-theme="dark"] .beneficio-card h3,
+[data-theme="dark"] .funcionalidad-card h3,
+[data-theme="dark"] .testimonio-card h3,
+[data-theme="dark"] .input-group label { color: #7fd6e6; }
+[data-theme="dark"] .contacto-info h2 { color: #7fd6e6 !important; }
+
+[data-theme="dark"] .estadistica h3,
+[data-theme="dark"] .beneficio-card i,
+[data-theme="dark"] .funcionalidad-card i,
+[data-theme="dark"] .contacto-card i { color: #4fc3d6; }
+
+[data-theme="dark"] .estadisticas > p,
+[data-theme="dark"] .estadistica p,
+[data-theme="dark"] .beneficio-card p,
+[data-theme="dark"] .funcionalidades > p,
+[data-theme="dark"] .funcionalidad-card p,
+[data-theme="dark"] .testimonios p,
+[data-theme="dark"] .testimonio-card p,
+[data-theme="dark"] .contacto-header p,
+[data-theme="dark"] .contacto-info > p,
+[data-theme="dark"] .contacto-card p { color: #b3c6cd; }
+
+[data-theme="dark"] .faq details { background: #10252e; border-color: rgba(79, 195, 214, .35); }
+[data-theme="dark"] .faq summary { color: #e6f1f4 !important; }
+[data-theme="dark"] .faq details p { color: #b3c6cd; }
+
+[data-theme="dark"] .contacto-form input,
+[data-theme="dark"] .contacto-form textarea {
+  background: rgba(5, 120, 138, .18);
+  border: 1px solid rgba(79, 195, 214, .35);
+  color: #e6f1f4;
+}
+[data-theme="dark"] .contacto-form input::placeholder,
+[data-theme="dark"] .contacto-form textarea::placeholder { color: #9db4bc; }
+[data-theme="dark"] .error { color: #f87171; }
+[data-theme="dark"] .submit:hover { background: #4fc3d6; color: #0b1a21; }
+
+[data-theme="dark"] .footer { background: #0d1e26; }
+[data-theme="dark"] .footer h4,
+[data-theme="dark"] .footer p,
+[data-theme="dark"] .footer-logo p { color: #b3c6cd; }
+[data-theme="dark"] .footer a { color: #e6f1f4; }
+[data-theme="dark"] .footer a:hover,
+[data-theme="dark"] .footer-social i:hover { color: #7fd6e6; }
+[data-theme="dark"] .footer-social i { color: #9db4bc; }
+
+.footer-logo .logo-svg {
+  width: 240px;
+}
+
+.navbar a.btn-primary,
+.navbar a.btn-primary:hover {
+  color: #ffffff;
+  margin: 0;
 }

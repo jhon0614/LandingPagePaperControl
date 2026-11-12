@@ -63,10 +63,9 @@ LOGO
 
 .auth-logo {
     display: flex;
-
     justify-content: center;
-
-    margin-bottom: 24px;
+    width: 260px;
+    margin: 0 auto 24px;
 }
 
 

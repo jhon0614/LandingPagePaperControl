@@ -24,8 +24,12 @@
 }
 
 .auth-logo {
-  width: 180px;
+  width: 260px;
   margin: 0 auto 24px;
+}
+
+.auth-logo .logo-svg {
+  width: 100%;
 }
 
 .auth-header {
@@ -273,4 +277,24 @@
     justify-content: center;
     width: 100%;
     margin-bottom: 18px;
+}
+
+.recaptcha-contenedor,
+.google-login-container > div {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.recaptcha-contenedor {
+  width: 304px;
+  max-width: 100%;
+  margin: 0 auto 16px;
+}
+/* Recorta el borde blanco del reCAPTCHA en tema oscuro */
+[data-theme="dark"] .recaptcha-contenedor {
+  width: 298px;
+  height: 70px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 0 auto 16px;
 }

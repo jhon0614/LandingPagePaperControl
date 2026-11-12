@@ -265,7 +265,7 @@ function OlvideContrasena() {
 
                 <div className="auth-logo">
 
-                    <Logo />
+                    <Logo ajustado/>
 
                 </div>
 

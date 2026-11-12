@@ -1,6 +1,6 @@
 import Logo from "../components/Logo";
 import "../styles/AuthLayout.css";
-
+import useTema from "../hooks/useTema";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -21,7 +21,7 @@ function Login() {
 
     const navigate = useNavigate();
 
-
+    const { tema } = useTema();
     const [correo, setCorreo] = useState(
     localStorage.getItem("correoRecordado") || ""
     );
@@ -538,7 +538,7 @@ function Login() {
 
                 <div className="auth-logo">
 
-                    <Logo />
+                    <Logo ajustado/>
 
                 </div>
 
@@ -698,16 +698,20 @@ function Login() {
 
                         )}
 
-                    <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                    onChange={(token) => setCaptchaToken(token)}
-                    onExpired={() => setCaptchaToken(null)}
-                    onErrored={() => {
-                        setCaptchaToken(null);
-                        setError("No se pudo cargar reCAPTCHA. Inténtalo nuevamente.");
-                    }}
-                    />
+                    <div className="recaptcha-contenedor">
+                        <ReCAPTCHA
+                            key={tema}
+                            ref={recaptchaRef}
+                            theme={tema === "dark" ? "dark" : "light"}
+                            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                            onChange={(token) => setCaptchaToken(token)}
+                            onExpired={() => setCaptchaToken(null)}
+                            onErrored={() => {
+                                setCaptchaToken(null);
+                                setError("No se pudo cargar reCAPTCHA. Inténtalo nuevamente.");
+                            }}
+                        />
+                    </div>
 
                     {/* BOTÓN INICIAR SESIÓN */}
 
@@ -747,13 +751,14 @@ function Login() {
 
                     <div className="google-login-container">
                         <GoogleLogin
+                            key={tema}
                             onSuccess={iniciarSesionGoogle}
                             onError={() => {
                                 setError("No fue posible autenticar con Google.");
                             }}
                             text="signin_with"
                             shape="rectangular"
-                            theme="outline"
+                            theme={tema === "dark" ? "filled_black" : "outline"}
                             size="large"
                             width="320"
                         />

@@ -847,6 +847,20 @@
     background: rgba(5,120,138,.18);
 }
 
+[data-theme="dark"] .paginacion-barra {
+    color: #b3c6cd;
+}
+
+[data-theme="dark"] .paginacion-mostrar select {
+    border: 1px solid rgba(79,195,214,.35);
+    background: #10252e;
+    color: #e6f1f4;
+}
+
+[data-theme="dark"] .paginacion-navegacion {
+    color: #b3c6cd;
+}
+
 /* ----- Graficas.css ----- */
 
 [data-theme="dark"] .grafica-tarjeta {

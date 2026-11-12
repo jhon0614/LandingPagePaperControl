@@ -135,7 +135,7 @@ function CambiarContrasena() {
       <section className="auth-card cambiar-card">
 
         <div className="auth-logo">
-          <Logo />
+          <Logo ajustado/>
         </div>
 
         <div className="auth-header">

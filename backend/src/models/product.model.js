@@ -1,4 +1,4 @@
-import { limiteSql } from "../utils/query.js";
+import { limiteSql, busquedaSql } from "../utils/query.js";
 // Centraliza las consultas de productos, existencias y sus relaciones.
 // Las operaciones que cambian stock usan transacciones para que el producto,
 // el movimiento y la alerta siempre queden sincronizados.
@@ -17,13 +17,15 @@ export class ModeloProducto {
   }
 
   async listar(incluirInactivos = false, categoriaId, filtros = {}) {
+    const busqueda = busquedaSql(filtros.buscar, ["p.nombre", "p.sku", "p.codigo_barras", "p.descripcion", "c.nombre"]);
     const [filas] = await this.conexiones.execute(
       `SELECT p.*, c.nombre AS categoria
          FROM productos p JOIN categorias c ON c.id = p.categoria_id
         WHERE p.eliminado_en IS NULL ${incluirInactivos ? "" : "AND p.esta_activo = TRUE"}
           ${categoriaId == null ? "" : "AND p.categoria_id = ?"}
+          ${busqueda.sql}
         ORDER BY p.nombre, p.id ${limiteSql(filtros)}`,
-      categoriaId == null ? [] : [categoriaId],
+      [...(categoriaId == null ? [] : [categoriaId]), ...busqueda.parametros],
     );
     return this.#adjuntarProveedores(filas);
   }

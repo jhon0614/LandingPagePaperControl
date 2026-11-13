@@ -1,4 +1,5 @@
 import { ErrorAplicacion } from "../errors/app-error.js";
+import { paginacion, busquedaSql } from "../utils/query.js";
 
 function presentarCliente(fila) {
   const cantidadCompras = Number(fila.cantidad_compras ?? 0);
@@ -101,8 +102,10 @@ export class ServicioCliente {
     return presentarCliente(fila);
   }
 
-  async buscar(termino, incluirInactivos) {
-    // La consulta vacía devuelve los primeros clientes activos dentro del límite.
+  async buscar(termino, incluirInactivos, filtros = {}) {
+    busquedaSql(termino, []);
+    const { limite } = paginacion(filtros);
+    // El modelo obtiene una fila adicional para calcular hayMas.
     const terminoNormalizado = String(termino ?? "").trim();
 
     if (terminoNormalizado.length > 100) {
@@ -115,8 +118,9 @@ export class ServicioCliente {
 
     const filas = await this.modeloCliente.buscar(
       terminoNormalizado,
-      100,
+      limite,
       incluirInactivos === "true",
+      filtros,
     );
 
     return filas.map(presentarCliente);

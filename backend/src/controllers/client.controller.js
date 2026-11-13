@@ -1,3 +1,4 @@
+import { listaPaginada } from "../utils/query.js";
 // Recibe las solicitudes HTTP de clientes y delega validaciones de negocio,
 // persistencia y auditoría al servicio correspondiente.
 export class ControladorCliente {
@@ -42,14 +43,10 @@ export class ControladorCliente {
       const clientes = await this.servicioCliente.buscar(
         termino,
         puedeAdministrar ? requerimiento.query.incluirInactivos : undefined,
+        requerimiento.query,
       );
 
-      return respuesta.status(200).json({
-        exito: true,
-        datos: {
-          clientes,
-        },
-      });
+      return respuesta.status(200).json(listaPaginada("clientes", clientes, requerimiento.query));
     } catch (error) {
       return siguiente(error);
     }

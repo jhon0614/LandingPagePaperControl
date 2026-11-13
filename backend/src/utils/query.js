@@ -1,5 +1,23 @@
 import { ErrorAplicacion } from "../errors/app-error.js";
 
+// Columnas definidas por el modelo; el texto siempre viaja como parametro SQL.
+export function busquedaSql(valor, columnas) {
+  if (valor === undefined) return { sql: "", parametros: [] };
+  if (typeof valor !== "string" || valor.trim().length > 100)
+    throw new ErrorAplicacion(
+      "buscar debe ser un texto de hasta 100 caracteres.",
+      400,
+      "TERMINO_BUSQUEDA_INVALIDO",
+    );
+  const texto = valor.trim();
+  if (!texto) return { sql: "", parametros: [] };
+  const patron = `%${texto.replace(/[!%_]/g, "!$&")}%`;
+  return {
+    sql: `AND (${columnas.map((columna) => `${columna} LIKE ? ESCAPE '!'`).join(" OR ")})`,
+    parametros: columnas.map(() => patron),
+  };
+}
+
 export function paginacion(filtros = {}) {
   const pagina = Number(filtros.pagina ?? 1);
   const limite = Number(filtros.limite ?? 500);

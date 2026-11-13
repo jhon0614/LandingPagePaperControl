@@ -807,39 +807,47 @@ function Caja() {
 
                         <>
 
-                            <div className="caja-gasto-form">
+                            <div className="historial-ventas-filtros caja-historial-filtros">
 
-                                <CampoFecha
-                                    value={fechaDesdeHistorial}
-                                    onChange={(e) =>
-                                        setFechaDesdeHistorial(e.target.value)
-                                    }
-                                />
+                                <div className="historial-filtro">
+                                    <label htmlFor="fechaDesdeHistorial">Desde</label>
+                                    <CampoFecha
+                                        id="fechaDesdeHistorial"
+                                        value={fechaDesdeHistorial}
+                                        onChange={(e) =>
+                                            setFechaDesdeHistorial(e.target.value)
+                                        }
+                                    />
+                                </div>
 
-                                <CampoFecha
-                                    value={fechaHastaHistorial}
-                                    onChange={(e) =>
-                                        setFechaHastaHistorial(e.target.value)
-                                    }
-                                />
+                                <div className="historial-filtro">
+                                    <label htmlFor="fechaHastaHistorial">Hasta</label>
+                                    <CampoFecha
+                                        id="fechaHastaHistorial"
+                                        value={fechaHastaHistorial}
+                                        onChange={(e) =>
+                                            setFechaHastaHistorial(e.target.value)
+                                        }
+                                    />
+                                </div>
 
                             </div>
 
-                            <div className="caja-gastos-tabla">
+                            {cargandoHistorial ? (
 
-                                {cargandoHistorial ? (
+                                <p className="caja-gastos-vacio">
+                                    Cargando historial...
+                                </p>
 
-                                    <p className="caja-gastos-vacio">
-                                        Cargando historial...
-                                    </p>
+                            ) : historialTurnos.length === 0 ? (
 
-                                ) : historialTurnos.length === 0 ? (
+                                <p className="caja-gastos-vacio">
+                                    No hay turnos registrados en este rango.
+                                </p>
 
-                                    <p className="caja-gastos-vacio">
-                                        No hay turnos registrados en este rango.
-                                    </p>
+                            ) : (
 
-                                ) : (
+                                <div className="historial-ventas-tabla caja-historial-tabla">
 
                                     <table>
 
@@ -858,18 +866,10 @@ function Caja() {
                                             {historialTurnos.map((turno) => (
                                                 <tr key={turno.id}>
                                                     <td>{turno.usuarioNombre}</td>
-                                                    <td>
-                                                        {formatoFechaHora(turno.abiertoEn)}
-                                                    </td>
-                                                    <td>
-                                                        {formatoFechaHora(turno.cerradoEn)}
-                                                    </td>
-                                                    <td>
-                                                        {formatoMoneda(turno.montoEsperado)}
-                                                    </td>
-                                                    <td>
-                                                        {formatoMoneda(turno.montoContado)}
-                                                    </td>
+                                                    <td>{formatoFechaHora(turno.abiertoEn)}</td>
+                                                    <td>{formatoFechaHora(turno.cerradoEn)}</td>
+                                                    <td>{formatoMoneda(turno.montoEsperado)}</td>
+                                                    <td>{formatoMoneda(turno.montoContado)}</td>
                                                     <td>
                                                         <span
                                                             className={
@@ -887,9 +887,9 @@ function Caja() {
 
                                     </table>
 
-                                )}
+                                </div>
 
-                            </div>
+                            )}
 
                         </>
 

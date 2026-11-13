@@ -478,3 +478,49 @@
 [data-theme="dark"] .caja-cuadre-diferencia {
     background: rgba(5, 120, 138, 0.3) !important;
 }
+
+/* Cuadre del turno: fila Diferencia en tema oscuro */
+[data-theme="dark"] .caja-modal .caja-cuadre-diferencia {
+    background: rgba(5, 120, 138, .3) !important;
+}
+
+[data-theme="dark"] .caja-modal .caja-cuadre-diferencia span {
+    color: #b3c6cd;
+}
+
+[data-theme="dark"] .caja-modal .caja-cuadre-diferencia strong {
+    color: #e6f1f4;
+}
+
+[data-theme="dark"] .caja-modal .caja-cuadre-diferencia.negativa strong {
+    color: #f87171;
+}
+
+[data-theme="dark"] .caja-modal .caja-cuadre-diferencia.positiva strong {
+    color: #4ade80;
+}
+
+.caja-historial-filtros {
+    margin-top: 18px;
+}
+
+.caja-historial-tabla table {
+    min-width: 760px;
+}
+
+.caja-historial-tabla td {
+    white-space: nowrap;
+}
+
+.caja-historial-tabla td:first-child {
+    white-space: normal;
+    min-width: 150px;
+}
+
+.caja-gastos-panel + .caja-gastos-panel {
+    margin-top: 24px;
+}
+
+.caja-gastos-panel:last-child {
+    margin-bottom: 24px;
+}

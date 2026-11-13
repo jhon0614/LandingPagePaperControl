@@ -3044,37 +3044,31 @@ function Ventas() {
             {modalCliente && (
 
                 <div
-                    className="pos-modal-overlay"
+                    className="cliente-modal-overlay"
                     onMouseDown={(e) => {
-
                         if (e.target === e.currentTarget) {
-
                             setModalCliente(false);
-
                             setDatosCliente(null);
-
                         }
-
                     }}
                 >
 
-                    <div className="pos-modal">
+                    <div className="cliente-modal">
 
-                        <div className="pos-modal-header">
+                        <div className="cliente-modal-header">
 
                             <div>
-                                <h2>Datos del cliente</h2>
+                                <h2>Información del cliente</h2>
+                                <p>Datos registrados en PaperControl.</p>
                             </div>
 
                             <button
                                 type="button"
-                                className="pos-modal-cerrar"
+                                className="cliente-modal-cerrar"
+                                title="Cerrar"
                                 onClick={() => {
-
                                     setModalCliente(false);
-
                                     setDatosCliente(null);
-
                                 }}
                             >
                                 <i className="fa-solid fa-xmark"></i>
@@ -3082,33 +3076,99 @@ function Ventas() {
 
                         </div>
 
-                        <div className="config-pagos-body">
+                        {cargandoCliente ? (
 
-                            {cargandoCliente ? (
-
+                            <div className="cliente-detalle">
                                 <p>Cargando...</p>
+                            </div>
 
-                            ) : datosCliente ? (
+                        ) : datosCliente ? (
 
-                                <div className="datos-cliente-detalle">
+                            <div className="cliente-detalle">
 
-                                    <p><strong>Nombre:</strong> {datosCliente.nombres} {datosCliente.apellidos}</p>
-                                    {rolActual !== "VENDEDOR" && (
-                                        <p><strong>Documento:</strong> {datosCliente.tipoDocumento} {datosCliente.documento}</p>
-                                    )}
-                                    <p><strong>Teléfono:</strong> {datosCliente.telefono || "—"}</p>
-                                    <p><strong>Correo:</strong> {datosCliente.correo || "—"}</p>
-                                    <p><strong>Dirección:</strong> {datosCliente.direccion || "—"}</p>
-                                    <p><strong>Estado:</strong> {datosCliente.estaActivo ? "Activo" : "Inactivo"}</p>
+                                <div className="cliente-detalle-avatar">
+                                    {datosCliente.nombres?.charAt(0)?.toUpperCase()}
+                                </div>
+
+                                <h3>
+                                    {datosCliente.nombres} {datosCliente.apellidos}
+                                </h3>
+
+                                <div className="cliente-detalle-badges">
+
+                                    <span
+                                        className={
+                                            datosCliente.estaActivo
+                                                ? "estado-activo"
+                                                : "estado-inactivo"
+                                        }
+                                    >
+                                        {datosCliente.estaActivo ? "Activo" : "Inactivo"}
+                                    </span>
+
+                                    <span
+                                        className={
+                                            datosCliente.esFrecuente
+                                                ? "badge-frecuente"
+                                                : "badge-regular"
+                                        }
+                                    >
+                                        <i
+                                            className={
+                                                datosCliente.esFrecuente
+                                                    ? "fa-solid fa-star"
+                                                    : "fa-regular fa-user"
+                                            }
+                                        ></i>
+                                        {datosCliente.esFrecuente
+                                            ? "Cliente frecuente"
+                                            : "Cliente regular"}
+                                    </span>
 
                                 </div>
 
-                            ) : (
+                                <div className="cliente-detalle-datos">
 
+                                    {rolActual !== "VENDEDOR" && (
+                                        <div>
+                                            <span>Documento</span>
+                                            <strong>{datosCliente.documento}</strong>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <span>Teléfono</span>
+                                        <strong>{datosCliente.telefono || "—"}</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>Correo</span>
+                                        <strong>{datosCliente.correo || "—"}</strong>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        ) : (
+
+                            <div className="cliente-detalle">
                                 <p>No fue posible cargar los datos.</p>
+                            </div>
 
-                            )}
+                        )}
 
+                        <div className="cliente-modal-footer">
+                            <button
+                                type="button"
+                                className="btn-cerrar-cliente"
+                                onClick={() => {
+                                    setModalCliente(false);
+                                    setDatosCliente(null);
+                                }}
+                            >
+                                Cerrar
+                            </button>
                         </div>
 
                     </div>

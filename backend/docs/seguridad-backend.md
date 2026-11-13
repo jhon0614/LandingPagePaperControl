@@ -1,4 +1,68 @@
-# Revisión de seguridad del backend — 2026-09-02
+# Controles y revisiones de seguridad del backend
+
+## Estado documental — 2026-11-13
+
+Esta guía describe controles observados en el código de referencia `981fdb7` y
+conserva el antecedente de revisión de septiembre. No acredita la configuración
+del despliegue, la ausencia de vulnerabilidades ni una ejecución completa de
+pruebas sobre ese commit.
+
+La [política de seguridad](../../SECURITY.md) es un documento distinto: define
+`main` como rama con soporte y mantiene pendientes el canal privado y los plazos
+de atención. Esta guía no designa un correo de reporte ni sustituye esa política.
+
+### Controles actuales visibles en el código
+
+| Área | Comportamiento observado | Fuente |
+| --- | --- | --- |
+| Autenticación | JWT con algoritmo HS256 fijado; `sub` y `sid` enteros válidos; sesión vigente y usuario activo consultados en MySQL; rol actual tomado de la base. | `src/middleware/auth.middleware.js` |
+| Contraseñas | bcrypt, límite de 72 bytes UTF-8 para nuevas contraseñas, recuperación con token temporal almacenado como hash y revocación transaccional de sesiones al cambiar/restablecer. | `src/services/password.service.js`, `src/models/password-reset.model.js`, `src/models/user.model.js` |
+| Renovación | Token aleatorio almacenado como hash; rotación condicional y comprobación de vigencia y revocación. La existencia de estos controles no demuestra que todos los órdenes concurrentes estén cubiertos. | `src/services/auth.service.js`, `src/models/session.model.js` |
+| Cookies | HttpOnly y ruta `/api/auth`; en producción, Secure y SameSite=None; fuera de producción, SameSite=Strict. Guardar y borrar emplean las mismas opciones. | `src/controllers/auth.controller.js` |
+| Origen y HTTP | Origen exacto, validación adicional de Origin/Fetch Metadata, CORS con credenciales, cabeceras Retry-After y RateLimit expuestas, Helmet, API no-store y JSON máximo de 100 KB. | `src/app.js`, `src/middleware/security.js` |
+| Límites | La configuración normal habilita contadores compartidos en MySQL. La construcción de la aplicación admite MemoryStore si se desactiva esa opción; no debe confundirse ese camino con la configuración normal. | `src/config/env.js`, `src/app.js`, `src/models/rate-limit.store.js` |
+| Roles y datos | Las rutas protegidas comprueban identidad y rol; algunos flujos añaden propiedad del vendedor. Consultas parametrizadas, orden permitido y paginación limitada. | `src/routes/`, `src/middleware/roles.middleware.js`, `src/utils/query.js` |
+| Ventas e inventario | Precios y existencias autoritativos en MySQL; cálculos en centavos, transacciones, bloqueos y movimientos de inventario. | `src/models/sales/`, `src/models/product.model.js` |
+| Secretos | `JWT_ACCESS_SECRET` es obligatorio. La configuración actual no comprueba longitud mínima, entropía ni valores de ejemplo; no se inspeccionó el secreto operativo. | `src/config/env.js` |
+| Transporte y proxy | HTTPS exigido para FRONTEND_ORIGIN en producción; URL de recuperación del mismo origen; confianza en proxy configurable; TLS MySQL opcional con validación de certificado cuando se activa. La configuración efectiva del proveedor no se ha observado. | `src/config/env.js`, `src/config/database.js` |
+
+### Límites de solicitudes definidos
+
+| Ámbito | Cuota | Ventana |
+| --- | --- | --- |
+| Toda `/api` | 300 por IP | 1 minuto |
+| Login local y Google | 20 por IP, compartidos entre ambas rutas | 15 minutos |
+| Renovación | 60 por IP | 15 minutos |
+| Cambio de contraseña | 5 por IP | 15 minutos |
+| Recuperación/restablecimiento públicos | 5 por IP, contador compartido | 15 minutos |
+| Solicitud de recuperación | 3 por correo normalizado, además del límite por IP | 15 minutos |
+| Contacto público | 5 por IP | 15 minutos |
+
+Las cuotas de ruta se suman al límite global. Sus valores se definen en
+`src/app.js`, `src/routes/auth.routes.js` y `src/routes/contact.routes.js`; no
+representan una medición del comportamiento desplegado.
+
+### Estado y límites de la revisión reciente
+
+La revisión de fuente cubrió autenticación, roles, SQL, datos, ventas, inventario
+y Docker. Hubo observaciones locales acotadas del ciclo de cierre/renovación de
+sesión y una simulación de módulos del frontend. La continuación de pruebas se
+detuvo por instrucción del usuario antes de cerrar toda la validación
+independiente. No se ejecutó un navegador real ni se verificaron servicios
+desplegados.
+
+Esas observaciones no se presentan aquí como una certificación ni como hallazgos
+confirmados finales. Sus evidencias y pendientes se conservan fuera del
+repositorio de código, en la documentación de auditoría. No se consultó una base
+actual de CVEs durante esa revisión; el resultado histórico de `npm audit` de
+septiembre no debe reutilizarse como un resultado actual.
+
+## Antecedente histórico — revisión de 2026-09-02
+
+El contenido siguiente se conserva como antecedente de aquella revisión. Para el
+comportamiento actual, prevalecen la tabla anterior y el código referenciado;
+por ejemplo, MemoryStore, los atributos de cookies y la validación del secreto
+descritos en este antecedente no deben interpretarse como el estado actual.
 
 Se revisaron configuración Express, autenticación, cookies, rutas, permisos,
 validación de entradas y consultas del sprint. No es una auditoría de penetración

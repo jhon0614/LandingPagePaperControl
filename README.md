@@ -250,6 +250,8 @@ En el backend, configura `NODE_ENV=production`, el origen HTTPS del frontend y l
 
 La documentación actualmente versionada se distribuye en `backend/docs` y `database`. La guía ADSO propone centralizar documentación viva, ADR, diagramas, API, datos, seguridad, pruebas, operación e índice de evidencias en `/docs`; esa estructura todavía no está incorporada y no se presenta como entregada.
 
+La política de seguridad se mantiene en `SECURITY.md`, en la raíz: identifica `main` como rama con soporte y conserva como pendientes el canal privado de reporte y los plazos de atención.
+
 - [Preparación del backend](backend/README.md)
 - [Esquema y relaciones de la base de datos](database/README.md)
 - [Autenticación y recuperación de contraseña](backend/docs/autenticacion-api.md)
@@ -257,6 +259,7 @@ La documentación actualmente versionada se distribuye en `backend/docs` y `data
 - [Ventas y comprobantes](backend/docs/ventas-api.md)
 - [Inventario y caja](backend/docs/sprint-inventario-caja.md)
 - [Dashboard](backend/docs/dashboard-api.md)
+- [Política de seguridad — borrador; rama `main` con soporte y canal privado pendiente](SECURITY.md)
 - [Controles de seguridad y despliegue](backend/docs/seguridad-backend.md)
 - [Cambios del backend y compatibilidad de migraciones](backend/docs/correcciones-backend-2026-09-09.md)
 

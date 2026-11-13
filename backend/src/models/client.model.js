@@ -1,3 +1,4 @@
+import { limiteSql, busquedaSql } from "../utils/query.js";
 // Consultas de persistencia del módulo de clientes.
 export class ModeloCliente {
   constructor(conexiones) {
@@ -93,13 +94,8 @@ export class ModeloCliente {
     return this.buscarPorId(id);
   }
 
-  async buscar(termino, limite = 20, incluirInactivos = false) {
-    const patron = `%${termino}%`;
-    // se convierte limite a número y se aplica límites de 1 a 100
-    const limiteSeguro = Math.min(
-      Math.max(Number.parseInt(limite, 10) || 20, 1), // si no se envía un número, se toma 20
-      100, // 100 es el límite máximo
-    );
+  async buscar(termino, limite = 500, incluirInactivos = false, filtros = {}) {
+    const busqueda = busquedaSql(termino, ["c.numero_documento", "CONCAT_WS(' ', c.nombres, c.apellidos)", "c.telefono", "c.correo"]);
 
     const [filas] = await this.conexiones.execute(
       `SELECT c.id, c.tipo_documento, c.numero_documento, c.nombres,
@@ -113,18 +109,12 @@ export class ModeloCliente {
            ON v.cliente_id = c.id AND v.estado = 'CONFIRMADA'
         WHERE c.eliminado_en IS NULL
           ${incluirInactivos ? "" : "AND c.esta_activo = TRUE"}
-          AND (
-            c.numero_documento LIKE ?
-            OR c.nombres LIKE ?
-            OR c.apellidos LIKE ?
-            OR c.telefono LIKE ?
-            OR c.correo LIKE ?
-        )
+          ${busqueda.sql}
         GROUP BY c.id
         ORDER BY CASE WHEN c.numero_documento = ? THEN 0 ELSE 1 END,
-                 c.nombres, c.apellidos
-        LIMIT ${limiteSeguro}`, //se ordena primero por documento, luego nombre y por último apellido
-      [patron, patron, patron, patron, patron, termino],
+                 c.nombres, c.apellidos, c.id
+        ${limiteSql({ ...filtros, limite })}`,
+      [...busqueda.parametros, termino ?? ""],
     );
 
     return filas;

@@ -1,4 +1,4 @@
-import { limiteSql } from "../utils/query.js";
+import { limiteSql, busquedaSql } from "../utils/query.js";
 // Agrupa las consultas relacionadas con usuarios. De esta manera, el resto de
 // la aplicación no necesita conocer cómo están escritas las consultas SQL.
 export class ModeloUsuario {
@@ -75,6 +75,7 @@ export class ModeloUsuario {
   }
 
   async listar(filtros = {}) {
+    const busqueda = busquedaSql(filtros.buscar, ["CONCAT_WS(' ', u.nombres, u.apellidos)", "u.correo"]);
     const [filas] = await this.conexiones.execute(
       `SELECT u.id, u.nombres, u.apellidos, u.correo,
             u.google_correo, u.google_estado,
@@ -84,7 +85,9 @@ export class ModeloUsuario {
        FROM usuarios u
        JOIN roles r ON r.id = u.rol_id
       WHERE u.eliminado_en IS NULL
+        ${busqueda.sql}
       ORDER BY u.nombres, u.apellidos, u.id ${limiteSql(filtros)}`,
+      busqueda.parametros,
     );
 
     return filas;

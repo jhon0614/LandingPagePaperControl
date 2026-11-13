@@ -1,4 +1,4 @@
-import { limiteSql } from "../utils/query.js";
+import { limiteSql, busquedaSql } from "../utils/query.js";
 // Consultas de persistencia para proveedores. La eliminación es lógica para
 // conservar las asociaciones históricas con productos.
 export class ModeloProveedor {
@@ -6,11 +6,14 @@ export class ModeloProveedor {
     this.conexiones = conexiones;
   }
   async listar(filtros = {}) {
+    const busqueda = busquedaSql(filtros.buscar, ["nombre", "nombre_contacto", "numero_documento", "correo", "telefono"]);
     const [filas] = await this.conexiones.execute(
       `SELECT id, nombre, nombre_contacto, telefono, correo, direccion,
               esta_activo, creado_en, actualizado_en
          FROM proveedores WHERE eliminado_en IS NULL AND esta_activo = TRUE
+          ${busqueda.sql}
         ORDER BY nombre, id ${limiteSql(filtros)}`,
+      busqueda.parametros,
     );
     return filas;
   }

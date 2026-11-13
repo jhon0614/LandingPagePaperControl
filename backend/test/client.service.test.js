@@ -106,7 +106,7 @@ test("busca clientes y presenta los campos para la API", async () => {
   const clientes = await servicio.buscar("  Laura  ");
 
   assert.equal(busquedaRecibida, "Laura");
-  assert.equal(limiteRecibido, 100);
+  assert.equal(limiteRecibido, 500);
   assert.equal(incluirInactivosRecibido, false);
   assert.equal(clientes.length, 1);
   assert.equal(clientes[0].documento, "1001234567");

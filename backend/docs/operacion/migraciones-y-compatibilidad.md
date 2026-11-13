@@ -1,7 +1,15 @@
-# Correcciones de backend — 2026-09-09
+# Migraciones y compatibilidad del backend
 
-No se modificó frontend ni `.env`. Esta actualización sustituye los pendientes
-de sesiones, concurrencia y paginación de la revisión anterior.
+**Referencia histórica:** actualización de 2026-09-09. Este documento conserva
+las instrucciones operativas y cambios de aquella entrega, que no modificó
+frontend ni `.env`. No acredita que una migración esté aplicada ni que todos los
+pendientes de seguridad de revisiones posteriores estén resueltos.
+
+Para los contratos vigentes consulta las guías de
+[autenticación](../api/autenticacion.md), [ventas](../api/ventas.md) y
+[convenciones](../api/convenciones.md). Los controles y su antecedente histórico
+están en [seguridad](../seguridad/controles.md); por ejemplo, los atributos de
+cookies descritos más abajo corresponden al registro de septiembre.
 
 ## Migración antes del arranque
 

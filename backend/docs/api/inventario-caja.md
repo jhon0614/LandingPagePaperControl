@@ -1,16 +1,12 @@
-# Sprint de inventario y caja — backend
+# Inventario y caja
 
-## Criterios y cobertura — 2026-09-02
+Esta guía reúne los contratos de categorías y reporte diario de caja que estaban
+documentados en las notas de sprint. Conserva al final la trazabilidad y los
+límites de aquel antecedente. No es un catálogo completo del CRUD de productos,
+movimientos, proveedores, turnos y gastos.
 
-Fuente: documento `PAPER CONTROL (1).docx` de la carpeta Documentación, historias
-HU-19, HU-20 y HU-32 y caso CU-09. La correspondencia con SCRUM-44, SCRUM-46 y
-SCRUM-32 se infiere por título, módulo y estimación; no se consultó Jira.
-
-| Historia | Criterios cubiertos en backend |
-| --- | --- |
-| SCRUM-46 / HU-20 | Descuento automático; rechazo por stock insuficiente antes del commit; historial de movimientos. CU-09: transacción conjunta, rollback, stock no negativo y restitución al anular. |
-| SCRUM-44 / HU-19 | Crear, editar y eliminar categorías; asignar categoría a productos; filtrar inventario por categoría. |
-| SCRUM-32 / HU-32 | Ingresos y pagos por día; rango de fechas y vendedor; gastos de caja menor según fecha real del período. |
+Ver [ventas](ventas.md) para salida/restitución de existencias por venta o
+anulación, y [convenciones](convenciones.md) para búsqueda y paginación.
 
 ## Categorías
 
@@ -87,16 +83,35 @@ es ingresos menos gastos; no representa utilidad ni efectivo físico esperado.
 Una sola consulta con UNION ALL evita multiplicar importes por varios pagos o
 gastos y devuelve ambos agregados desde una misma vista de la base.
 
-El contrato provisional de este endpoint cambia de `turnos` a `dias` para cumplir
-la historia. El historial y cierre de `/api/turnos-caja` mantienen su contrato.
-No se modifica el frontend.
+La respuesta del reporte utiliza `dias`. El antecedente de implementación cambió
+su contrato provisional de `turnos` a `dias` para cumplir la historia, sin cambiar
+el contrato de historial/cierre de `/api/turnos-caja` ni modificar el frontend en
+aquella entrega.
 
-## Validación
+## Antecedente de cobertura — 2026-09-02
 
-`npm test` ejecuta pruebas unitarias y HTTP con Express real y conexiones
-simuladas. Cubren permisos, CRUD, duplicados, referencias, fechas, filtro de
-vendedor, día solo con gastos, totales, rollback de venta y anulación repetida.
-No se necesita migración. Sigue pendiente la prueba de SQL y concurrencia con
-MySQL real en una base exclusiva de pruebas y la aceptación visual del usuario.
+Fuente: documento `PAPER CONTROL (1).docx` de la carpeta Documentación, historias
+HU-19, HU-20 y HU-32 y caso CU-09. La correspondencia con SCRUM-44, SCRUM-46 y
+SCRUM-32 se infiere por título, módulo y estimación; no se consultó Jira.
 
-Ver [revisión de seguridad](seguridad-backend.md) para controles y límites.
+| Historia | Criterios documentados en el antecedente |
+| --- | --- |
+| SCRUM-46 / HU-20 | Descuento automático de existencias; rechazo por stock insuficiente antes del commit; historial de movimientos. CU-09: transacción conjunta, rollback, stock no negativo y restitución al anular. |
+| SCRUM-44 / HU-19 | Crear, editar y eliminar categorías; asignar categoría a productos; filtrar inventario por categoría. |
+| SCRUM-32 / HU-32 | Ingresos y pagos por día; rango de fechas y vendedor; gastos de caja menor según fecha real del período. |
+
+## Validación documentada en el antecedente
+
+La nota del 02/09/2026 remitía a `npm test`: pruebas unitarias y HTTP con Express
+y conexiones simuladas para permisos, CRUD, duplicados, referencias, fechas,
+filtro de vendedor, días solo con gastos, totales, rollback y anulación repetida.
+Indicaba que la entrega no necesitaba migración y dejaba pendientes SQL y
+concurrencia en una base MySQL exclusiva, además de aceptación visual.
+
+Esos son los límites de la referencia histórica, no un resultado nuevo ni una
+declaración del estado actual de toda la validación. La reorganización documental
+no ejecutó pruebas.
+
+Ver [seguridad](../seguridad/controles.md) y
+[compatibilidad](../operacion/migraciones-y-compatibilidad.md) para controles,
+cambios posteriores y límites.

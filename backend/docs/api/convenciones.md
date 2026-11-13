@@ -1,4 +1,37 @@
-# Paginacion y busqueda de listados
+# Convenciones de la API
+
+## Navegación y autenticación
+
+El backend local usa `http://localhost:3000`. Las rutas protegidas reciben
+`Authorization: Bearer <tokenAcceso>`; los flujos que manejan la cookie de
+renovación requieren `credentials: "include"`. El contrato completo está en
+[autenticación](autenticacion.md).
+
+## Formato de respuestas
+
+Respuesta de éxito con cuerpo:
+
+```json
+{ "exito": true, "datos": {} }
+```
+
+Respuesta de error:
+
+```json
+{
+  "exito": false,
+  "error": {
+    "codigo": "CODIGO_DEL_ERROR",
+    "mensaje": "Descripción del problema"
+  }
+}
+```
+
+La validación puede añadir `error.detalles`. Los nombres dentro de `datos`
+dependen de la ruta. Una respuesta `204` no lleva cuerpo; las descargas y el
+comprobante HTML usan el formato indicado en su contrato, no el envelope JSON.
+
+## Paginación y búsqueda de listados
 
 Los endpoints GET `/api/usuarios`, `/api/proveedores`, `/api/productos` y
 `/api/clientes` admiten `pagina`, `limite` y `buscar` combinados:

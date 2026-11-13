@@ -1,4 +1,7 @@
 function Botones({ paginacion }) {
+
+    if (paginacion.totalPaginas <= 1) return null;
+
     return (
         <div className="paginacion-botones">
             <button
@@ -46,7 +49,7 @@ export function SelectorRegistros({ paginacion, etiqueta = "registros" }) {
 }
 
 export function NavegacionPaginas({ paginacion }) {
-    if (paginacion.total === 0) return null;
+    if (paginacion.total === 0 || paginacion.totalPaginas <= 1) return null;
 
     return (
         <div className="paginacion-navegacion">

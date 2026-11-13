@@ -1,15 +1,21 @@
 import { apiFetch } from "./api";
-
+import { obtenerTodasLasPaginas } from "./paginacion";
 
 export async function obtenerClientes({ incluirInactivos = false } = {}) {
 
-    const query = incluirInactivos
-        ? "?incluirInactivos=true"
-        : "";
+    const parametros = {};
 
-    const respuesta = await apiFetch(`/api/clientes${query}`);
+    if (incluirInactivos) {
 
-    return respuesta.datos.clientes;
+        parametros.incluirInactivos = "true";
+
+    }
+
+    return obtenerTodasLasPaginas(
+        "/api/clientes",
+        "clientes",
+        parametros
+    );
 
 }
 

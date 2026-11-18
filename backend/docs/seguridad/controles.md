@@ -7,7 +7,7 @@ conserva el antecedente de revisión de septiembre. No acredita la configuració
 del despliegue, la ausencia de vulnerabilidades ni una ejecución completa de
 pruebas sobre ese commit.
 
-La [política de seguridad](../../SECURITY.md) es un documento distinto: define
+La [política de seguridad](../../../SECURITY.md) es un documento distinto: define
 `main` como rama con soporte y mantiene pendientes el canal privado y los plazos
 de atención. Esta guía no designa un correo de reporte ni sustituye esa política.
 
@@ -143,7 +143,7 @@ Los controles de transporte y cookies siguen las
 
 Actualización 2026-09-09: los pendientes de revocación, concurrencia, límites
 compartidos y paginación se implementaron. Consultar
-[correcciones y migración](correcciones-backend-2026-09-09.md) para el estado
+[correcciones y migración](../operacion/migraciones-y-compatibilidad.md) para el estado
 actual, compatibilidad con frontend y pruebas con MySQL real. Las secciones
 anteriores describen la revisión previa; el resultado de auditoría de paquetes
 allí mencionado no representa una nueva auditoría de dependencias.

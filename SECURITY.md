@@ -69,8 +69,8 @@ No se establecen plazos de respuesta mientras esos puntos sigan pendientes.
 
 ## Documentación relacionada
 
-- [Controles técnicos y revisiones del backend](backend/docs/seguridad-backend.md).
-- [Correcciones del backend y compatibilidad de migraciones](backend/docs/correcciones-backend-2026-09-09.md).
+- [Controles técnicos y revisiones del backend](backend/docs/seguridad/controles.md).
+- [Migraciones y compatibilidad del backend](backend/docs/operacion/migraciones-y-compatibilidad.md).
 - [Estado y operación del proyecto](README.md).
 
 Los controles técnicos y las evidencias de auditoría tienen un propósito distinto

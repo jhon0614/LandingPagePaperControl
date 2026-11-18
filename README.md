@@ -67,7 +67,7 @@ backend/
   scripts/         Creación del administrador inicial
   test/            Pruebas automatizadas
   integration/     Pruebas con MySQL local
-  docs/            Documentación de la API
+  docs/            Índice y guías de API, seguridad y operación
 database/
   schema.sql       Esquema para una instalación nueva
   seed.sql         Roles, métodos de pago y parámetros iniciales
@@ -253,15 +253,18 @@ La documentación actualmente versionada se distribuye en `backend/docs` y `data
 La política de seguridad se mantiene en `SECURITY.md`, en la raíz: identifica `main` como rama con soporte y conserva como pendientes el canal privado de reporte y los plazos de atención.
 
 - [Preparación del backend](backend/README.md)
+- [Preparación y organización del frontend](frontend/README.md)
+- [Índice de documentación del backend](backend/docs/README.md)
 - [Esquema y relaciones de la base de datos](database/README.md)
-- [Autenticación y recuperación de contraseña](backend/docs/autenticacion-api.md)
-- [Administración de usuarios](backend/docs/usuarios-api.md)
-- [Ventas y comprobantes](backend/docs/ventas-api.md)
-- [Inventario y caja](backend/docs/sprint-inventario-caja.md)
-- [Dashboard](backend/docs/dashboard-api.md)
+- [Convenciones y listados](backend/docs/api/convenciones.md)
+- [Autenticación, Google y recuperación de contraseña](backend/docs/api/autenticacion.md)
+- [Administración de usuarios y aprobación de Google](backend/docs/api/usuarios.md)
+- [Ventas, compras, descuentos y comprobantes](backend/docs/api/ventas.md)
+- [Inventario y caja](backend/docs/api/inventario-caja.md)
+- [Dashboard](backend/docs/api/dashboard.md)
 - [Política de seguridad — borrador; rama `main` con soporte y canal privado pendiente](SECURITY.md)
-- [Controles de seguridad y despliegue](backend/docs/seguridad-backend.md)
-- [Cambios del backend y compatibilidad de migraciones](backend/docs/correcciones-backend-2026-09-09.md)
+- [Controles de seguridad y despliegue](backend/docs/seguridad/controles.md)
+- [Migraciones y compatibilidad del backend](backend/docs/operacion/migraciones-y-compatibilidad.md)
 
 ## Docker con recarga automática
 
@@ -320,7 +323,7 @@ no para contacto. Verifica el envío y la recepción en el ambiente publicado an
 
 Proyecto desarrollado por **Jhon Ricardo Rios Cuervo** y **Kelly Lopera**, equipo ADSO del SENA. El historial Git registra aportes con los nombres `Jhon Ricardo Rios Cuervo`, `Jhon Rios` y la cuenta `kellylop613`. Las responsabilidades de cada entrega deben trazarse a sus commits y revisiones, sin deducirlas del número de commits.
 
-Consulta `git log` y `git shortlog -sn HEAD` para revisar las contribuciones. Actualmente no hay `CONTRIBUTING.md` ni `SECURITY.md` versionados; las reglas de colaboración y el canal de reporte de vulnerabilidades están pendientes de formalización. Los controles técnicos existentes se describen en [seguridad del backend](backend/docs/seguridad-backend.md).
+Consulta `git log` y `git shortlog -sn HEAD` para revisar las contribuciones. No existe `CONTRIBUTING.md`; las reglas de colaboración siguen pendientes de formalización. La [política de seguridad](SECURITY.md) está en borrador, con `main` como rama con soporte y el canal privado de reporte pendiente. Los controles técnicos se describen en [seguridad del backend](backend/docs/seguridad/controles.md).
 
 ## Licencia y terceros
 

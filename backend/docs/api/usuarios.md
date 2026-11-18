@@ -16,7 +16,8 @@ Authorization: Bearer <tokenAcceso>
 Content-Type: application/json
 ```
 
-El token se obtiene en `POST /api/auth/login`. El frontend debe enviar solamente
+El token se obtiene mediante login local o Google, según la
+[guía de autenticación](autenticacion.md). El frontend debe enviar solamente
 el token de acceso en `Authorization`; el token de renovación se maneja mediante
 una cookie HttpOnly.
 
@@ -29,29 +30,9 @@ Los roles utilizados por el sistema son:
 
 ## Formato común
 
-Respuesta exitosa:
-
-```json
-{
-  "exito": true,
-  "datos": {}
-}
-```
-
-Respuesta con error:
-
-```json
-{
-  "exito": false,
-  "error": {
-    "codigo": "CODIGO_DEL_ERROR",
-    "mensaje": "Descripción entendible del problema."
-  }
-}
-```
-
-Los errores de validación pueden incluir `error.detalles` con los campos que
-deben corregirse.
+Los envelopes de éxito/error y los listados paginados se describen en
+[convenciones](convenciones.md). Los errores de validación pueden incluir
+`error.detalles` con los campos que deben corregirse.
 
 ## Representación de un usuario
 
@@ -73,7 +54,11 @@ deben corregirse.
 }
 ```
 
-La API nunca devuelve contraseñas, hashes, tokens ni credenciales internas.
+Las respuestas de administración no devuelven contraseñas, hashes, tokens ni
+credenciales internas.
+
+El listado y el detalle de usuarios también incluyen `google_estado` y
+`google_correo` (nullable), usados para la aprobación administrativa de Google.
 
 `bloqueadoHasta` contiene una fecha cuando el usuario está bloqueado. El frontend
 puede usar este valor para mostrar la acción de desbloqueo.
@@ -426,3 +411,35 @@ La reactivación de usuarios inactivos se realiza mediante
 `PATCH /api/usuarios/:id/estado`. Las cuentas eliminadas lógicamente todavía no
 cuentan con un endpoint de recuperación; intentar crear nuevamente su correo
 devuelve `409 USUARIO_ELIMINADO_EXISTENTE`.
+
+## Gestionar acceso con Google
+
+```http
+PATCH /api/usuarios/:id/google
+Authorization: Bearer <tokenAcceso>
+Content-Type: application/json
+```
+
+Disponible para `ADMINISTRADOR` y `DUENO`. Requiere una solicitud o vinculación
+existente; el login y la solicitud de vinculación están en
+[autenticación](autenticacion.md#autenticación-con-google).
+
+```json
+{ "accion": "aprobar" }
+```
+
+| Acción | Estado resultante | Efecto |
+| --- | --- | --- |
+| `aprobar` | `APROBADO` | Habilita el acceso Google para la solicitud existente. |
+| `rechazar` | `RECHAZADO` | Rechaza el acceso y revoca las sesiones existentes. |
+| `revocar` | `NINGUNO` | Revoca las sesiones y elimina `google_sub`/`google_correo`; permite solicitar una vinculación nueva. |
+| `reabrir` | `PENDIENTE` | Solo desde `RECHAZADO`; conserva `sub`/correo y revoca sesiones existentes. Sigue requiriendo nueva aprobación. |
+
+Para reabrir se envía `{ "accion": "reabrir" }` al mismo endpoint.
+La modificación y su auditoría se guardan en la misma transacción administrativa.
+La respuesta `200` contiene
+`{ "exito": true, "datos": { "usuario": { ... } } }`.
+
+Un vendedor recibe `403`; una acción o ID inválidos, `400`; un usuario
+inexistente, `404`. Sin solicitud disponible, o al reabrir desde otro estado,
+se devuelve `409 GOOGLE_SOLICITUD_NO_DISPONIBLE`.

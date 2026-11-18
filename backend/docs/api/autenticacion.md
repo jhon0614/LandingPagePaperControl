@@ -1,5 +1,10 @@
 # API de autenticación para frontend
 
+Ver [convenciones de la API](convenciones.md) y
+[administración de usuarios](usuarios.md) para los contratos comunes y las
+acciones administrativas. Esta guía reúne autenticación local y Google; no
+representa una nueva ejecución de pruebas.
+
 ## Configuración común
 
 URL local del backend:
@@ -14,11 +19,67 @@ debe intentar leer `tokenRenovacion`.
 
 ## Autenticación con Google
 
-El backend admite `POST /api/auth/google` para iniciar sesión y
-`POST /api/auth/google/vincular` para vincular una identidad de Google al usuario
-autenticado. La configuración, los cuerpos, las respuestas, los requisitos de
-base de datos y los límites están en [Autenticación con Google](google-auth.md).
-La vinculación es explícita: no se crean usuarios ni se asocian cuentas por correo.
+El backend admite `POST /api/auth/google` y
+`POST /api/auth/google/vincular`. No crea usuarios automáticamente: una identidad
+Google válida puede solicitar acceso para una cuenta local existente, pero no
+habilita una sesión hasta obtener aprobación administrativa.
+
+### Configuración y base de datos
+
+Configurar `GOOGLE_CLIENT_ID` y disponer de las dependencias del backend. La API
+verifica el ID token con `google-auth-library`, su audiencia, `sub`, correo y
+`email_verified === true`.
+
+Las instalaciones nuevas usan `database/schema.sql`. Para bases existentes,
+aplicar en orden `database/migrations/2026-11-06-google-sub.sql` si falta
+`google_sub`, y `database/migrations/2026-11-06-google-aprobacion.sql`.
+La segunda añade `google_correo` y `google_estado`; los registros con `google_sub`
+previo pasan a `APROBADO`, con `google_correo = correo`. No volver a ejecutar el
+esquema completo sobre una base existente. Ver la
+[guía de migraciones](../operacion/migraciones-y-compatibilidad.md).
+
+### Login con Google
+
+```http
+POST /api/auth/google
+Content-Type: application/json
+```
+
+```json
+{
+  "credential": "<ID token Google>",
+  "recordarme": false
+}
+```
+
+Si el `sub` no existe, se busca el correo verificado normalizado en las cuentas
+locales. Para una cuenta activa sin vinculación y con estado `NINGUNO`, se guardan
+el `sub`, el correo y el estado `PENDIENTE`, sin crear usuario ni sesión. Las
+solicitudes repetidas conservan el estado; un rechazo no se convierte
+automáticamente en pendiente.
+
+| Estado HTTP | Código | Significado |
+| --- | --- | --- |
+| 403 | `GOOGLE_PENDIENTE` | Solicitud enviada; espera aprobación administrativa. |
+| 403 | `GOOGLE_RECHAZADO` | La solicitud de acceso fue rechazada. |
+| 401 | `GOOGLE_NO_VINCULADO` | No existe una cuenta local disponible o tiene otro `sub`. |
+| 401 | `GOOGLE_CREDENCIAL_INVALIDA` / `GOOGLE_CUENTA_NO_VERIFICADA` | Credencial inválida o identidad incompleta/no verificada. |
+
+Solo `APROBADO` permite crear la sesión. Se mantienen los controles de cuenta
+activa y bloqueo; el rol procede de MySQL. La respuesta exitosa contiene el mismo
+`datos.tokenAcceso` y `datos.usuario` del login local, además de la cookie HttpOnly.
+Login local y Google comparten el límite de 20 solicitudes por IP cada 15 minutos,
+además del límite global.
+
+### Solicitar vinculación desde una sesión existente
+
+`POST /api/auth/google/vincular` exige Bearer token y recibe
+`{ "credential": "<ID token Google>" }`. El correo verificado debe coincidir con
+el del usuario autenticado. También solicita aprobación mediante
+`403 GOOGLE_PENDIENTE`; no habilita Google por su cuenta.
+
+La aprobación, el rechazo, la revocación y la reapertura se documentan en
+[gestión del acceso con Google](usuarios.md#gestionar-acceso-con-google).
 
 ## Iniciar sesión
 
@@ -31,13 +92,15 @@ Content-Type: application/json
 {
   "correo": "admin@papercontrol.local",
   "contrasena": "contraseña-segura",
-  "recordarme": false
+  "recordarme": false,
+  "captchaToken": "<token de reCAPTCHA>"
 }
 ```
 
 `recordarme` es opcional y por defecto vale `false`:
 
-- `false`: la cookie de renovación desaparece al cerrar el navegador.
+- `false`: se crea una cookie de sesión, sin fecha de expiración persistente;
+  su conservación depende del ciclo de sesión y de las opciones del navegador.
 - `true`: la cookie permanece hasta la fecha de expiración configurada.
 
 Respuesta `200`:
@@ -120,10 +183,11 @@ El backend marca la sesión como revocada en MySQL y elimina la cookie. La
 operación también responde `204` si la cookie ya no existe, por lo que puede
 ejecutarse más de una vez sin causar errores.
 
-El token de acceso que ya había sido emitido es un JWT de corta duración y no se
-guarda en MySQL. Por eso el frontend debe eliminarlo de memoria al cerrar sesión;
-si existiera una copia fuera del navegador, vencerá como máximo al cumplirse los
-minutos configurados en `JWT_ACCESS_MINUTES`.
+El JWT no se almacena como tal en MySQL, pero incluye `sid`: cada petición
+protegida comprueba que esa sesión siga vigente y no esté revocada. Una sesión
+revocada debe rechazarse aunque el JWT todavía no haya expirado. Esto no cancela
+peticiones que ya fueron autorizadas. El frontend también debe limpiar su token
+de memoria; esa limpieza no sustituye la revocación del backend.
 
 Para el cierre manual, el botón debe llamar `/logout`, borrar el token de acceso
 y el usuario de la memoria de React, y redirigir al login.
@@ -133,8 +197,9 @@ cumplirse el límite debe llamar al mismo `/logout`, limpiar la memoria y
 redirigir al login. El backend no puede detectar por sí solo que una persona dejó
 de usar una pestaña.
 
-Cerrar el navegador con `recordarme: false` elimina la cookie de sesión, aunque
-el registro de MySQL permanecerá hasta expirar o hasta una limpieza posterior.
+`recordarme: false` no asigna expiración persistente a la cookie, pero cerrar una
+pestaña o un navegador no equivale a confirmar una revocación en MySQL. El registro
+del servidor permanece hasta expirar, revocarse o ser retirado por limpieza.
 
 ## Ejemplo de llamadas
 
@@ -143,7 +208,7 @@ const respuestaLogin = await fetch(`${API_URL}/api/auth/login`, {
   method: "POST",
   credentials: "include",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ correo, contrasena, recordarme }),
+  body: JSON.stringify({ correo, contrasena, recordarme, captchaToken }),
 });
 
 const respuestaRefresh = await fetch(`${API_URL}/api/auth/refresh`, {
@@ -251,3 +316,11 @@ Un token inexistente, vencido o ya utilizado responde:
 
 La pantalla del frontend debe leer `token` desde la URL, pedir y confirmar la
 nueva contraseña y, al finalizar, redirigir al login.
+
+## Referencias de cobertura
+
+`backend/test/auth.service.test.js`, `auth.controller.test.js`,
+`auth.middleware.test.js`, `password.service.test.js`, `google-admin.test.js` y
+`recaptcha.service.test.js` contienen pruebas relacionadas. Las verificaciones de
+Google se simulan en esas pruebas; no requieren credenciales Google reales.
+Esta reorganización no ejecuta esos comandos ni acredita un resultado nuevo.

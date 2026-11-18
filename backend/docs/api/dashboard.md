@@ -27,9 +27,10 @@ Los valores representan productos activos no eliminados, ventas confirmadas,
 usuarios activos no eliminados y productos activos con existencias mayores que
 cero cuyo stock actual es menor o igual al mínimo.
 
-## Nota para el frontend
+## Ejemplo de consumo desde el frontend
 
-Crear `src/services/dashboard.service.js`:
+El siguiente patrón ilustra el consumo mediante `src/services/dashboard.service.js`;
+no representa una funcionalidad pendiente ni una nueva validación de las pantallas:
 
 ```js
 import { apiFetch } from "./api";
@@ -40,8 +41,8 @@ export async function obtenerResumenDashboard() {
 }
 ```
 
-En `Admin.jsx` y `Dueno.jsx`, importar `obtenerResumenDashboard`, cargarlo en
-el `useEffect` y usar un estado inicial con las cuatro propiedades:
+En `Admin.jsx` y `Dueno.jsx`, el consumidor puede importar `obtenerResumenDashboard`,
+cargarlo en el `useEffect` y usar un estado inicial con las cuatro propiedades:
 
 ```js
 const [totales, setTotales] = useState({
@@ -52,12 +53,14 @@ const [totales, setTotales] = useState({
 });
 ```
 
-Reemplazar los valores fijos:
+El renderizado utiliza los valores devueltos:
 
 ```jsx
 <span>{totales.ventas}</span>
 <span>{totales.usuarios}</span>
 ```
 
-La llamada anterior a `obtenerProductos()` deja de ser necesaria en esos dos
-dashboards, porque el nuevo endpoint ya calcula productos y stock bajo.
+Para esas cuatro cifras no hace falta obtener el listado completo de productos:
+el endpoint ya calcula productos y stock bajo. Ver
+[convenciones](convenciones.md) para el formato común y
+[controles de seguridad](../seguridad/controles.md) para el alcance de los permisos.

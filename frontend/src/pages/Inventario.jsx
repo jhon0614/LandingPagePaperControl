@@ -266,7 +266,7 @@ import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
                                                 <button
                                                     type="button"
                                                     className="accion historial"
-                                                    title="Ver historial de movimientos"
+                                                    title="Gestionar inventario"
                                                     onClick={() =>
                                                         abrirHistorial(
                                                             producto
@@ -1784,14 +1784,18 @@ function Inventario() {
                                     </div>
 
                                     <div className="campo">
-                                        <label>Stock</label>
+                                        <label>Stock{productoEditar ? " (solo lectura)" : ""}</label>
                                         <input
                                             name="stock"
                                             type="number"
                                             min="0"
                                             placeholder="Ej: 20"
-                                            defaultValue={
-                                                productoEditar?.stock ?? 0
+                                            defaultValue={productoEditar?.stock ?? 0}
+                                            readOnly={Boolean(productoEditar)}
+                                            title={
+                                                productoEditar
+                                                    ? "Para cambiar el stock usa Gestionar inventario"
+                                                    : undefined
                                             }
                                             required
                                         />
@@ -2050,7 +2054,7 @@ function Inventario() {
                             <div className="modal-header">
                                 <div>
                                     <h2>
-                                        Historial —{" "}
+                                        Gestión de inventario —{" "}
                                         {productoHistorial?.nombre}
                                     </h2>
                                     <p>

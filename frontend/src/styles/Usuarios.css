@@ -1334,3 +1334,18 @@
 [data-theme="dark"] .tabla-usuarios tbody tr:hover td:last-child {
     background: #16313c !important;
 }
+
+@media (min-width: 769px) {
+    .tabla-usuarios {
+        min-width: 0;
+    }
+
+    .tabla-usuarios th,
+    .tabla-usuarios td {
+        padding: 12px 10px;
+    }
+
+    .tabla-usuarios td:nth-child(2) {
+        overflow-wrap: anywhere;
+    }
+}

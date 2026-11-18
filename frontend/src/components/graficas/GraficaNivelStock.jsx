@@ -73,7 +73,7 @@ function GraficaNivelStock({ productos }) {
 
             <div className="grafica-stock-barras">
 
-                <ResponsiveContainer width="100%" height={150}>
+                <ResponsiveContainer width="100%" height={200}>
 
                     <BarChart
                         data={datosBarras}
@@ -129,8 +129,7 @@ function GraficaNivelStock({ productos }) {
                 datos={datos}
                 centroTitulo={total}
                 centroTexto="Productos"
-                alto={130}
-                horizontal
+                alto={200}
             />
 
         </div>

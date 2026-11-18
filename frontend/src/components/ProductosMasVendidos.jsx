@@ -201,7 +201,12 @@ function ProductosMasVendidos() {
                                     <span className="mas-vendidos-posicion">
                                         {indice + 1}
                                     </span>
-                                    {producto.nombre}
+                                    <span
+                                        className="mas-vendidos-texto"
+                                        title={producto.nombre}
+                                    >
+                                        {producto.nombre}
+                                    </span>
                                 </div>
 
                                 <div className="mas-vendidos-barra-wrapper">

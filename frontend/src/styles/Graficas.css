@@ -231,13 +231,63 @@
 
 .grafica-stock {
     display: grid;
-    gap: 14px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 24px;
+    row-gap: 14px;
 }
 
 .grafica-stock-barras {
     min-width: 0;
 }
 
+.grafica-stock .grafica-dona {
+    display: contents;
+}
+
+.grafica-stock .grafica-dona-lienzo {
+    max-width: 190px;
+    margin: 0 auto;
+}
+
+.grafica-stock .grafica-dona-leyenda {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 26px;
+}
+
+.grafica-stock .grafica-dona-leyenda li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.grafica-stock .grafica-dona-leyenda small {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .grafica-stock {
+        grid-template-columns: 1fr;
+    }
+}
+
+.grafica-tarjeta:has(.grafica-stock) {
+    display: flex;
+    flex-direction: column;
+}
+
+.grafica-stock {
+    flex: 1;
+    align-content: center;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+
+.grafica-stock .grafica-dona-lienzo {
+    max-width: 220px;
+}
 
 /* ---------- Tabla de ventas recientes ---------- */
 
@@ -315,4 +365,16 @@
         width: 100%;
     }
 
+}
+
+[data-theme="dark"] .grafica-dona .recharts-sector[fill="#062f3d"] {
+    fill: #1d20d2;
+}
+
+[data-theme="dark"] .grafica-dona-leyenda .grafica-punto[style*="rgb(6, 47, 61)"] {
+    background: #1d20d2 !important;
+}
+
+[data-theme="dark"] .grafica-tooltip-fila .grafica-punto[style*="rgb(6, 47, 61)"] {
+    background: #1d20d2 !important;
 }

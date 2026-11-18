@@ -827,32 +827,39 @@ function Ventas() {
 
         const listaProductos = productos || [];
 
-        if (!texto) {
+        const coincidentes = !texto
+            ? listaProductos
+            : listaProductos.filter((producto) => {
 
-            return listaProductos;
+                const nombre =
+                    normalizarTexto(
+                        producto.nombre
+                    );
 
-        }
-        
-        return listaProductos.filter((producto) => {
 
-            const nombre =
-                normalizarTexto(
-                    producto.nombre
+                const categoria =
+                    normalizarTexto(
+                        producto.categoria
+                    );
+
+
+                return (
+                    nombre.includes(texto) ||
+                    categoria.includes(texto)
                 );
 
+            });
+        /*
+        * Disponibles primero y agotados al final.
+        * El orden original se conserva dentro de cada grupo.
+        */
 
-            const categoria =
-                normalizarTexto(
-                    producto.categoria
-                );
+        const agotado = (producto) =>
+            Number(producto.stock) <= 0 ? 1 : 0;
 
-
-            return (
-                nombre.includes(texto) ||
-                categoria.includes(texto)
-            );
-
-        });
+        return [...coincidentes].sort(
+            (a, b) => agotado(a) - agotado(b)
+        );
 
     }, [productos, busqueda]);
 
@@ -1839,7 +1846,11 @@ function Ventas() {
                                 (producto) => (
 
                                     <div
-                                        className="pos-producto-card"
+                                        className={
+                                            Number(producto.stock) <= 0
+                                                ? "pos-producto-card agotado"
+                                                : "pos-producto-card"
+                                        }
                                         key={producto.id}
                                         onClick={() => agregarAlCarrito(producto)}
                                     >
@@ -1851,7 +1862,10 @@ function Ventas() {
 
                                         <div className="pos-producto-precio">
                                             <small>
-                                                {producto.categoria} · Stock: {producto.stock}
+                                                {producto.categoria} ·{" "}
+                                                {Number(producto.stock) <= 0
+                                                    ? "Agotado"
+                                                    : `Stock: ${producto.stock}`}
                                             </small>
                                             <span>
                                                 ${producto.precio.toLocaleString("es-CO")}

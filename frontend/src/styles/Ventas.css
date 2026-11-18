@@ -2092,3 +2092,39 @@ body:has(.cliente-modal-overlay) {
     background-position: right 12px center !important;
     background-size: 16px 16px !important;
 }
+
+.pos-producto-card.agotado {
+    border-color: #fca5a5;
+    background: #fef2f2;
+    cursor: not-allowed;
+}
+
+.pos-producto-card.agotado:hover {
+    border-color: #ef4444;
+    box-shadow: none;
+    transform: none;
+}
+
+.pos-producto-card.agotado strong,
+.pos-producto-card.agotado .pos-producto-precio span {
+    color: #b91c1c;
+}
+
+.pos-producto-card.agotado small {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .pos-producto-card.agotado {
+    border-color: rgba(248, 113, 113, 0.5);
+    background: rgba(229, 72, 77, 0.12);
+}
+
+[data-theme="dark"] .pos-producto-card.agotado strong,
+[data-theme="dark"] .pos-producto-card.agotado .pos-producto-precio span {
+    color: #f87171;
+}
+
+[data-theme="dark"] .pos-producto-card.agotado small {
+    color: #fca5a5;
+}

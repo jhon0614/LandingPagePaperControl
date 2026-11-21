@@ -372,6 +372,51 @@ con credenciales/TLS (`rediss://`) y un espacio de claves separado por entorno.
 
 Referencia del cliente: https://redis.io/docs/latest/develop/clients/nodejs/produsage/
 
+## Cache y recarga de Categorias (backend)
+
+Usa la misma configuracion `REDIS_URL` y `REDIS_CACHE_TTL_SECONDS` de
+Proveedores, con claves independientes. No cambia el frontend ni el JSON.
+
+- `GET /api/categorias`: devuelve `datos.categorias`, con `X-Cache` MISS/HIT/BYPASS.
+- `GET /api/categorias?refrescar=true`: consulta MySQL y renueva la cache;
+  devuelve REFRESH si Redis esta disponible, BYPASS si no lo esta.
+- `refrescar=false` o sin parametro utiliza la cache; otro valor devuelve 400.
+- Crear, editar o eliminar categorias invalida su listado. Crear o editar
+  productos tambien lo invalida porque el modelo puede crear categorias.
+- Se mantienen permisos: los tres roles leen; solo Administrador/Dueno escriben.
+- Para el futuro boton del frontend: llamar a `/api/categorias?refrescar=true`
+  usando el cliente autenticado habitual y reemplazar el listado al responder.
+
+Prueba manual: reiniciar backend, consultar dos veces (MISS y HIT), refrescar
+(REFRESH), consultar otra vez (HIT) y modificar una categoria (siguiente MISS).
+Si Redis se apaga, las consultas siguen funcionando con MySQL y BYPASS.
+
+## Cache y recarga de Productos/Inventario (backend)
+
+`GET /api/productos` utiliza Redis despues de validar autenticacion y permisos.
+Conserva el JSON, la paginacion y la fila adicional para calcular `hayMas`.
+La clave distingue pagina, limite, buscar, categoriaId e incluirInactivos.
+
+- TTL: 10 segundos por defecto (`REDIS_PRODUCTS_CACHE_TTL_SECONDS`).
+- Lectura normal: `X-Cache: MISS`, `HIT` o `BYPASS`.
+- Recarga: `/api/productos?pagina=1&limite=50&refrescar=true` consulta MySQL,
+  invalida las otras variantes y actualiza la pagina solicitada (REFRESH).
+- El futuro boton debe conservar los filtros vigentes. Si descarga varias
+  paginas consecutivas, enviar refrescar=true solo en la primera.
+- Crear, editar, cambiar estado, eliminar y registrar entradas/ajustes invalidan
+  la cache. Tambien asociar/quitar proveedores, editar/eliminar proveedores o
+  categorias y confirmar/anular ventas.
+- El detalle, movimientos, alertas, comprobantes y validacion de stock/precios
+  al vender siguen consultando MySQL. No se almacenan ventas ni caja en Redis.
+- Un fallo de Redis deja la lectura en BYPASS; las escrituras siguen usando
+  MySQL. Cambios por SQL directo o una invalidacion fallida en otra instancia
+  pueden tardar hasta el TTL en reflejarse: no es una cache de consistencia fuerte.
+
+Prueba local: reiniciar backend; consultar la misma pagina dos veces (MISS/HIT),
+forzar refrescar=true (REFRESH), registrar una entrada o confirmar una venta y
+volver a consultar (MISS con stock actualizado). Probar los filtros por separado.
+No requiere modificar ni desplegar el frontend ni migrar la base de datos.
+
 ## Autores y contribuciones
 
 Proyecto desarrollado por **Jhon Ricardo Rios Cuervo** y **Kelly Lopera**, equipo ADSO del SENA. El historial Git registra aportes con los nombres `Jhon Ricardo Rios Cuervo`, `Jhon Rios` y la cuenta `kellylop613`. Las responsabilidades de cada entrega deben trazarse a sus commits y revisiones, sin deducirlas del número de commits.

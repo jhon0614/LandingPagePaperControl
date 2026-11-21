@@ -5,7 +5,7 @@ export class ControladorCategoria {
   listar = async (_req, res) =>
     res.json({
       exito: true,
-      datos: { categorias: await this.servicio.listar() },
+      datos: { categorias: await this.servicio.listar(_req.query, (estado) => res.set("X-Cache", estado)) },
     });
   crear = async (req, res) =>
     res.status(201).json({

@@ -1,16 +1,23 @@
 import { ErrorAplicacion } from "../errors/app-error.js";
 
 export class ServicioCategoria {
-  constructor(modelo) {
+  constructor(modelo, cache) {
     this.modelo = modelo;
+    this.cache = cache;
   }
-  listar() {
-    return this.modelo.listar();
+  async listar(filtros = {}, informarCache = () => {}) {
+    if (filtros.refrescar !== undefined && !["true", "false"].includes(filtros.refrescar))
+      throw new ErrorAplicacion("refrescar debe ser true o false.", 400, "REFRESCAR_INVALIDO");
+    const cargar = () => this.modelo.listar();
+    if (!this.cache) { informarCache("BYPASS"); return cargar(); }
+    return this.cache.obtenerOCargar({}, cargar, informarCache, { refrescar: filtros.refrescar === "true" });
   }
 
   async crear(datos) {
     try {
-      return await this.modelo.crear(this.#nombre(datos.nombre));
+      const categoria = await this.modelo.crear(this.#nombre(datos.nombre));
+      await this.cache?.invalidar();
+      return categoria;
     } catch (error) {
       this.#traducir(error);
     }
@@ -23,6 +30,7 @@ export class ServicioCategoria {
         this.#nombre(datos.nombre),
       );
       if (!categoria) this.#noEncontrada();
+      await this.cache?.invalidar();
       return categoria;
     } catch (error) {
       this.#traducir(error);
@@ -32,6 +40,7 @@ export class ServicioCategoria {
   async eliminar(id) {
     try {
       if (!(await this.modelo.eliminar(this.#id(id)))) this.#noEncontrada();
+      await this.cache?.invalidar();
     } catch (error) {
       this.#traducir(error);
     }

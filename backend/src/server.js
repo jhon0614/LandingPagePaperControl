@@ -2,20 +2,26 @@ import { cargarConfiguracion } from "./config/env.js";
 import { BaseDatos } from "./config/database.js";
 import { crearAplicacion } from "./app.js";
 import { crearCacheProveedores } from "./services/supplier-cache.service.js";
+import { crearCacheListado } from "./services/list-cache.service.js";
 
 // Carga la configuración y obtiene las conexiones Singleton antes de abrir el puerto.
 const configuracion = cargarConfiguracion();
 const baseDatos = BaseDatos.obtenerInstancia(configuracion.baseDatos);
 const cacheProveedores = crearCacheProveedores(configuracion.cacheRedis);
+const cacheCategorias = crearCacheListado(configuracion.cacheRedis, {
+  prefijo: "papercontrol:cache:categorias:v1", nombre: "Categorías",
+});
 
 try {
   // La API solo inicia cuando se confirma que MySQL responde.
   await baseDatos.comprobarConexion();
   await cacheProveedores?.iniciar();
+  await cacheCategorias?.iniciar();
   const aplicacion = crearAplicacion({
     conexiones: baseDatos.conexiones,
     configuracion,
     cacheProveedores,
+    cacheCategorias,
   });
   const detenerTrabajador = aplicacion.locals.iniciarTrabajadorCorreo();
   const servidor = aplicacion.listen(configuracion.puerto, () => {
@@ -30,6 +36,7 @@ try {
     servidor.close(async () => {
       await detenerTrabajador();
       cacheProveedores?.cerrar();
+      cacheCategorias?.cerrar();
       await baseDatos.cerrar();
       process.exit(0);
     });
@@ -41,6 +48,7 @@ try {
   // Evita dejar el servidor abierto parcialmente cuando falla la conexión.
   console.error("No fue posible iniciar PaperControl API:", error.message);
   cacheProveedores?.cerrar();
+  cacheCategorias?.cerrar();
   await baseDatos.cerrar();
   process.exit(1);
 }

@@ -438,6 +438,33 @@ espacio de claves propio. No cambia el frontend ni requiere migraciones.
 - Se mantienen las limitaciones de TTL ante SQL directo o fallos de invalidacion
   en otras instancias; MySQL sigue siendo la fuente de verdad.
 
+## Cache y recarga de Usuarios (backend)
+
+GET `/api/usuarios?pagina=1&limite=50` mantiene el JSON y agrega X-Cache:
+MISS/HIT/BYPASS. Agregar `refrescar=true` consulta MySQL y renueva Redis
+(REFRESH). Conservar pagina, limite y buscar; refrescar solo admite true/false.
+Si el frontend descarga varias paginas, forzar solo la primera.
+
+TTL por defecto: 10 segundos (`REDIS_USERS_CACHE_TTL_SECONDS`). Usa REDIS_URL
+y un espacio de claves independiente. Los datos cacheados son los del presentador:
+no incluyen contrasenas, hashes, tokens ni sesiones. Redis puede contener nombres
+y correos, por lo que debe mantenerse privado, con credenciales/TLS segun entorno.
+
+Crear, editar, activar/desactivar, eliminar y gestionar acceso Google invalidan
+el listado; tambien el cambio/restablecimiento de contrasena, desbloqueo,
+intentos fallidos, login correcto y solicitudes Google pendientes. Las operaciones
+administrativas transaccionales invalidan despues del commit, nunca antes.
+
+Solo Administrador/Dueno acceden al listado con los permisos existentes; ambos
+reciben actualmente los mismos campos. El detalle, login, renovacion, autorizacion,
+bloqueos efectivos y sesiones siguen consultando MySQL, nunca esta cache.
+Redis caido produce BYPASS sin impedir las operaciones. Se mantienen las
+limitaciones por TTL ante SQL directo o invalidacion fallida en otras instancias.
+
+Prueba: reiniciar backend, consultar dos veces (MISS/HIT), solicitar refrescar=true
+(REFRESH) y repetir (HIT). Editar un usuario o desbloquearlo debe dejar la siguiente
+consulta en MISS con los nuevos datos. No requiere cambios de frontend ni migracion.
+
 ## Autores y contribuciones
 
 Proyecto desarrollado por **Jhon Ricardo Rios Cuervo** y **Kelly Lopera**, equipo ADSO del SENA. El historial Git registra aportes con los nombres `Jhon Ricardo Rios Cuervo`, `Jhon Rios` y la cuenta `kellylop613`. Las responsabilidades de cada entrega deben trazarse a sus commits y revisiones, sin deducirlas del número de commits.

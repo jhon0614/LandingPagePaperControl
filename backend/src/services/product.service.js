@@ -45,8 +45,9 @@ function presentarMovimiento(fila) {
 }
 
 export class ServicioProducto {
-  constructor(modelo) {
+  constructor(modelo, cacheCategorias) {
     this.modelo = modelo;
+    this.cacheCategorias = cacheCategorias;
   }
 
   async categorias() {
@@ -75,6 +76,7 @@ export class ServicioProducto {
   async crear(datos, usuarioId) {
     try {
       const id = await this.modelo.crear(datos, usuarioId);
+      await this.cacheCategorias?.invalidar();
       return this.obtener(id);
     } catch (error) {
       this.#traducirDuplicado(error);
@@ -87,6 +89,7 @@ export class ServicioProducto {
     try {
       if (!(await this.modelo.actualizar(productoId, datos, usuarioId)))
         this.#noEncontrado();
+      await this.cacheCategorias?.invalidar();
       return this.obtener(productoId);
     } catch (error) {
       this.#traducirDuplicado(error);

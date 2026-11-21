@@ -465,6 +465,28 @@ Prueba: reiniciar backend, consultar dos veces (MISS/HIT), solicitar refrescar=t
 (REFRESH) y repetir (HIT). Editar un usuario o desbloquearlo debe dejar la siguiente
 consulta en MISS con los nuevos datos. No requiere cambios de frontend ni migracion.
 
+## Cache y recarga de Dashboard (backend)
+
+GET `/api/dashboard/resumen` conserva `datos.resumen` como objeto con cuatro
+indicadores: productos activos, ventas confirmadas, usuarios activos y stock bajo.
+Usa REDIS_URL y REDIS_CACHE_TTL_SECONDS (30 segundos por defecto), con claves
+propias. La autenticacion y permisos de Administrador/Dueno siguen en MySQL.
+
+- Respuesta normal: X-Cache MISS/HIT/BYPASS.
+- GET `/api/dashboard/resumen?refrescar=true`: consulta MySQL y renueva Redis
+  (REFRESH). El futuro boton del frontend puede usar esta ruta con el cliente
+  autenticado habitual. Otros valores diferentes de true/false devuelven 400.
+- Invalidan el resumen: crear/editar/activar/desactivar/eliminar productos,
+  entradas y ajustes de stock, confirmar/anular ventas, y crear/activar/desactivar
+  o eliminar usuarios. Las transacciones administrativas invalidan tras el commit.
+- No se cachean Caja, Reportes ni graficas que consulten endpoints de reportes.
+- Si Redis no responde, MySQL entrega los indicadores con BYPASS. SQL directo
+  o fallos de invalidacion entre instancias pueden reflejarse hasta el TTL.
+
+Prueba: reiniciar backend, consultar dos veces (MISS/HIT), forzar refrescar=true
+(REFRESH), modificar stock o registrar una venta y consultar de nuevo (MISS con
+contadores actualizados). No requiere migraciones ni cambios de frontend.
+
 ## Autores y contribuciones
 
 Proyecto desarrollado por **Jhon Ricardo Rios Cuervo** y **Kelly Lopera**, equipo ADSO del SENA. El historial Git registra aportes con los nombres `Jhon Ricardo Rios Cuervo`, `Jhon Rios` y la cuenta `kellylop613`. Las responsabilidades de cada entrega deben trazarse a sus commits y revisiones, sin deducirlas del número de commits.

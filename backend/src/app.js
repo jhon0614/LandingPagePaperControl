@@ -74,7 +74,7 @@ import { AlmacenLimitesMySQL } from "./models/rate-limit.store.js";
 import { ModeloColaCorreo } from "./models/mail-queue.model.js";
 import { iniciarTrabajadorCorreo } from "./services/mail-worker.js";
 
-export function crearAplicacion({ conexiones, configuracion, cacheProveedores, cacheCategorias, cacheProductos, cacheClientes }) {
+export function crearAplicacion({ conexiones, configuracion, cacheProveedores, cacheCategorias, cacheProductos, cacheClientes, cacheUsuarios }) {
   const aplicacion = express();
 
   aplicacion.disable("x-powered-by"); //desactiva la cabecera x-powered-by
@@ -132,6 +132,7 @@ export function crearAplicacion({ conexiones, configuracion, cacheProveedores, c
     modeloRol,
     modeloSesion,
     modeloAuditoria,
+    cacheUsuarios,
   );
   const controladorUsuario = new ControladorUsuario(servicioUsuario);
   const servicioCliente = new ServicioCliente(
@@ -166,6 +167,7 @@ export function crearAplicacion({ conexiones, configuracion, cacheProveedores, c
     modeloSesion,
     modeloConfiguracion: new ModeloConfiguracion(conexiones),
     configuracionAutenticacion: configuracion.autenticacion,
+    cacheUsuarios,
   });
   const controladorAutenticacion = new ControladorAutenticacion(
     servicioAutenticacion,
@@ -184,6 +186,7 @@ export function crearAplicacion({ conexiones, configuracion, cacheProveedores, c
     servicioCorreo,
     modeloAuditoria,
     configuracion: configuracion.restablecimientoContrasena,
+    cacheUsuarios,
   });
   const controladorContrasena = new ControladorContrasena(servicioContrasena);
   aplicacion.locals.iniciarTrabajadorCorreo = () =>

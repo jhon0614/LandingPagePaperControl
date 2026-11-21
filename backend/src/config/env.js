@@ -87,6 +87,7 @@ export function cargarConfiguracion() {
       url: redisUrl,
       ttl: enteroPositivo("REDIS_CACHE_TTL_SECONDS", 30),
       ttlProductos: enteroPositivo("REDIS_PRODUCTS_CACHE_TTL_SECONDS", 10),
+      ttlUsuarios: enteroPositivo("REDIS_USERS_CACHE_TTL_SECONDS", 10),
     },
     apiKey,
     limitesCompartidos: true,

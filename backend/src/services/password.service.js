@@ -17,6 +17,7 @@ export class ServicioContrasena {
     modeloAuditoria,
     modeloColaCorreo,
     configuracion,
+    cacheUsuarios,
   }) {
     this.modeloColaCorreo = modeloColaCorreo;
     this.modeloUsuario = modeloUsuario;
@@ -24,13 +25,14 @@ export class ServicioContrasena {
     this.servicioCorreo = servicioCorreo;
     this.modeloAuditoria = modeloAuditoria;
     this.configuracion = configuracion;
+    this.cacheUsuarios = cacheUsuarios;
     if (typeof modeloUsuario.conexiones?.getConnection === "function") {
       for (const metodo of [
         "solicitarRestablecimientoAdministrativo",
         "desbloquearUsuario",
       ]) {
-        this[metodo] = (datos) =>
-          transaccionAdministrativa(
+        this[metodo] = async (datos) => {
+          const resultado = await transaccionAdministrativa(
             modeloUsuario.conexiones,
             datos.responsableId,
             (conexion) => {
@@ -47,6 +49,9 @@ export class ServicioContrasena {
               return servicio[metodo](datos);
             },
           );
+          if (metodo === "desbloquearUsuario") await this.cacheUsuarios?.invalidar();
+          return resultado;
+        };
       }
     }
   }
@@ -106,6 +111,7 @@ export class ServicioContrasena {
       );
     }
 
+    await this.cacheUsuarios?.invalidar();
     return {
       mensaje: "La contraseña fue cambiada correctamente.",
     };
@@ -142,6 +148,7 @@ export class ServicioContrasena {
       );
     }
 
+    await this.cacheUsuarios?.invalidar();
     return {
       mensaje: "La contraseña fue restablecida correctamente.",
     };
@@ -207,6 +214,7 @@ export class ServicioContrasena {
       );
     }
 
+    await this.cacheUsuarios?.invalidar();
     await this.modeloAuditoria.registrar({
       usuarioId: Number(responsableId),
       accion: "DESBLOQUEAR_USUARIO",

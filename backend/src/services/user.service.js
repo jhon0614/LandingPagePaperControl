@@ -4,6 +4,7 @@ import { ModeloRol } from "../models/role.model.js";
 import { ModeloSesion } from "../models/session.model.js";
 import { ModeloAuditoria } from "../models/audit.model.js";
 import { ErrorAplicacion } from "../errors/app-error.js";
+import { paginacion, busquedaSql } from "../utils/query.js";
 import bcrypt from "bcryptjs";
 
 function presentarUsuario(fila) {
@@ -30,11 +31,12 @@ function presentarUsuario(fila) {
 
 // Coordina las operaciones relacionadas con la administración de usuarios.
 export class ServicioUsuario {
-  constructor(modeloUsuario, modeloRol, modeloSesion, modeloAuditoria) {
+  constructor(modeloUsuario, modeloRol, modeloSesion, modeloAuditoria, cacheUsuarios) {
     this.modeloUsuario = modeloUsuario;
     this.modeloRol = modeloRol;
     this.modeloSesion = modeloSesion;
     this.modeloAuditoria = modeloAuditoria;
+    this.cacheUsuarios = cacheUsuarios;
     // Una instancia ligada a la conexión no abre transacciones anidadas.
     if (typeof modeloUsuario.conexiones?.getConnection === "function") {
       for (const metodo of [
@@ -51,7 +53,7 @@ export class ServicioUsuario {
               : metodo === "eliminar"
                 ? argumentos[1]
                 : argumentos[2];
-          return transaccionAdministrativa(
+          const resultado = await transaccionAdministrativa(
             modeloUsuario.conexiones,
             responsableId,
             (conexion) => {
@@ -64,18 +66,22 @@ export class ServicioUsuario {
               return servicio[metodo](...argumentos);
             },
           );
+          await this.cacheUsuarios?.invalidar();
+          return resultado;
         };
       }
     }
   }
 
-  async listar(filtros = {}) {
-    // solicitar la lista completa al modelo.
-    const filas = await this.modeloUsuario.listar(filtros);
-    // transformar los campos de MySQL al formato de la API.
-    const usuarios = filas.map(presentarUsuario);
-    // devolver los usuarios.
-    return usuarios;
+  async listar(filtros = {}, informarCache = () => {}) {
+    if (filtros.refrescar !== undefined && !["true", "false"].includes(filtros.refrescar))
+      throw new ErrorAplicacion("refrescar debe ser true o false.", 400, "REFRESCAR_INVALIDO");
+    const { pagina, limite } = paginacion(filtros);
+    busquedaSql(filtros.buscar, []);
+    const consulta = { pagina, limite, buscar: filtros.buscar?.trim() || "" };
+    const cargar = async () => (await this.modeloUsuario.listar(consulta)).map(presentarUsuario);
+    if (!this.cacheUsuarios) { informarCache("BYPASS"); return cargar(); }
+    return this.cacheUsuarios.obtenerOCargar(consulta, cargar, informarCache, { refrescar: filtros.refrescar === "true" });
   }
 
   async buscarPorId(id) {
@@ -164,6 +170,7 @@ export class ServicioUsuario {
       rolId,
     });
 
+    await this.cacheUsuarios?.invalidar();
     await this.modeloAuditoria.registrar({
       usuarioId: Number(administradorId),
       accion: "CREAR_USUARIO",
@@ -288,6 +295,7 @@ export class ServicioUsuario {
       rolId: rolIdFinal,
     });
 
+    await this.cacheUsuarios?.invalidar();
     const cambiosDatos = {};
     if (nombresFinales !== usuarioActual.nombres) {
       cambiosDatos.nombres = {
@@ -413,6 +421,7 @@ export class ServicioUsuario {
       numeroId,
       nuevoEstado,
     );
+    await this.cacheUsuarios?.invalidar();
 
     // 7. Si el nuevo estado es false, revocar las sesiones.
     if (!nuevoEstado) {
@@ -447,6 +456,7 @@ export class ServicioUsuario {
     if (!await this.modeloUsuario.cambiarEstadoGoogle(usuario.id, estado)) {
       throw new ErrorAplicacion("El usuario no tiene una solicitud de Google disponible.", 409, "GOOGLE_SOLICITUD_NO_DISPONIBLE");
     }
+    await this.cacheUsuarios?.invalidar();
     if (estado !== "APROBADO") await this.modeloSesion.revocarPorUsuario(usuario.id);
     await this.modeloAuditoria.registrar({
       usuarioId: Number(administradorId), accion: "CAMBIAR_GOOGLE_USUARIO",
@@ -509,6 +519,7 @@ export class ServicioUsuario {
       );
     }
 
+    await this.cacheUsuarios?.invalidar();
     await this.modeloSesion.revocarPorUsuario(numeroId);
 
     await this.modeloAuditoria.registrar({

@@ -8,7 +8,7 @@ export class ControladorUsuario {
   listar = async (_solicitud, respuesta, siguiente) => {
     try {
       // solicitar los usuarios al servicio.
-      const usuarios = await this.servicioUsuario.listar(_solicitud.query);
+      const usuarios = await this.servicioUsuario.listar(_solicitud.query, (estado) => respuesta.set("X-Cache", estado));
       // responder con estado 200 y el arreglo de usuarios.
       return respuesta
         .status(200)

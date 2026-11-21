@@ -17,8 +17,10 @@ export class ServicioAutenticacion {
     modeloSesion,
     modeloConfiguracion,
     configuracionAutenticacion,
+    cacheUsuarios,
   }) {
     this.modeloUsuario = modeloUsuario;
+    this.cacheUsuarios = cacheUsuarios;
     this.modeloIntentoAcceso = modeloIntentoAcceso;
     this.modeloSesion = modeloSesion;
     this.modeloConfiguracion = modeloConfiguracion;
@@ -161,6 +163,7 @@ export class ServicioAutenticacion {
           maximoIntentos,
           minutosBloqueo,
         );
+        await this.cacheUsuarios?.invalidar();
       }
 
       await this.#registrarIntento(
@@ -227,6 +230,7 @@ export class ServicioAutenticacion {
     const correoNormalizado = usuario.correo.trim().toLowerCase();
 
     await this.modeloUsuario.registrarAccesoExitoso(usuario.id);
+    await this.cacheUsuarios?.invalidar();
 
     const tokenRenovacion = this.#crearTokenRenovacion();
     const hashTokenRenovacion = this.#crearHashToken(tokenRenovacion);
@@ -407,6 +411,7 @@ export class ServicioAutenticacion {
     if (!await this.modeloUsuario.solicitarGoogle(usuario.id, datosGoogle.sub, datosGoogle.email.trim().toLowerCase())) {
       throw new ErrorAplicacion("No se pudo solicitar la vinculación de Google.", 409, "GOOGLE_VINCULACION_NO_DISPONIBLE");
     }
+    await this.cacheUsuarios?.invalidar();
     throw new ErrorAplicacion("Solicitud enviada, espera la aprobación del administrador", 403, "GOOGLE_PENDIENTE");
   }
 
@@ -442,6 +447,7 @@ export class ServicioAutenticacion {
           throw new ErrorAplicacion("La solicitud cambió. Intenta nuevamente.", 409, "GOOGLE_SOLICITUD_CONFLICTO");
         }
         usuario.google_estado = "PENDIENTE";
+        await this.cacheUsuarios?.invalidar();
         usuario.google_sub = datosGoogle.sub;
       }
       if (usuario?.google_sub !== datosGoogle.sub) usuario = null;

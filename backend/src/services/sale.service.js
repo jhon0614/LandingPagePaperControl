@@ -88,8 +88,9 @@ function presentarComprobante({ venta, productos, pagos }) {
 
 // Coordina las reglas de venta sin depender de objetos propios de Express.
 export class ServicioVenta {
-  constructor(modelo) {
+  constructor(modelo, cacheProductos) {
     this.modelo = modelo;
+    this.cacheProductos = cacheProductos;
   }
 
   async metodosPago() {
@@ -216,6 +217,7 @@ export class ServicioVenta {
         ...(resultado.total != null ? { total: resultado.total } : {}),
       });
     }
+    await this.cacheProductos?.invalidar();
     return presentarComprobante(await this.modelo.comprobante(resultado.id));
   }
 
@@ -382,6 +384,7 @@ export class ServicioVenta {
       const [mensaje, estado, codigo] = errores[resultado.error];
       throw new ErrorAplicacion(mensaje, estado, codigo);
     }
+    await this.cacheProductos?.invalidar();
     return this.comprobante(ventaId, usuario);
   }
 

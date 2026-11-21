@@ -16,9 +16,10 @@ const presentar = (fila) => ({
 });
 
 export class ServicioProveedor {
-  constructor(modelo, cache) {
+  constructor(modelo, cache, cacheProductos) {
     this.modelo = modelo;
     this.cache = cache;
+    this.cacheProductos = cacheProductos;
   }
   async listar(filtros = {}, informarCache = () => {}) {
     if (filtros.refrescar !== undefined && !["true", "false"].includes(filtros.refrescar))
@@ -44,11 +45,13 @@ export class ServicioProveedor {
     const proveedorId = this.#id(id);
     if (!(await this.modelo.actualizar(proveedorId, this.#normalizar(datos))))
       this.#noEncontrado();
+    await this.cacheProductos?.invalidar();
     await this.cache?.invalidar();
     return this.obtener(proveedorId);
   }
   async eliminar(id) {
     if (!(await this.modelo.eliminar(this.#id(id)))) this.#noEncontrado();
+    await this.cacheProductos?.invalidar();
     await this.cache?.invalidar();
   }
   #normalizar(datos) {

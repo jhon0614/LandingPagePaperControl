@@ -1,9 +1,10 @@
 import { ErrorAplicacion } from "../errors/app-error.js";
 
 export class ServicioCategoria {
-  constructor(modelo, cache) {
+  constructor(modelo, cache, cacheProductos) {
     this.modelo = modelo;
     this.cache = cache;
+    this.cacheProductos = cacheProductos;
   }
   async listar(filtros = {}, informarCache = () => {}) {
     if (filtros.refrescar !== undefined && !["true", "false"].includes(filtros.refrescar))
@@ -30,6 +31,7 @@ export class ServicioCategoria {
         this.#nombre(datos.nombre),
       );
       if (!categoria) this.#noEncontrada();
+      await this.cacheProductos?.invalidar();
       await this.cache?.invalidar();
       return categoria;
     } catch (error) {
@@ -40,6 +42,7 @@ export class ServicioCategoria {
   async eliminar(id) {
     try {
       if (!(await this.modelo.eliminar(this.#id(id)))) this.#noEncontrada();
+      await this.cacheProductos?.invalidar();
       await this.cache?.invalidar();
     } catch (error) {
       this.#traducir(error);

@@ -11,6 +11,7 @@ export class ControladorProducto {
         requerimiento.query.incluirInactivos,
         requerimiento.query.categoriaId,
         requerimiento.query,
+        (estado) => respuesta.set("X-Cache", estado),
       );
       return respuesta.json(
         listaPaginada("productos", productos, requerimiento.query),

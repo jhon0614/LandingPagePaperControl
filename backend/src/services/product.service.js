@@ -1,4 +1,5 @@
 import { ErrorAplicacion } from "../errors/app-error.js";
+import { paginacion, busquedaSql } from "../utils/query.js";
 
 // Traduce las filas de MySQL al contrato en camelCase que consume Inventario.jsx.
 const numero = (valor) => Number(valor ?? 0);
@@ -45,21 +46,30 @@ function presentarMovimiento(fila) {
 }
 
 export class ServicioProducto {
-  constructor(modelo, cacheCategorias) {
+  constructor(modelo, cacheCategorias, cacheProductos) {
     this.modelo = modelo;
     this.cacheCategorias = cacheCategorias;
+    this.cacheProductos = cacheProductos;
   }
 
   async categorias() {
     return this.modelo.categorias();
   }
 
-  async listar(incluirInactivos, categoriaId, filtros = {}) {
+  async listar(incluirInactivos, categoriaId, filtros = {}, informarCache = () => {}) {
+    if (filtros.refrescar !== undefined && !["true", "false"].includes(filtros.refrescar))
+      throw new ErrorAplicacion("refrescar debe ser true o false.", 400, "REFRESCAR_INVALIDO");
+    const { pagina, limite } = paginacion(filtros);
+    busquedaSql(filtros.buscar, []);
     const categoria =
       categoriaId == null ? undefined : this.#id(categoriaId, "categoria");
-    return (
-      await this.modelo.listar(incluirInactivos === "true", categoria, filtros)
+    const consulta = { pagina, limite, buscar: filtros.buscar?.trim() || "" };
+    const cargar = async () => (
+      await this.modelo.listar(incluirInactivos === "true", categoria, consulta)
     ).map(presentarProducto);
+    if (!this.cacheProductos) { informarCache("BYPASS"); return cargar(); }
+    const clave = { ...consulta, categoriaId: categoria ?? null, incluirInactivos: incluirInactivos === "true" };
+    return this.cacheProductos.obtenerOCargar(clave, cargar, informarCache, { refrescar: filtros.refrescar === "true" });
   }
 
   async obtener(id) {
@@ -76,6 +86,7 @@ export class ServicioProducto {
   async crear(datos, usuarioId) {
     try {
       const id = await this.modelo.crear(datos, usuarioId);
+      await this.cacheProductos?.invalidar();
       await this.cacheCategorias?.invalidar();
       return this.obtener(id);
     } catch (error) {
@@ -89,6 +100,7 @@ export class ServicioProducto {
     try {
       if (!(await this.modelo.actualizar(productoId, datos, usuarioId)))
         this.#noEncontrado();
+      await this.cacheProductos?.invalidar();
       await this.cacheCategorias?.invalidar();
       return this.obtener(productoId);
     } catch (error) {
@@ -101,6 +113,7 @@ export class ServicioProducto {
     const productoId = this.#id(id);
     if (!(await this.modelo.cambiarEstado(productoId, estaActivo)))
       this.#noEncontrado();
+    await this.cacheProductos?.invalidar();
     return this.obtener(productoId);
   }
 
@@ -118,6 +131,7 @@ export class ServicioProducto {
         409,
         "PRODUCTO_CON_VENTAS",
       );
+    await this.cacheProductos?.invalidar();
     return resultado;
   }
 
@@ -143,6 +157,7 @@ export class ServicioProducto {
         409,
         "MOVIMIENTO_SIN_CAMBIO",
       );
+    await this.cacheProductos?.invalidar();
     const movimientos = await this.modelo.listarMovimientos(productoId);
     return presentarMovimiento(
       movimientos.find((fila) => Number(fila.id) === Number(resultado)) ??
@@ -188,6 +203,7 @@ export class ServicioProducto {
         );
       }
     }
+    await this.cacheProductos?.invalidar();
     return this.proveedores(productoId);
   }
 
@@ -201,6 +217,7 @@ export class ServicioProducto {
         "ASOCIACION_NO_ENCONTRADA",
       );
     }
+    await this.cacheProductos?.invalidar();
   }
 
   #id(valor, entidad = "producto") {

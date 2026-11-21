@@ -74,7 +74,7 @@ import { AlmacenLimitesMySQL } from "./models/rate-limit.store.js";
 import { ModeloColaCorreo } from "./models/mail-queue.model.js";
 import { iniciarTrabajadorCorreo } from "./services/mail-worker.js";
 
-export function crearAplicacion({ conexiones, configuracion, cacheProveedores, cacheCategorias }) {
+export function crearAplicacion({ conexiones, configuracion, cacheProveedores, cacheCategorias, cacheProductos }) {
   const aplicacion = express();
 
   aplicacion.disable("x-powered-by"); //desactiva la cabecera x-powered-by
@@ -143,13 +143,13 @@ export function crearAplicacion({ conexiones, configuracion, cacheProveedores, c
     new ServicioTurnoCaja(new ModeloTurnoCaja(conexiones)),
   );
   const controladorVenta = new ControladorVenta(
-    new ServicioVenta(new ModeloVenta(conexiones)),
+    new ServicioVenta(new ModeloVenta(conexiones), cacheProductos),
   );
   const controladorProducto = new ControladorProducto(
-    new ServicioProducto(new ModeloProducto(conexiones), cacheCategorias),
+    new ServicioProducto(new ModeloProducto(conexiones), cacheCategorias, cacheProductos),
   );
   const controladorProveedor = new ControladorProveedor(
-    new ServicioProveedor(new ModeloProveedor(conexiones), cacheProveedores),
+    new ServicioProveedor(new ModeloProveedor(conexiones), cacheProveedores, cacheProductos),
   );
   const controladorReporte = new ControladorReporte(
     new ServicioReporte(new ModeloReporte(conexiones)),
@@ -254,7 +254,7 @@ export function crearAplicacion({ conexiones, configuracion, cacheProveedores, c
     crearRutasCategorias({
       autenticar,
       controlador: new ControladorCategoria(
-        new ServicioCategoria(new ModeloCategoria(conexiones), cacheCategorias),
+        new ServicioCategoria(new ModeloCategoria(conexiones), cacheCategorias, cacheProductos),
       ),
     }),
   );

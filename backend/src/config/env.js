@@ -48,6 +48,9 @@ export function interpretarProxyConfiable(valorOriginal) {
 // entre el servidor, la base de datos y el módulo de autenticación.
 export function cargarConfiguracion() {
   const entorno = process.env.NODE_ENV ?? "development";
+  const redisUrl = process.env.REDIS_URL || undefined;
+  if (redisUrl && !["redis:", "rediss:"].includes(new URL(redisUrl).protocol))
+    throw new Error("REDIS_URL debe usar redis:// o rediss://.");
   const apiKey = process.env.API_KEY || undefined;
   if (apiKey && apiKey.length < 32)
     throw new Error("API_KEY debe tener al menos 32 caracteres.");
@@ -80,6 +83,7 @@ export function cargarConfiguracion() {
   return Object.freeze({
     //freeze para que no se pueda modificar
     entorno,
+    cacheRedis: { url: redisUrl, ttl: enteroPositivo("REDIS_CACHE_TTL_SECONDS", 30) },
     apiKey,
     limitesCompartidos: true,
     puerto: enteroPositivo("PORT", 3000),

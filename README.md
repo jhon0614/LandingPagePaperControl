@@ -319,6 +319,59 @@ El frontend envía estos cuatro campos a `${VITE_API_URL}/api/contacto`.
 La clave `VITE_RECAPTCHA_SITE_KEY` sigue siendo necesaria para el login, pero
 no para contacto. Verifica el envío y la recepción en el ambiente publicado antes de aceptar la funcionalidad.
 
+## Prueba local de cache Redis en Proveedores
+
+Redis es opcional y solo almacena el listado de proveedores; MySQL sigue siendo
+la fuente de verdad. El navegador sigue haciendo peticiones al cambiar de modulo.
+La autenticacion y los roles se comprueban antes de acceder a la cache.
+
+Con el contenedor `papercontrol-redis` iniciado, configurar en `backend/.env`:
+
+```dotenv
+REDIS_URL=redis://127.0.0.1:6379
+REDIS_CACHE_TTL_SECONDS=30
+```
+
+Reiniciar el backend con `npm run dev`. Al conectar aparece
+`Redis conectado: cache de Proveedores (30s).` En Network, seleccionar la
+consulta GET `/api/proveedores` y revisar `X-Cache` en las cabeceras de respuesta:
+
+- `MISS`: MySQL respondio y se guardo el resultado en Redis.
+- `HIT`: se reutilizo el resultado de Redis.
+- `BYPASS`: Redis esta desactivado o no disponible; respondio MySQL.
+- `REFRESH`: se solicito `refrescar=true`, se consulto MySQL y se actualizo Redis.
+
+El boton Actualizar del frontend debe usar, por ejemplo,
+`GET /api/proveedores?pagina=1&limite=50&buscar=papel&refrescar=true`.
+Debe conservar pagina, limite y busqueda vigentes. El parametro admite solo
+`true` o `false` (otros valores devuelven 400); omitido usa la cache normalmente.
+Al refrescar se invalidan las otras variantes del listado y se almacena de nuevo
+la pagina solicitada. No cambia el formato JSON ni los permisos o rate limits.
+Con Redis caido tambien consulta MySQL y devuelve `X-Cache: BYPASS`.
+
+Abrir Proveedores y regresar antes de 30 segundos debe producir HIT para la
+misma pagina y busqueda. Crear, editar o eliminar invalida todas las variantes;
+la siguiente consulta vuelve a ser MISS. La cache conserva la fila adicional
+que el backend usa para calcular `hayMas` y no guarda respuestas de error.
+Administrador y Dueno comparten actualmente este mismo listado autorizado;
+si se agregan restricciones por usuario, debera incluirse su alcance en la clave.
+
+Para comprobar el fallback, ejecutar `docker stop papercontrol-redis` y volver a
+consultar: la API debe seguir usando MySQL. Reiniciar con
+`docker start papercontrol-redis`; el backend intenta reconectar cada 5 segundos
+y descarta las entradas antiguas al reconectar. No se ejecuta `FLUSHDB`.
+Cambios directos en MySQL pueden tardar hasta el TTL en reflejarse mientras
+Redis permanezca conectado. Una caida durante una escritura puede dejar datos
+anteriores hasta el TTL en otra instancia; esta cache no promete consistencia fuerte.
+
+Pruebas sin base de datos de negocio: `npm run test:redis` desde `backend`.
+Utiliza claves aleatorias propias en Redis local y las elimina al terminar.
+Para desactivar la cache, dejar `REDIS_URL` vacia y reiniciar. No requiere
+migracion ni desplegar el frontend. En produccion debe usarse un Redis privado,
+con credenciales/TLS (`rediss://`) y un espacio de claves separado por entorno.
+
+Referencia del cliente: https://redis.io/docs/latest/develop/clients/nodejs/produsage/
+
 ## Autores y contribuciones
 
 Proyecto desarrollado por **Jhon Ricardo Rios Cuervo** y **Kelly Lopera**, equipo ADSO del SENA. El historial Git registra aportes con los nombres `Jhon Ricardo Rios Cuervo`, `Jhon Rios` y la cuenta `kellylop613`. Las responsabilidades de cada entrega deben trazarse a sus commits y revisiones, sin deducirlas del número de commits.

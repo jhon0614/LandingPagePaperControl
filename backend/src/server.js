@@ -8,6 +8,9 @@ import { crearCacheListado } from "./services/list-cache.service.js";
 const configuracion = cargarConfiguracion();
 const baseDatos = BaseDatos.obtenerInstancia(configuracion.baseDatos);
 const cacheProveedores = crearCacheProveedores(configuracion.cacheRedis);
+const cacheDashboard = crearCacheListado(configuracion.cacheRedis, {
+  prefijo: "papercontrol:cache:dashboard:v1", nombre: "Dashboard",
+});
 const cacheUsuarios = crearCacheListado({ ...configuracion.cacheRedis, ttl: configuracion.cacheRedis.ttlUsuarios }, {
   prefijo: "papercontrol:cache:usuarios:v1", nombre: "Usuarios",
 });
@@ -29,6 +32,7 @@ try {
   await cacheProductos?.iniciar();
   await cacheClientes?.iniciar();
   await cacheUsuarios?.iniciar();
+  await cacheDashboard?.iniciar();
   const aplicacion = crearAplicacion({
     conexiones: baseDatos.conexiones,
     configuracion,
@@ -37,6 +41,7 @@ try {
     cacheProductos,
     cacheClientes,
     cacheUsuarios,
+    cacheDashboard,
   });
   const detenerTrabajador = aplicacion.locals.iniciarTrabajadorCorreo();
   const servidor = aplicacion.listen(configuracion.puerto, () => {
@@ -55,6 +60,7 @@ try {
       cacheProductos?.cerrar();
       cacheClientes?.cerrar();
       cacheUsuarios?.cerrar();
+      cacheDashboard?.cerrar();
       await baseDatos.cerrar();
       process.exit(0);
     });
@@ -70,6 +76,7 @@ try {
   cacheProductos?.cerrar();
   cacheClientes?.cerrar();
   cacheUsuarios?.cerrar();
+  cacheDashboard?.cerrar();
   await baseDatos.cerrar();
   process.exit(1);
 }

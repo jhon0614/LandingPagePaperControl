@@ -46,10 +46,11 @@ function presentarMovimiento(fila) {
 }
 
 export class ServicioProducto {
-  constructor(modelo, cacheCategorias, cacheProductos) {
+  constructor(modelo, cacheCategorias, cacheProductos, cacheDashboard) {
     this.modelo = modelo;
     this.cacheCategorias = cacheCategorias;
     this.cacheProductos = cacheProductos;
+    this.cacheDashboard = cacheDashboard;
   }
 
   async categorias() {
@@ -86,6 +87,7 @@ export class ServicioProducto {
   async crear(datos, usuarioId) {
     try {
       const id = await this.modelo.crear(datos, usuarioId);
+      await this.cacheDashboard?.invalidar();
       await this.cacheProductos?.invalidar();
       await this.cacheCategorias?.invalidar();
       return this.obtener(id);
@@ -100,6 +102,7 @@ export class ServicioProducto {
     try {
       if (!(await this.modelo.actualizar(productoId, datos, usuarioId)))
         this.#noEncontrado();
+      await this.cacheDashboard?.invalidar();
       await this.cacheProductos?.invalidar();
       await this.cacheCategorias?.invalidar();
       return this.obtener(productoId);
@@ -113,6 +116,7 @@ export class ServicioProducto {
     const productoId = this.#id(id);
     if (!(await this.modelo.cambiarEstado(productoId, estaActivo)))
       this.#noEncontrado();
+    await this.cacheDashboard?.invalidar();
     await this.cacheProductos?.invalidar();
     return this.obtener(productoId);
   }
@@ -131,6 +135,7 @@ export class ServicioProducto {
         409,
         "PRODUCTO_CON_VENTAS",
       );
+    await this.cacheDashboard?.invalidar();
     await this.cacheProductos?.invalidar();
     return resultado;
   }
@@ -157,6 +162,7 @@ export class ServicioProducto {
         409,
         "MOVIMIENTO_SIN_CAMBIO",
       );
+    await this.cacheDashboard?.invalidar();
     await this.cacheProductos?.invalidar();
     const movimientos = await this.modelo.listarMovimientos(productoId);
     return presentarMovimiento(

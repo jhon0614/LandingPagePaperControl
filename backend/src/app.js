@@ -74,7 +74,7 @@ import { AlmacenLimitesMySQL } from "./models/rate-limit.store.js";
 import { ModeloColaCorreo } from "./models/mail-queue.model.js";
 import { iniciarTrabajadorCorreo } from "./services/mail-worker.js";
 
-export function crearAplicacion({ conexiones, configuracion, cacheProveedores, cacheCategorias, cacheProductos, cacheClientes, cacheUsuarios }) {
+export function crearAplicacion({ conexiones, configuracion, cacheProveedores, cacheCategorias, cacheProductos, cacheClientes, cacheUsuarios, cacheDashboard }) {
   const aplicacion = express();
 
   aplicacion.disable("x-powered-by"); //desactiva la cabecera x-powered-by
@@ -133,6 +133,7 @@ export function crearAplicacion({ conexiones, configuracion, cacheProveedores, c
     modeloSesion,
     modeloAuditoria,
     cacheUsuarios,
+    cacheDashboard,
   );
   const controladorUsuario = new ControladorUsuario(servicioUsuario);
   const servicioCliente = new ServicioCliente(
@@ -145,10 +146,10 @@ export function crearAplicacion({ conexiones, configuracion, cacheProveedores, c
     new ServicioTurnoCaja(new ModeloTurnoCaja(conexiones)),
   );
   const controladorVenta = new ControladorVenta(
-    new ServicioVenta(new ModeloVenta(conexiones), cacheProductos, cacheClientes),
+    new ServicioVenta(new ModeloVenta(conexiones), cacheProductos, cacheClientes, cacheDashboard),
   );
   const controladorProducto = new ControladorProducto(
-    new ServicioProducto(new ModeloProducto(conexiones), cacheCategorias, cacheProductos),
+    new ServicioProducto(new ModeloProducto(conexiones), cacheCategorias, cacheProductos, cacheDashboard),
   );
   const controladorProveedor = new ControladorProveedor(
     new ServicioProveedor(new ModeloProveedor(conexiones), cacheProveedores, cacheProductos),
@@ -157,7 +158,7 @@ export function crearAplicacion({ conexiones, configuracion, cacheProveedores, c
     new ServicioReporte(new ModeloReporte(conexiones)),
   );
   const controladorDashboard = new ControladorDashboard(
-    new ServicioDashboard(new ModeloDashboard(conexiones)),
+    new ServicioDashboard(new ModeloDashboard(conexiones), cacheDashboard),
   );
 
   // Se crean los modelos y se entregan al servicio responsable del login.

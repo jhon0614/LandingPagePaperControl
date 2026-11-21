@@ -31,12 +31,13 @@ function presentarUsuario(fila) {
 
 // Coordina las operaciones relacionadas con la administración de usuarios.
 export class ServicioUsuario {
-  constructor(modeloUsuario, modeloRol, modeloSesion, modeloAuditoria, cacheUsuarios) {
+  constructor(modeloUsuario, modeloRol, modeloSesion, modeloAuditoria, cacheUsuarios, cacheDashboard) {
     this.modeloUsuario = modeloUsuario;
     this.modeloRol = modeloRol;
     this.modeloSesion = modeloSesion;
     this.modeloAuditoria = modeloAuditoria;
     this.cacheUsuarios = cacheUsuarios;
+    this.cacheDashboard = cacheDashboard;
     // Una instancia ligada a la conexión no abre transacciones anidadas.
     if (typeof modeloUsuario.conexiones?.getConnection === "function") {
       for (const metodo of [
@@ -67,6 +68,7 @@ export class ServicioUsuario {
             },
           );
           await this.cacheUsuarios?.invalidar();
+          if (["crear", "cambiarEstado", "eliminar"].includes(metodo)) await this.cacheDashboard?.invalidar();
           return resultado;
         };
       }
@@ -171,6 +173,7 @@ export class ServicioUsuario {
     });
 
     await this.cacheUsuarios?.invalidar();
+    await this.cacheDashboard?.invalidar();
     await this.modeloAuditoria.registrar({
       usuarioId: Number(administradorId),
       accion: "CREAR_USUARIO",
@@ -422,6 +425,7 @@ export class ServicioUsuario {
       nuevoEstado,
     );
     await this.cacheUsuarios?.invalidar();
+    await this.cacheDashboard?.invalidar();
 
     // 7. Si el nuevo estado es false, revocar las sesiones.
     if (!nuevoEstado) {
@@ -520,6 +524,7 @@ export class ServicioUsuario {
     }
 
     await this.cacheUsuarios?.invalidar();
+    await this.cacheDashboard?.invalidar();
     await this.modeloSesion.revocarPorUsuario(numeroId);
 
     await this.modeloAuditoria.registrar({

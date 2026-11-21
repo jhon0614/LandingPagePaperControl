@@ -7,17 +7,17 @@ import { crearCacheListado } from "./services/list-cache.service.js";
 // Carga la configuración y obtiene las conexiones Singleton antes de abrir el puerto.
 const configuracion = cargarConfiguracion();
 const baseDatos = BaseDatos.obtenerInstancia(configuracion.baseDatos);
-const cacheProveedores = crearCacheProveedores(configuracion.cacheRedis);
-const cacheDashboard = crearCacheListado(configuracion.cacheRedis, {
+const cacheProveedores = crearCacheProveedores({ ...configuracion.cacheRedis, ttl: configuracion.cacheRedis.ttlProveedores });
+const cacheDashboard = crearCacheListado({ ...configuracion.cacheRedis, ttl: configuracion.cacheRedis.ttlDashboard }, {
   prefijo: "papercontrol:cache:dashboard:v1", nombre: "Dashboard",
 });
 const cacheUsuarios = crearCacheListado({ ...configuracion.cacheRedis, ttl: configuracion.cacheRedis.ttlUsuarios }, {
   prefijo: "papercontrol:cache:usuarios:v1", nombre: "Usuarios",
 });
-const cacheClientes = crearCacheListado(configuracion.cacheRedis, {
+const cacheClientes = crearCacheListado({ ...configuracion.cacheRedis, ttl: configuracion.cacheRedis.ttlClientes }, {
   prefijo: "papercontrol:cache:clientes:v1", nombre: "Clientes",
 });
-const cacheCategorias = crearCacheListado(configuracion.cacheRedis, {
+const cacheCategorias = crearCacheListado({ ...configuracion.cacheRedis, ttl: configuracion.cacheRedis.ttlCategorias }, {
   prefijo: "papercontrol:cache:categorias:v1", nombre: "Categorías",
 });
 const cacheProductos = crearCacheListado({ ...configuracion.cacheRedis, ttl: configuracion.cacheRedis.ttlProductos }, {

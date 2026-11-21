@@ -49,6 +49,7 @@ export function interpretarProxyConfiable(valorOriginal) {
 export function cargarConfiguracion() {
   const entorno = process.env.NODE_ENV ?? "development";
   const redisUrl = process.env.REDIS_URL || undefined;
+  const ttlCache = enteroPositivo("REDIS_CACHE_TTL_SECONDS", 30);
   if (redisUrl && !["redis:", "rediss:"].includes(new URL(redisUrl).protocol))
     throw new Error("REDIS_URL debe usar redis:// o rediss://.");
   const apiKey = process.env.API_KEY || undefined;
@@ -85,7 +86,11 @@ export function cargarConfiguracion() {
     entorno,
     cacheRedis: {
       url: redisUrl,
-      ttl: enteroPositivo("REDIS_CACHE_TTL_SECONDS", 30),
+      ttl: ttlCache,
+      ttlProveedores: enteroPositivo("REDIS_SUPPLIERS_CACHE_TTL_SECONDS", ttlCache),
+      ttlCategorias: enteroPositivo("REDIS_CATEGORIES_CACHE_TTL_SECONDS", ttlCache),
+      ttlClientes: enteroPositivo("REDIS_CLIENTS_CACHE_TTL_SECONDS", ttlCache),
+      ttlDashboard: enteroPositivo("REDIS_DASHBOARD_CACHE_TTL_SECONDS", ttlCache),
       ttlProductos: enteroPositivo("REDIS_PRODUCTS_CACHE_TTL_SECONDS", 10),
       ttlUsuarios: enteroPositivo("REDIS_USERS_CACHE_TTL_SECONDS", 10),
     },

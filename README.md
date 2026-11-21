@@ -487,6 +487,26 @@ Prueba: reiniciar backend, consultar dos veces (MISS/HIT), forzar refrescar=true
 (REFRESH), modificar stock o registrar una venta y consultar de nuevo (MISS con
 contadores actualizados). No requiere migraciones ni cambios de frontend.
 
+## Tiempos independientes de cache en Render
+
+Cada modulo admite su propio TTL en segundos. Proveedores, Categorias, Clientes
+y Dashboard usan REDIS_CACHE_TTL_SECONDS si se omite su variable especifica.
+Productos y Usuarios conservan sus valores predeterminados de 10 segundos.
+No hace falta modificar el .env local para aplicar estos valores solo en Render:
+
+```dotenv
+REDIS_SUPPLIERS_CACHE_TTL_SECONDS=300
+REDIS_CATEGORIES_CACHE_TTL_SECONDS=300
+REDIS_PRODUCTS_CACHE_TTL_SECONDS=30
+REDIS_CLIENTS_CACHE_TTL_SECONDS=60
+REDIS_USERS_CACHE_TTL_SECONDS=60
+REDIS_DASHBOARD_CACHE_TTL_SECONDS=10
+```
+
+Configurar en Environment del backend y redesplegar el codigo compatible.
+La invalidacion por escrituras y refrescar=true sigue aplicando antes del TTL.
+Las variables no van en Vercel. Solo se admiten enteros mayores que cero.
+
 ## Autores y contribuciones
 
 Proyecto desarrollado por **Jhon Ricardo Rios Cuervo** y **Kelly Lopera**, equipo ADSO del SENA. El historial Git registra aportes con los nombres `Jhon Ricardo Rios Cuervo`, `Jhon Rios` y la cuenta `kellylop613`. Las responsabilidades de cada entrega deben trazarse a sus commits y revisiones, sin deducirlas del número de commits.

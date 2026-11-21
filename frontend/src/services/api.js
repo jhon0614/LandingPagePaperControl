@@ -1,3 +1,5 @@
+import { cabecerasApi } from "./api-key";
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 
@@ -46,27 +48,6 @@ function esRutaPublicaAuth(endpoint) {
 
 }
 
-
-/*
-=========================================================
-LIMITACIÓN CONOCIDA — CORS Y Retry-After
-=========================================================
-
-El CORS actual del backend no expone el header Retry-After,
-y el limitador de tasa (rate limiter) global se ejecuta antes
-que CORS. Esto significa que, en solicitudes entre distintos
-orígenes, algunos 429 pueden llegar al navegador como errores
-de red genéricos en vez de una respuesta 429 legible (el
-navegador bloquea la respuesta por falta de cabeceras CORS).
-
-Por eso, más abajo, los errores de red se tratan como fallos
-temporales (esFalloTemporal = true), igual que un 429 real:
-no podemos distinguir uno del otro desde el frontend con la
-configuración actual del backend. Esto es una dependencia
-pendiente de resolver del lado del backend, no del frontend.
-*/
-
-
 /*
 =========================================================
 RENOVAR SESIÓN USANDO LA COOKIE HTTPONLY
@@ -92,6 +73,7 @@ async function renovarToken() {
                 {
                     method: "POST",
                     credentials: "include",
+                    headers: cabecerasApi(),
                 }
             );
 
@@ -267,9 +249,7 @@ export async function apiFetch(
     reintentando = false
 ) {
 
-    const headers = {
-        ...opciones.headers,
-    };
+    const headers = cabecerasApi(opciones.headers);
 
     if (tokenEnMemoria) {
 

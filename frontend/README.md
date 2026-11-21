@@ -45,6 +45,7 @@ Crea manualmente `frontend/.env` con valores del entorno local:
 
 ```dotenv
 VITE_API_URL=http://localhost:3000
+VITE_API_KEY=misma_clave_que_API_KEY_del_backend
 VITE_GOOGLE_CLIENT_ID=tu_id.apps.googleusercontent.com
 VITE_RECAPTCHA_SITE_KEY=tu_clave_del_sitio
 ```
@@ -52,6 +53,7 @@ VITE_RECAPTCHA_SITE_KEY=tu_clave_del_sitio
 | Variable | Propósito |
 | --- | --- |
 | `VITE_API_URL` | Origen de la API, sin `/api` ni barra final; los servicios añaden las rutas. |
+| `VITE_API_KEY` | Filtro público opcional enviado como `X-API-Key`; debe coincidir con `API_KEY` del backend. No autentica usuarios ni hace privada la API. |
 | `VITE_GOOGLE_CLIENT_ID` | ID público del cliente OAuth; debe corresponder a `GOOGLE_CLIENT_ID` del backend. |
 | `VITE_RECAPTCHA_SITE_KEY` | Clave pública del sitio de reCAPTCHA v2 utilizada por el login. |
 

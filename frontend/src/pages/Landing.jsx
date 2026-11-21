@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import "../App.css";
 import useTema from "../hooks/useTema";
+import { cabecerasApi } from "../services/api-key";
 
 function Landing() {
   const { tema, alternarTema } = useTema();
@@ -84,9 +85,9 @@ function Landing() {
         `${import.meta.env.VITE_API_URL}/api/contacto`,
         {
           method: "POST",
-          headers: {
+          headers: cabecerasApi({
             "Content-Type": "application/json",
-          },
+          }),
           body: JSON.stringify({
             nombre: formData.nombre.trim(),
             apellido: formData.apellido.trim(),

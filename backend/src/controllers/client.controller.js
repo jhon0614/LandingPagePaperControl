@@ -44,6 +44,7 @@ export class ControladorCliente {
         termino,
         puedeAdministrar ? requerimiento.query.incluirInactivos : undefined,
         requerimiento.query,
+        (estado) => respuesta.set("X-Cache", estado),
       );
 
       return respuesta.status(200).json(listaPaginada("clientes", clientes, requerimiento.query));

@@ -49,7 +49,7 @@ test("clientes: pagina 3 llega al modelo y se presenta hayMas sin la fila extra"
   } });
   const controlador = new ControladorCliente(servicio);
   let cuerpo;
-  const respuesta = { status: () => respuesta, json: (datos) => { cuerpo = datos; } };
+  const respuesta = { set: () => respuesta, status: () => respuesta, json: (datos) => { cuerpo = datos; } };
   const query = { buscar: "Cliente", pagina: "3", limite: "50", incluirInactivos: "true" };
   await controlador.buscar({ query, usuario: { rol: "VENDEDOR" } }, respuesta, (error) => { throw error; });
   assert.equal(recibidos[1], 50);

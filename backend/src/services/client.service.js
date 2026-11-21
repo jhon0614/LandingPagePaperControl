@@ -25,9 +25,10 @@ function presentarCliente(fila) {
 // Contiene las reglas de registro, búsqueda y administración de clientes sin
 // depender de objetos HTTP, lo que permite probarlo con modelos simulados.
 export class ServicioCliente {
-  constructor(modeloCliente, modeloAuditoria) {
+  constructor(modeloCliente, modeloAuditoria, cacheClientes) {
     this.modeloCliente = modeloCliente;
     this.modeloAuditoria = modeloAuditoria;
+    this.cacheClientes = cacheClientes;
   }
 
   async crear(datos) {
@@ -58,6 +59,7 @@ export class ServicioCliente {
       direccion: datos.direccion?.trim() || null,
     });
 
+    await this.cacheClientes?.invalidar();
     return presentarCliente(fila);
   }
 
@@ -86,6 +88,7 @@ export class ServicioCliente {
       estaActivo,
     );
     const estadoAnterior = Boolean(clienteActual.esta_activo);
+    await this.cacheClientes?.invalidar();
 
     // Evita generar registros de auditoría cuando el estado ya era el solicitado.
     if (estadoAnterior !== estaActivo) {
@@ -102,9 +105,11 @@ export class ServicioCliente {
     return presentarCliente(fila);
   }
 
-  async buscar(termino, incluirInactivos, filtros = {}) {
+  async buscar(termino, incluirInactivos, filtros = {}, informarCache = () => {}) {
+    if (filtros.refrescar !== undefined && !["true", "false"].includes(filtros.refrescar))
+      throw new ErrorAplicacion("refrescar debe ser true o false.", 400, "REFRESCAR_INVALIDO");
     busquedaSql(termino, []);
-    const { limite } = paginacion(filtros);
+    const { pagina, limite } = paginacion(filtros);
     // El modelo obtiene una fila adicional para calcular hayMas.
     const terminoNormalizado = String(termino ?? "").trim();
 
@@ -116,14 +121,16 @@ export class ServicioCliente {
       );
     }
 
-    const filas = await this.modeloCliente.buscar(
+    const cargar = async () => (await this.modeloCliente.buscar(
       terminoNormalizado,
       limite,
       incluirInactivos === "true",
       filtros,
-    );
-
-    return filas.map(presentarCliente);
+    )).map(presentarCliente);
+    if (!this.cacheClientes) { informarCache("BYPASS"); return cargar(); }
+    // Usar el alcance efectivo que autorizo el controlador, no el query crudo.
+    const clave = { pagina, limite, buscar: terminoNormalizado, incluirInactivos: incluirInactivos === "true" };
+    return this.cacheClientes.obtenerOCargar(clave, cargar, informarCache, { refrescar: filtros.refrescar === "true" });
   }
 
   async buscarPorId(id) {
@@ -154,6 +161,7 @@ export class ServicioCliente {
     }
 
     await this.modeloCliente.eliminarLogicamente(numeroId);
+    await this.cacheClientes?.invalidar();
     await this.modeloAuditoria.registrar({
       usuarioId: Number(responsableId),
       accion: "ELIMINAR_CLIENTE",
@@ -316,6 +324,7 @@ export class ServicioCliente {
       direccion: direccionFinal,
     });
 
+    await this.cacheClientes?.invalidar();
     // Conserva quién modificó el cliente, los cambios y la IP de origen.
     await this.modeloAuditoria.registrar({
       usuarioId: Number(administradorId),

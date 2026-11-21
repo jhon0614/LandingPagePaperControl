@@ -417,6 +417,27 @@ forzar refrescar=true (REFRESH), registrar una entrada o confirmar una venta y
 volver a consultar (MISS con stock actualizado). Probar los filtros por separado.
 No requiere modificar ni desplegar el frontend ni migrar la base de datos.
 
+## Cache y recarga de Clientes (backend)
+
+Usa REDIS_URL y REDIS_CACHE_TTL_SECONDS (30 segundos por defecto), con un
+espacio de claves propio. No cambia el frontend ni requiere migraciones.
+
+- GET `/api/clientes?pagina=1&limite=50`: MISS/HIT/BYPASS en X-Cache.
+- Agregar `refrescar=true` consulta MySQL y renueva la cache (REFRESH si Redis
+  responde; BYPASS si esta desactivado o caido). Otro valor distinto de true o
+  false devuelve 400. Conservar buscar, pagina, limite e incluirInactivos.
+- La clave distingue busqueda, pagina, limite y el alcance autorizado de
+  inactivos. El vendedor nunca recibe la variante de inactivos del administrador.
+- Crear, editar, activar/desactivar o eliminar clientes invalida todas las
+  variantes. Confirmar o anular ventas tambien, por los totales de compra y
+  la condicion de cliente frecuente. El detalle y las compras no se cachean.
+- Probar MISS -> HIT -> refrescar=true -> REFRESH -> HIT, modificar un cliente
+  y comprobar MISS con los nuevos datos. Se conservan permisos, API key y JWT.
+- Para el futuro boton: usar el cliente HTTP autenticado existente. Si carga
+  varias paginas consecutivas, enviar refrescar=true solo en la primera.
+- Se mantienen las limitaciones de TTL ante SQL directo o fallos de invalidacion
+  en otras instancias; MySQL sigue siendo la fuente de verdad.
+
 ## Autores y contribuciones
 
 Proyecto desarrollado por **Jhon Ricardo Rios Cuervo** y **Kelly Lopera**, equipo ADSO del SENA. El historial Git registra aportes con los nombres `Jhon Ricardo Rios Cuervo`, `Jhon Rios` y la cuenta `kellylop613`. Las responsabilidades de cada entrega deben trazarse a sus commits y revisiones, sin deducirlas del número de commits.

@@ -1,4 +1,5 @@
 import { crearRutasContacto } from "./routes/contact.routes.js";
+import { validarApiKey } from "./middleware/api-key.middleware.js";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -111,6 +112,7 @@ export function crearAplicacion({ conexiones, configuracion }) {
     }),
   );
   aplicacion.use("/api", limitar(300, 60 * 1000));
+  aplicacion.use("/api", validarApiKey(configuracion.apiKey));
   aplicacion.use(express.json({ limit: "100kb" })); //limita el tamaño de las peticiones
 
   const modeloUsuario = new ModeloUsuario(conexiones);

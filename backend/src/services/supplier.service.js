@@ -1,4 +1,5 @@
 import { ErrorAplicacion } from "../errors/app-error.js";
+import { paginacion, busquedaSql } from "../utils/query.js";
 
 // Presenta los nombres esperados por Proveedores.jsx y normaliza los campos
 // opcionales antes de enviarlos a MySQL.
@@ -15,11 +16,19 @@ const presentar = (fila) => ({
 });
 
 export class ServicioProveedor {
-  constructor(modelo) {
+  constructor(modelo, cache) {
     this.modelo = modelo;
+    this.cache = cache;
   }
-  async listar(filtros = {}) {
-    return (await this.modelo.listar(filtros)).map(presentar);
+  async listar(filtros = {}, informarCache = () => {}) {
+    if (filtros.refrescar !== undefined && !["true", "false"].includes(filtros.refrescar))
+      throw new ErrorAplicacion("refrescar debe ser true o false.", 400, "REFRESCAR_INVALIDO");
+    const { pagina, limite } = paginacion(filtros);
+    busquedaSql(filtros.buscar, []);
+    const consulta = { pagina, limite, buscar: filtros.buscar?.trim() || "" };
+    const cargar = async () => (await this.modelo.listar(consulta)).map(presentar);
+    if (!this.cache) { informarCache("BYPASS"); return cargar(); }
+    return this.cache.obtenerOCargar(consulta, cargar, informarCache, { refrescar: filtros.refrescar === "true" });
   }
   async obtener(id) {
     const fila = await this.modelo.buscarPorId(this.#id(id));
@@ -28,16 +37,19 @@ export class ServicioProveedor {
   }
   async crear(datos) {
     const id = await this.modelo.crear(this.#normalizar(datos));
+    await this.cache?.invalidar();
     return this.obtener(id);
   }
   async actualizar(id, datos) {
     const proveedorId = this.#id(id);
     if (!(await this.modelo.actualizar(proveedorId, this.#normalizar(datos))))
       this.#noEncontrado();
+    await this.cache?.invalidar();
     return this.obtener(proveedorId);
   }
   async eliminar(id) {
     if (!(await this.modelo.eliminar(this.#id(id)))) this.#noEncontrado();
+    await this.cache?.invalidar();
   }
   #normalizar(datos) {
     return {

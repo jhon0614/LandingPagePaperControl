@@ -6,7 +6,9 @@ export class ControladorProveedor {
   }
   listar = async (_requerimiento, respuesta, siguiente) => {
     try {
-      const proveedores = await this.servicio.listar(_requerimiento.query);
+      const proveedores = await this.servicio.listar(_requerimiento.query, (estado) => {
+        respuesta.set("X-Cache", estado);
+      });
       return respuesta.json(
         listaPaginada("proveedores", proveedores, _requerimiento.query),
       );

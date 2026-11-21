@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 // carpeta desde la cual se haya iniciado el servidor.
 const rutaLogo = fileURLToPath(
   new URL(
-    "../../../frontend/src/assets/LogoPaperControl.jpeg",
+    "../../../frontend/src/assets/LogoPaperControl.png",
     import.meta.url,
   ),
 );
@@ -111,7 +111,7 @@ export class ServicioCorreo {
         text: texto,
         html,
         attachments: [{
-          filename: "papercontrol.jpeg",
+          filename: "papercontrol.png",
           content: logo.toString("base64"),
           content_id: "logo-papercontrol",
         }],
@@ -194,7 +194,7 @@ export class ServicioCorreo {
         subject: "Nueva solicitud de contacto de PaperControl",
         html,
         attachments: [{
-          filename: "papercontrol.jpeg",
+          filename: "papercontrol.png",
           content: logo.toString("base64"),
           content_id: "logo-papercontrol",
         }],

@@ -6,11 +6,12 @@ export class ModeloProveedor {
     this.conexiones = conexiones;
   }
   async listar(filtros = {}) {
+    const incluirInactivos = filtros.incluirInactivos === true || filtros.incluirInactivos === "true";
     const busqueda = busquedaSql(filtros.buscar, ["nombre", "nombre_contacto", "numero_documento", "correo", "telefono"]);
     const [filas] = await this.conexiones.execute(
       `SELECT id, nombre, nombre_contacto, telefono, correo, direccion,
               esta_activo, creado_en, actualizado_en
-         FROM proveedores WHERE eliminado_en IS NULL AND esta_activo = TRUE
+         FROM proveedores WHERE eliminado_en IS NULL ${incluirInactivos ? "" : "AND esta_activo = TRUE"}
           ${busqueda.sql}
         ORDER BY nombre, id ${limiteSql(filtros)}`,
       busqueda.parametros,
@@ -60,6 +61,15 @@ export class ModeloProveedor {
       `UPDATE proveedores SET esta_activo = FALSE, eliminado_en = CURRENT_TIMESTAMP
         WHERE id = ? AND eliminado_en IS NULL`,
       [id],
+    );
+    return resultado.affectedRows > 0;
+  }
+
+  async cambiarEstado(id, estaActivo) {
+    const [resultado] = await this.conexiones.execute(
+      `UPDATE proveedores SET esta_activo = ?
+        WHERE id = ? AND eliminado_en IS NULL`,
+      [estaActivo, id],
     );
     return resultado.affectedRows > 0;
   }

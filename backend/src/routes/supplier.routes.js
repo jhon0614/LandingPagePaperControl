@@ -20,6 +20,7 @@ export function crearRutasProveedores({ autenticar, controlador }) {
   router.get("/", controlador.listar);
   router.get("/:id", controlador.obtener);
   router.post("/", validar(esquema), controlador.crear);
+  router.patch("/:id/estado", validar(z.object({ estaActivo: z.boolean() }).strict()), controlador.cambiarEstado);
   router.patch("/:id", validar(esquema), controlador.actualizar);
   router.delete("/:id", controlador.eliminar);
   return router;

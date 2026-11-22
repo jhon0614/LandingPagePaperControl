@@ -85,7 +85,7 @@ test("refrescar consulta MySQL aunque exista HIT y renueva la cache normal", asy
 test("servicio conecta refrescar sin incorporarlo a la clave ni a los filtros SQL", async () => {
   let opciones;
   const servicio = new ServicioProveedor({}, { obtenerOCargar: async (consulta, _cargar, _informar, config) => {
-    assert.deepEqual(consulta, { pagina: 2, limite: 50, buscar: "papel" });
+    assert.deepEqual(consulta, { pagina: 2, limite: 50, buscar: "papel", incluirInactivos: false });
     opciones = config;
     return [];
   } });

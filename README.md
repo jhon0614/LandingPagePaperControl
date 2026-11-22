@@ -507,6 +507,30 @@ Configurar en Environment del backend y redesplegar el codigo compatible.
 La invalidacion por escrituras y refrescar=true sigue aplicando antes del TTL.
 Las variables no van en Vercel. Solo se admiten enteros mayores que cero.
 
+## Proveedores activos e inactivos (backend)
+
+- GET `/api/proveedores?pagina=1&limite=50` conserva solo activos no eliminados.
+- GET `/api/proveedores?pagina=1&limite=50&incluirInactivos=true` incluye activos
+  e inactivos, siempre excluyendo eliminado_en. Cada fila conserva estaActivo.
+- PATCH `/api/proveedores/:id/estado` recibe exclusivamente
+  `{ "estaActivo": true }` o `{ "estaActivo": false }` y responde
+  `{ "exito": true, "datos": { "proveedor": { ... } } }` con HTTP 200.
+- Cambia unicamente esta_activo (actualizado_en se actualiza por MySQL); no llena
+  ni limpia eliminado_en. Repetir el mismo estado es idempotente. IDs inexistentes
+  o eliminados devuelven 404; tipos no booleanos y campos extra, 400.
+- Solo ADMINISTRADOR y DUENO pueden consultar/gestionar proveedores, como antes.
+- La cache distingue incluirInactivos; cambiar estado invalida ambas variantes
+  y la cache de Productos. Se mantienen buscar, pagina, limite y refrescar=true.
+- No se migraron datos ni se limpiaron eliminado_en de proveedores antiguos:
+  permanecen eliminados. Esto evita recuperar tambien lotes de pruebas retirados.
+- DELETE conserva el borrado logico anterior por compatibilidad. El frontend
+  debe usar PATCH /estado para Desactivar/Reactivar, y separar las tablas mediante
+  estaActivo. Si agrupa varias paginas, refrescar=true solo en la primera.
+- Los cambios de compose/Dockerfile ya permiten pasar VITE_API_KEY. Para Docker,
+  definirla en el .env de la raiz (o el archivo usado con --env-file), igual a
+  API_KEY del backend. No versionar ese archivo. No se levantaron contenedores
+  ni se modificaron las variables privadas para esta entrega.
+
 ## Autores y contribuciones
 
 Proyecto desarrollado por **Jhon Ricardo Rios Cuervo** y **Kelly Lopera**, equipo ADSO del SENA. El historial Git registra aportes con los nombres `Jhon Ricardo Rios Cuervo`, `Jhon Rios` y la cuenta `kellylop613`. Las responsabilidades de cada entrega deben trazarse a sus commits y revisiones, sin deducirlas del número de commits.

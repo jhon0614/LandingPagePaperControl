@@ -51,4 +51,14 @@ export class ControladorProveedor {
       return siguiente(error);
     }
   };
+  cambiarEstado = async (requerimiento, respuesta, siguiente) => {
+    try {
+      const proveedor = await this.servicio.cambiarEstado(
+        requerimiento.params.id, requerimiento.body.estaActivo,
+      );
+      return respuesta.json({ exito: true, datos: { proveedor } });
+    } catch (error) {
+      return siguiente(error);
+    }
+  };
 }

@@ -22,11 +22,13 @@ export class ServicioProveedor {
     this.cacheProductos = cacheProductos;
   }
   async listar(filtros = {}, informarCache = () => {}) {
+    if (filtros.incluirInactivos !== undefined && !["true", "false"].includes(filtros.incluirInactivos))
+      throw new ErrorAplicacion("incluirInactivos debe ser true o false.", 400, "INCLUIR_INACTIVOS_INVALIDO");
     if (filtros.refrescar !== undefined && !["true", "false"].includes(filtros.refrescar))
       throw new ErrorAplicacion("refrescar debe ser true o false.", 400, "REFRESCAR_INVALIDO");
     const { pagina, limite } = paginacion(filtros);
     busquedaSql(filtros.buscar, []);
-    const consulta = { pagina, limite, buscar: filtros.buscar?.trim() || "" };
+    const consulta = { pagina, limite, buscar: filtros.buscar?.trim() || "", incluirInactivos: filtros.incluirInactivos === "true" };
     const cargar = async () => (await this.modelo.listar(consulta)).map(presentar);
     if (!this.cache) { informarCache("BYPASS"); return cargar(); }
     return this.cache.obtenerOCargar(consulta, cargar, informarCache, { refrescar: filtros.refrescar === "true" });
@@ -53,6 +55,18 @@ export class ServicioProveedor {
     if (!(await this.modelo.eliminar(this.#id(id)))) this.#noEncontrado();
     await this.cacheProductos?.invalidar();
     await this.cache?.invalidar();
+  }
+  async cambiarEstado(id, estaActivo) {
+    const proveedorId = this.#id(id);
+    if (typeof estaActivo !== "boolean")
+      throw new ErrorAplicacion("estaActivo debe ser un booleano.", 400, "ESTADO_PROVEEDOR_INVALIDO");
+    const actual = await this.modelo.buscarPorId(proveedorId);
+    if (!actual) this.#noEncontrado();
+    if (Boolean(actual.esta_activo) === estaActivo) return presentar(actual);
+    if (!(await this.modelo.cambiarEstado(proveedorId, estaActivo))) this.#noEncontrado();
+    await this.cacheProductos?.invalidar();
+    await this.cache?.invalidar();
+    return this.obtener(proveedorId);
   }
   #normalizar(datos) {
     return {

@@ -568,7 +568,6 @@ function Inventario() {
 
         }
 
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         recargarProductosPorCategoria();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1320,7 +1319,7 @@ function Inventario() {
                     <div className="inventario-header-acciones">
 
                         <BotonActualizar onClick={actualizarInventario} actualizando={actualizando} />
-                        
+
                         <button
                             type="button"
                             className="btn-desactivados"

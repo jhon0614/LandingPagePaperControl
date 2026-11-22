@@ -1374,3 +1374,40 @@ RESPONSIVE
     opacity: 0.65;
     cursor: not-allowed;
 }
+
+@media (max-width: 900px) {
+
+    .movimientos-tabla-wrapper .inventario-tabla {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .movimientos-tabla-wrapper .inventario-tabla:has(th:nth-child(5)) {
+        min-width: 560px;
+    }
+
+    .movimientos-tabla-wrapper {
+        padding: 0 16px 20px;
+    }
+
+    .movimiento-form {
+        flex-wrap: wrap;
+        padding: 0 16px 14px;
+    }
+
+    .movimiento-form select,
+    .movimiento-form input {
+        flex: 1 1 140px;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .movimiento-form button {
+        flex: 0 0 auto;
+        height: 40px;
+    }
+
+    .inventario-tabla .movimiento-form {
+        padding: 0;
+    }
+}

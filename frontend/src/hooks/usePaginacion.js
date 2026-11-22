@@ -1,10 +1,10 @@
 import { useState } from "react";
 
-export const OPCIONES_POR_PAGINA = [50, 100, 200, 500];
+export const OPCIONES_POR_PAGINA = [12, 25, 50, 150];
 
 export default function usePaginacion(
     lista,
-    porPaginaInicial = 50,
+    porPaginaInicial = 12,
     opciones = OPCIONES_POR_PAGINA
 ) {
     const [pagina, setPagina] = useState(1);

@@ -532,3 +532,19 @@
 .caja-gastos-panel:last-child {
     margin-bottom: 24px;
 }
+
+@media (max-width: 600px) {
+
+    :root .caja-gasto-form input {
+        flex: 1 1 100%;
+    }
+
+    :root .caja-gastos-acciones {
+        display: block;
+    }
+
+    :root .btn-ver-detalles-gastos {
+        width: 100%;
+        min-height: 42px;
+    }
+}

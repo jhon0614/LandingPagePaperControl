@@ -174,3 +174,25 @@
         grid-template-columns: 150px 1fr 55px;
     }
 }
+
+@media (max-width: 600px) {
+
+    :root .mas-vendidos-filtros {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    :root .mas-vendidos-filtros button {
+        flex: 1;
+        padding: 10px 10px;
+    }
+
+    :root .mas-vendidos-rango {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    :root .mas-vendidos-rango span {
+        text-align: center;
+    }
+}

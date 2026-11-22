@@ -38,3 +38,19 @@
     color: #334155;
     margin-bottom: 4px;
 }
+
+@media (max-width: 600px) {
+
+    .proveedores-tabla-wrapper .inventario-tabla th {
+        font-size: 12px;
+    }
+
+    .proveedores-tabla-wrapper .inventario-tabla td {
+        font-size: 15px;
+        padding: 14px 12px;
+    }
+
+    .proveedores-tabla-wrapper .inventario-tabla td strong {
+        font-size: 15px;
+    }
+}

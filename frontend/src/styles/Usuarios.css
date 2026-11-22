@@ -1362,3 +1362,16 @@
     background: rgba(217, 119, 6, .18);
     color: #fbbf24;
 }
+
+@media (max-width: 768px) {
+
+    .tabla-usuarios {
+        min-width: 900px;
+    }
+
+    .tabla-usuarios th:last-child,
+    .tabla-usuarios td:last-child {
+        position: static;
+        box-shadow: none;
+    }
+}

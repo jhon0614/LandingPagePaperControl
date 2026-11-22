@@ -2157,3 +2157,7 @@ body:has(.cliente-modal-overlay) {
 .historial-ventas-header-acordeon + * {
     margin-top: 20px;
 }
+
+.historial-ventas-tabla th:last-child {
+    text-align: center;
+}

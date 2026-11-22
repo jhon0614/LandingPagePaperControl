@@ -2656,6 +2656,7 @@ function Ventas() {
                                         <th>Descuento</th>
                                         <th>Total</th>
                                         <th>Estado</th>
+                                        <th>Acciones</th>
                                         <th></th>
                                     </tr>
 

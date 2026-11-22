@@ -29,6 +29,7 @@ import {
 
 import usePaginacion from "../hooks/usePaginacion";
 import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
+import BotonActualizar from "../components/BotonActualizar";
 
 // =========================================================
     // COMPONENTE DROPDOWN
@@ -440,11 +441,47 @@ function Inventario() {
 
     const primerCargaCategoria = useRef(true);
 
-    /*
-     * =====================================================
-     * CARGA INICIAL
-     * =====================================================
-     */
+    const [actualizando, setActualizando] = useState(false);
+
+    async function actualizarInventario() {
+
+        try {
+
+            setActualizando(true);
+            setError("");
+
+            const [listaProductos, listaProveedores, listaCategorias] =
+                await Promise.all([
+                    obtenerProductos({
+                        incluirInactivos: true,
+                        categoriaId:
+                            filtroCategoriaId === "todas"
+                                ? undefined
+                                : filtroCategoriaId,
+                        refrescar: true,
+                    }),
+                    obtenerProveedores({ refrescar: true }),
+                    obtenerCategorias({ refrescar: true }),
+                ]);
+
+            setProductos(listaProductos);
+            setProveedoresDisponibles(listaProveedores);
+            setCategoriasBackend(listaCategorias);
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible actualizar el inventario."
+            );
+
+        } finally {
+
+            setActualizando(false);
+
+        }
+
+    }
 
     async function cargarDatos() {
 
@@ -1282,6 +1319,8 @@ function Inventario() {
 
                     <div className="inventario-header-acciones">
 
+                        <BotonActualizar onClick={actualizarInventario} actualizando={actualizando} />
+                        
                         <button
                             type="button"
                             className="btn-desactivados"

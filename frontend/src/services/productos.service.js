@@ -1,7 +1,7 @@
 import { apiFetch } from "./api";
 import { obtenerTodasLasPaginas } from "./paginacion";
 
-export async function obtenerProductos({ incluirInactivos = false, categoriaId } = {}) {
+export async function obtenerProductos({ incluirInactivos = false, categoriaId, refrescar = false } = {}) {
 
     const parametros = {};
 
@@ -20,7 +20,8 @@ export async function obtenerProductos({ incluirInactivos = false, categoriaId }
     return obtenerTodasLasPaginas(
         "/api/productos",
         "productos",
-        parametros
+        parametros,
+        { refrescar }
     );
 
 }

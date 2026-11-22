@@ -3,7 +3,7 @@ import { apiFetch } from "./api";
 const REGISTROS_POR_PAGINA = 500;
 const MAXIMO_PAGINAS = 100;
 
-export async function obtenerTodasLasPaginas(ruta, clave, parametros = {}) {
+export async function obtenerTodasLasPaginas(ruta, clave, parametros = {}, { refrescar = false } = {}) {
 
     const registros = [];
 
@@ -14,6 +14,10 @@ export async function obtenerTodasLasPaginas(ruta, clave, parametros = {}) {
             pagina: String(pagina),
             limite: String(REGISTROS_POR_PAGINA),
         });
+
+        if (refrescar && pagina === 1) {
+            consulta.set("refrescar", "true");
+        }
 
         const respuesta = await apiFetch(`${ruta}?${consulta}`);
 

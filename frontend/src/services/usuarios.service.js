@@ -21,11 +21,13 @@ USUARIOS
 =========================================================
 */
 
-export async function obtenerUsuarios() {
+export async function obtenerUsuarios({ refrescar = false } = {}) {
 
     return obtenerTodasLasPaginas(
         "/api/usuarios",
-        "usuarios"
+        "usuarios",
+        {},
+        { refrescar }
     );
 }
 

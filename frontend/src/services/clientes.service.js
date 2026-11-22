@@ -1,7 +1,7 @@
 import { apiFetch } from "./api";
 import { obtenerTodasLasPaginas } from "./paginacion";
 
-export async function obtenerClientes({ incluirInactivos = false } = {}) {
+export async function obtenerClientes({ incluirInactivos = false, refrescar = false } = {}) {
 
     const parametros = {};
 
@@ -14,7 +14,8 @@ export async function obtenerClientes({ incluirInactivos = false } = {}) {
     return obtenerTodasLasPaginas(
         "/api/clientes",
         "clientes",
-        parametros
+        parametros,
+        { refrescar }
     );
 
 }

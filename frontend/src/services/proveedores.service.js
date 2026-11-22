@@ -1,11 +1,13 @@
 import { apiFetch } from "./api";
 import { obtenerTodasLasPaginas } from "./paginacion";
 
-export async function obtenerProveedores() {
+export async function obtenerProveedores({ refrescar = false } = {}) {
 
     return obtenerTodasLasPaginas(
         "/api/proveedores",
-        "proveedores"
+        "proveedores",
+        {},
+        { refrescar }
     );
 
 }

@@ -1,8 +1,8 @@
 import { apiFetch } from "./api";
 
-export async function obtenerCategorias() {
+export async function obtenerCategorias({ refrescar = false } = {}) {
 
-    const respuesta = await apiFetch("/api/categorias");
+    const respuesta = await apiFetch(refrescar ? "/api/categorias?refrescar=true" : "/api/categorias");
 
     return respuesta.datos.categorias;
 

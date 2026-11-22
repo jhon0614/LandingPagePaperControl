@@ -5,8 +5,38 @@ import ProductosMasVendidos from "../components/ProductosMasVendidos";
 import "../styles/Dashboard.css";
 import GraficasDashboard from "../components/graficas/GraficasDashboard";
 import { obtenerResumenDashboard } from "../services/dashboard.service";
+import BotonActualizar from "../components/BotonActualizar";
 
 function Dueno() {
+
+    const [actualizando, setActualizando] = useState(false);
+    const [errorResumen, setErrorResumen] = useState("");
+
+    async function actualizarResumen() {
+
+        try {
+
+            setActualizando(true);
+            setErrorResumen("");
+
+            const resumen = await obtenerResumenDashboard({ refrescar: true });
+
+            setTotales(resumen);
+
+        } catch (error) {
+
+            setErrorResumen(
+                error.message ||
+                "No fue posible actualizar los indicadores."
+            );
+
+        } finally {
+
+            setActualizando(false);
+
+        }
+
+    }
 
     const [totales, setTotales] = useState({
         productos: 0,
@@ -39,10 +69,18 @@ function Dueno() {
 
     return (
         <Layout>
-            <h1>Panel Dueño</h1>
-            <p className="dashboard-subtitle">
-                Bienvenido al sistema de gestión de PaperControl.
-            </p>
+            <div className="encabezado-con-accion">
+                <div>
+                    <h1>Panel Dueño</h1>
+                    <p className="dashboard-subtitle">
+                        Bienvenido al sistema de gestión de PaperControl.
+                    </p>
+                </div>
+
+                <BotonActualizar onClick={actualizarResumen} actualizando={actualizando} />
+            </div>
+
+            {errorResumen && <div className="caja-error">{errorResumen}</div>}
 
             <section className="cards">
 

@@ -1,0 +1,300 @@
+.btn-actualizar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 42px;
+    padding: 0 18px;
+    border: 1px solid #05788a;
+    border-radius: 10px;
+    background: transparent;
+    color: #05788a;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-actualizar:hover:not(:disabled) {
+    background: #05788a;
+    color: #ffffff;
+}
+
+.btn-actualizar:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+[data-theme="dark"] .btn-actualizar {
+    border-color: #7dd9ef;
+    color: #7dd9ef;
+}
+
+[data-theme="dark"] .btn-actualizar:hover:not(:disabled) {
+    background: #7dd9ef;
+    color: #062f3d;
+}
+
+.acciones-encabezado {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.encabezado-con-accion {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.acciones-encabezado,
+.inventario-header-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    max-width: 100%;
+    margin-left: auto;
+}
+
+
+.acciones-encabezado > button,
+.inventario-header-acciones > button,
+.encabezado-con-accion > .btn-actualizar {
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    width: 170px;
+    height: 34px;
+    min-width: 0;
+    padding: 0 12px;
+    justify-content: center;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.filtros-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.filtros-fila .clientes-buscador {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.filtro-select {
+    flex: 0 0 170px;
+    width: 170px;
+    height: 50px;
+    padding: 0 12px;
+    border: 1px solid #d4e0e7;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #062f3d;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+[data-theme="dark"] .filtro-select {
+    background: #0f2b36;
+    color: #e6f4f8;
+    border-color: #2a4a57;
+}
+
+.usuarios-titulo-bloqueados {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #d97706;
+    font-size: 15px;
+}
+
+.clientes-busqueda .clientes-buscador {
+    height: 34px;
+    padding: 0 12px;
+    gap: 8px;
+    border-radius: 8px;
+}
+
+.clientes-busqueda .clientes-buscador input {
+    font-size: 12px;
+}
+
+.clientes-busqueda .clientes-buscador > i,
+.clientes-busqueda .clientes-buscador button {
+    font-size: 13px;
+}
+
+.clientes-busqueda {
+    margin-bottom: 18px;
+}
+
+.clientes-busqueda .filtro-select,
+.filtros-fila .filtro-select {
+    flex: 0 0 170px;
+    width: 170px;
+    height: 34px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 12px;
+}
+
+div.pos-buscador {
+    height: 34px;
+    padding: 0 12px;
+    gap: 8px;
+    border-radius: 8px;
+}
+
+div.pos-buscador input {
+    font-size: 12px;
+}
+
+.historial-ventas-filtros {
+    padding: 10px;
+    gap: 10px;
+}
+
+.historial-ventas-filtros .historial-filtro input,
+.historial-ventas-filtros .historial-filtro select {
+    height: 34px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 12px;
+}
+
+.historial-ventas-filtros .historial-filtro label {
+    font-size: 11px;
+}
+
+[data-theme="dark"] .filtro-select {
+    background: #10252e;
+    color: #7fd6e6;
+    border: 1px solid rgba(79, 195, 214, .35);
+}
+
+[data-theme="dark"] .filtro-select option {
+    background: #10252e;
+    color: #7fd6e6;
+}
+
+[data-theme="dark"] .clientes-busqueda .clientes-buscador {
+    background: #10252e;
+    border: 1px solid rgba(79, 195, 214, .35);
+}
+
+[data-theme="dark"] .clientes-busqueda .clientes-buscador input {
+    color: #7fd6e6;
+}
+
+[data-theme="dark"] .clientes-busqueda .clientes-buscador input::placeholder {
+    color: #7fd6e6;
+    opacity: .6;
+}
+
+[data-theme="dark"] .clientes-busqueda .clientes-buscador > i {
+    color: #7fd6e6;
+}
+
+@media (max-width: 600px) {
+
+    /* Inventario y Proveedores */
+    .inventario-tabla th {
+        font-size: 11px;
+        padding: 12px 12px;
+    }
+
+    .inventario-tabla td {
+        font-size: 13px;
+        padding: 12px;
+    }
+
+    .producto-info strong {
+        font-size: 13px;
+    }
+
+    .producto-info span {
+        font-size: 11px;
+    }
+
+    .codigo-producto {
+        font-size: 11px;
+    }
+
+    .stock-wrapper strong {
+        font-size: 13px;
+    }
+
+    .stock-wrapper small {
+        font-size: 10px;
+    }
+
+    .estado-badge {
+        font-size: 11px;
+    }
+
+    /* Clientes */
+    .tabla-clientes th {
+        font-size: 12px;
+    }
+
+    .tabla-clientes td {
+        font-size: 14px;
+    }
+
+    /* Usuarios */
+    .tabla-usuarios th {
+        font-size: 12px;
+    }
+
+    .tabla-usuarios td {
+        font-size: 14px;
+    }
+
+    /* Caja */
+    .caja-gastos-tabla th {
+        font-size: 12px;
+    }
+
+    .caja-gastos-tabla td {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 700px) {
+    .proveedores-header,
+    .usuarios-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .dashboard-subtitle {
+        margin-bottom: 16px;
+    }
+}
+.encabezado-con-accion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.encabezado-con-accion > .btn-actualizar {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+}
+
+/* Separa las tarjetas del dashboard del encabezado */
+.encabezado-con-accion + .cards {
+    margin-top: 0;
+}

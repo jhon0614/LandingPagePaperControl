@@ -24,7 +24,8 @@ export function crearRutasTurnosCaja({ autenticar, controlador }) {
   router.get("/gastos", controlador.gastos);
   router.post("/gastos", validar(esquemaGasto), controlador.registrarGasto);
   router.post("/cierre", validar(esquemaCierre), controlador.cerrar);
-  router.get("/", controlador.historial);
+  router.get("/:id/gastos", permitirRoles("ADMINISTRADOR", "DUENO"), controlador.gastosPorTurno);
+  router.get("/", permitirRoles("ADMINISTRADOR", "DUENO"), controlador.historial);
   return router;
 }
 

@@ -93,6 +93,13 @@ export class ModeloTurnoCaja {
     return filas[0] ?? null;
   }
 
+  async buscarPorId(id) {
+    const [filas] = await this.conexiones.execute(
+      "SELECT id FROM turnos_caja WHERE id = ? LIMIT 1", [id],
+    );
+    return filas[0] ?? null;
+  }
+
   async listarGastos(turnoId) {
     const [filas] = await this.conexiones.execute(
       `SELECT g.id, g.turno_caja_id, g.registrado_por, g.descripcion,
@@ -292,7 +299,9 @@ export class ModeloTurnoCaja {
               t.abierto_en, t.efectivo_esperado, t.efectivo_contado,
               t.diferencia, t.cerrado_en, t.estado, t.notas_cierre,
               CONCAT(ua.nombres, ' ', ua.apellidos) AS abierto_por_nombre,
-              CONCAT(uc.nombres, ' ', uc.apellidos) AS cerrado_por_nombre
+              CONCAT(uc.nombres, ' ', uc.apellidos) AS cerrado_por_nombre,
+              COALESCE((SELECT SUM(g.monto) FROM gastos_caja g
+                         WHERE g.turno_caja_id = t.id), 0) AS total_gastos
          FROM turnos_caja t
          JOIN usuarios ua ON ua.id = t.abierto_por
          LEFT JOIN usuarios uc ON uc.id = t.cerrado_por

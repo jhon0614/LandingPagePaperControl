@@ -49,6 +49,15 @@ export class ControladorTurnoCaja {
     }
   };
 
+  gastosPorTurno = async (requerimiento, respuesta, siguiente) => {
+    try {
+      const gastos = await this.servicio.gastosPorTurno(requerimiento.params.id);
+      return respuesta.status(200).json({ exito: true, datos: { gastos } });
+    } catch (error) {
+      return siguiente(error);
+    }
+  };
+
   // Envía al servicio los datos validados y quién registró el gasto.
   registrarGasto = async (requerimiento, respuesta, siguiente) => {
     try {

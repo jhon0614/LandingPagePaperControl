@@ -531,6 +531,23 @@ Las variables no van en Vercel. Solo se admiten enteros mayores que cero.
   API_KEY del backend. No versionar ese archivo. No se levantaron contenedores
   ni se modificaron las variables privadas para esta entrega.
 
+## Gastos del historial de caja (backend)
+
+- `GET /api/turnos-caja/:id/gastos`: disponible para `ADMINISTRADOR` y `DUENO`,
+  tanto en turnos abiertos como cerrados. Responde `{ exito: true, datos: { gastos: [...] } }`.
+- Cada gasto conserva el contrato de `/api/turnos-caja/gastos`: `id`, `turnoId`,
+  `usuarioId`, `usuario`, `usuarioNombre`, `descripcion`, `monto`, `ocurridoEn`, `creadoEn`.
+  Los nombres dependen de los datos del usuario; `usuarioNombre` puede ser `null`.
+- Un turno existente sin gastos devuelve `[]`; un ID inválido devuelve 400 y
+  un turno inexistente devuelve 404. No requiere que haya una caja abierta.
+- `GET /api/turnos-caja` incluye `totalGastos` numérico en cada turno (0 si no tiene gastos),
+  manteniendo filtros y paginación. El historial también queda restringido a esos dos roles.
+  El total se calcula en la consulta del listado, sin peticiones por cada turno.
+- El frontend puede mostrar `totalGastos` en la columna Gastos y consultar
+  `/:id/gastos` al desplegar una fila, usando `usuarioNombre` para Registrado por.
+  `/api/turnos-caja/gastos` conserva el acceso al turno actual para los roles de caja.
+- No requiere migración de BD ni cambios de variables de entorno.
+
 ## Autores y contribuciones
 
 Proyecto desarrollado por **Jhon Ricardo Rios Cuervo** y **Kelly Lopera**, equipo ADSO del SENA. El historial Git registra aportes con los nombres `Jhon Ricardo Rios Cuervo`, `Jhon Rios` y la cuenta `kellylop613`. Las responsabilidades de cada entrega deben trazarse a sus commits y revisiones, sin deducirlas del número de commits.

@@ -138,6 +138,15 @@ export class ServicioTurnoCaja {
     );
   }
 
+  async gastosPorTurno(id) {
+    const turnoId = Number(id);
+    if (!/^\d+$/.test(String(id)) || !Number.isSafeInteger(turnoId) || turnoId <= 0)
+      throw new ErrorAplicacion("El ID del turno es inválido.", 400, "ID_TURNO_INVALIDO");
+    if (!(await this.modelo.buscarPorId(turnoId)))
+      throw new ErrorAplicacion("El turno de caja no fue encontrado.", 404, "TURNO_CAJA_NO_ENCONTRADO");
+    return (await this.modelo.listarGastos(turnoId)).map(presentarGasto);
+  }
+
   async eliminarGasto(id, usuario) {
     // Un vendedor solo puede retirar sus propios gastos del turno vigente.
     const gastoId = Number(id);
@@ -228,7 +237,7 @@ export class ServicioTurnoCaja {
       );
     }
     return (await this.modelo.listar({ ...filtros, desde, hasta })).map(
-      presentarTurno,
+      (fila) => ({ ...presentarTurno(fila), totalGastos: numero(fila.total_gastos) }),
     );
   }
 }

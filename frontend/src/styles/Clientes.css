@@ -285,7 +285,7 @@
 
 .tabla-clientes {
     width: 100%;
-
+    min-width: 900px;
     border-collapse: collapse;
 }
 
@@ -871,19 +871,6 @@
     background: #0b4659;
 }
 
-
-/* RESPONSIVE */
-
-@media (max-width: 900px) {
-
-    .tabla-clientes th:nth-child(4),
-    .tabla-clientes td:nth-child(4) {
-        display: none;
-    }
-
-}
-
-
 @media (max-width: 768px) {
 
     .clientes-header {
@@ -931,13 +918,6 @@
 
     .clientes-info {
         grid-template-columns: 1fr;
-    }
-
-    .tabla-clientes th:nth-child(2),
-    .tabla-clientes td:nth-child(2),
-    .tabla-clientes th:nth-child(3),
-    .tabla-clientes td:nth-child(3) {
-        display: none;
     }
 
     .acciones-cliente {

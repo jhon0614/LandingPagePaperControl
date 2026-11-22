@@ -17,6 +17,7 @@ import usePaginacion from "../hooks/usePaginacion";
 import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
 import ComprobanteVenta from "../components/ventas/ComprobanteVenta";
 import "../styles/Comprobante.css";
+import BotonActualizar from "../components/BotonActualizar";
 
 function Clientes() {
     const usuarioActual = JSON.parse(
@@ -32,6 +33,36 @@ function Clientes() {
 
     const [errorClientes, setErrorClientes] = useState("");
 
+    const [actualizando, setActualizando] = useState(false);
+
+    async function actualizarClientes() {
+
+        try {
+
+            setActualizando(true);
+            setErrorClientes("");
+
+            const lista = await obtenerClientes({
+                incluirInactivos: true,
+                refrescar: true,
+            });
+
+            setClientes(lista);
+
+        } catch (error) {
+
+            setErrorClientes(
+                error.message ||
+                "No fue posible actualizar los clientes."
+            );
+
+        } finally {
+
+            setActualizando(false);
+
+        }
+
+    }
 
     async function cargarClientes() {
 
@@ -101,23 +132,8 @@ function Clientes() {
         useState({});
 
     const [guardando, setGuardando] = useState(false);
+    const [filtroEstado, setFiltroEstado] = useState("TODOS");
 
-    /*
-     * NORMALIZAR TEXTO
-     *
-     * Permite buscar sin tildes:
-     *
-     * "gomez"      -> encuentra "Gómez"
-     * "martinez"   -> encuentra "Martínez"
-     * "rodriguez"  -> encuentra "Rodríguez"
-     * "andres"     -> encuentra "Andrés"
-     * "lopez"      -> encuentra "López"
-     * "sofia"      -> encuentra "Sofía"
-     * "hernandez"  -> encuentra "Hernández"
-     *
-     * También mantiene la búsqueda sin importar
-     * mayúsculas o minúsculas.
-     */
     function normalizarTexto(texto) {
         return String(texto || "")
             .normalize("NFD")
@@ -714,6 +730,15 @@ function Clientes() {
         );
     }
 
+    const mostrarActivos =
+        filtroEstado === "TODOS" || filtroEstado === "ACTIVOS";
+
+    const mostrarInactivos =
+        filtroEstado === "TODOS" || filtroEstado === "INACTIVOS";
+
+    const mostrarSeccionFrecuentes =
+        filtroEstado === "TODOS" || filtroEstado === "FRECUENTES";
+
     const modalFormularioAbierto =
         modalNuevoCliente ||
         clienteEditando;
@@ -748,19 +773,27 @@ function Clientes() {
                     </p>
                 </div>
 
-                {puedeAdministrar() && (
-                    <button
-                        type="button"
-                        className="btn-nuevo-cliente"
-                        onClick={
-                            abrirNuevoCliente
-                        }
-                    >
-                        <i className="fa-solid fa-user-plus"></i>
+                <div className="acciones-encabezado">
 
-                        Nuevo cliente
-                    </button>
-                )}
+                    <BotonActualizar
+                        onClick={actualizarClientes}
+                        actualizando={actualizando}
+                    />
+
+                    {puedeAdministrar() && (
+                        <button
+                            type="button"
+                            className="btn-nuevo-cliente"
+                            onClick={
+                                abrirNuevoCliente
+                            }
+                        >
+                            <i className="fa-solid fa-user-plus"></i>
+
+                            Nuevo cliente
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="clientes-info">
@@ -829,7 +862,7 @@ function Clientes() {
                 </div>
             </div>
 
-            <div className="clientes-busqueda">
+            <div className="clientes-busqueda filtros-fila">
                 <div className="clientes-buscador">
                     <i className="fa-solid fa-magnifying-glass"></i>
 
@@ -856,8 +889,25 @@ function Clientes() {
                         </button>
                     )}
                 </div>
-            </div>
+                <select
+                    className="filtro-select"
+                    value={filtroEstado}
+                    onChange={(e) => {
+                        setFiltroEstado(e.target.value);
 
+                        if (e.target.value === "FRECUENTES") {
+                            setMostrarFrecuentes(true);
+                        }
+                    }}
+                >
+                    <option value="TODOS">Todos los clientes</option>
+                    <option value="ACTIVOS">Activos</option>
+                    <option value="INACTIVOS">Inactivos</option>
+                    <option value="FRECUENTES">Frecuentes</option>
+                </select>
+            </div>
+            
+            {mostrarActivos && (
             <section className="clientes-seccion">
                 <div className="clientes-seccion-header">
                     <div>
@@ -886,7 +936,9 @@ function Clientes() {
                 )}
                 <NavegacionPaginas paginacion={paginacionActivos} />
             </section>
+            )}
 
+            {mostrarInactivos && (
             <section className="clientes-seccion clientes-seccion-inactivos">
                 <div className="clientes-seccion-header">
                     <div>
@@ -915,7 +967,9 @@ function Clientes() {
                 )}
                 <NavegacionPaginas paginacion={paginacionInactivos} />
             </section>
+            )}
 
+            {mostrarSeccionFrecuentes && (
             <section className="clientes-frecuentes">
                 <div className="clientes-frecuentes-header">
                     <div>
@@ -998,6 +1052,7 @@ function Clientes() {
                     </div>
                 )}
             </section>
+            )}
 
             {/* MODAL VER DETALLE */}
 

@@ -251,6 +251,7 @@ function Ventas() {
     const navigate = useNavigate();
 
     const [turnoActivo, setTurnoActivo] = useState(null);
+    const [mostrarHistorialVentas, setMostrarHistorialVentas] = useState(false);
     const [verificandoCaja, setVerificandoCaja] = useState(true);
 
     useEffect(() => {
@@ -646,7 +647,6 @@ function Ventas() {
             }
 
             setVentas(datos);
-            console.log("Ventas cargadas:", datos);
             
 
         } catch (error) {
@@ -2477,7 +2477,12 @@ function Ventas() {
 
             <section className="historial-ventas">
 
-                <div className="historial-ventas-header">
+                <div
+                    className="historial-ventas-header historial-ventas-header-acordeon"
+                    onClick={() =>
+                        setMostrarHistorialVentas(!mostrarHistorialVentas)
+                    }
+                >
 
                     <div>
                         <h2>
@@ -2489,13 +2494,18 @@ function Ventas() {
                         </p>
                     </div>
 
+                    <i
+                        className={
+                            mostrarHistorialVentas
+                                ? "fa-solid fa-chevron-up"
+                                : "fa-solid fa-chevron-down"
+                        }
+                    ></i>
+
                 </div>
 
-
-                {/* =====================================================
-                    FILTROS
-                ===================================================== */}
-
+                {mostrarHistorialVentas && (
+                <>
                 <div className="historial-ventas-filtros">
 
                     <div className="historial-filtro">
@@ -2818,10 +2828,11 @@ function Ventas() {
                     )}
 
                 </div>
-
+                </>
+                )}
             </section>
 
-                        {modalAnular && ventaAAnular && (
+                {modalAnular && ventaAAnular && (
 
                 <div
                     className="pos-modal-overlay"

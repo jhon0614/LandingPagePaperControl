@@ -2128,3 +2128,32 @@ body:has(.cliente-modal-overlay) {
 [data-theme="dark"] .pos-producto-card.agotado small {
     color: #fca5a5;
 }
+
+@media (max-width: 700px) {
+    .historial-ventas-filtros .historial-filtro {
+        flex: 0 0 auto;
+        width: 100%;
+    }
+
+    .historial-ventas-filtros {
+        gap: 12px;
+    }
+}
+
+.historial-ventas-header-acordeon {
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+.historial-ventas-header-acordeon i {
+    color: #062f3d;
+    font-size: 16px;
+}
+
+[data-theme="dark"] .historial-ventas-header-acordeon i {
+    color: #7fd6e6;
+}
+
+.historial-ventas-header-acordeon + * {
+    margin-top: 20px;
+}

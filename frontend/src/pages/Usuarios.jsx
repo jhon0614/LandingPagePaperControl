@@ -20,6 +20,16 @@ import "../styles/Dashboard.css";
 import "../styles/Usuarios.css";
 import usePaginacion from "../hooks/usePaginacion";
 import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
+import BotonActualizar from "../components/BotonActualizar";
+import "../styles/Clientes.css";
+
+function normalizarTexto(texto) {
+    return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
 
 function Usuarios() {
 
@@ -70,9 +80,36 @@ function Usuarios() {
     const [desbloqueandoUsuario, setDesbloqueandoUsuario] =
         useState(null);
 
-    /*
-     * CARGAR DATOS
-     */
+    const [actualizando, setActualizando] = useState(false);
+
+    const [busqueda, setBusqueda] = useState("");
+
+    const [filtroEstado, setFiltroEstado] = useState("TODOS");
+
+    const [filtroRol, setFiltroRol] = useState("TODOS");
+
+    async function actualizarUsuarios() {
+
+        try {
+
+            setActualizando(true);
+            setError("");
+
+            const lista = await obtenerUsuarios({ refrescar: true });
+
+            setUsuarios(lista || []);
+
+        } catch (error) {
+
+            manejarError(error);
+
+        } finally {
+
+            setActualizando(false);
+
+        }
+
+    }
 
     async function cargarDatos() {
 
@@ -861,31 +898,49 @@ function Usuarios() {
     }
 
 
-    /*
-     * LISTAS
-     */
+    const usuariosActivos = usuarios.filter((u) => u.estaActivo);
+    const usuariosInactivos = usuarios.filter((u) => !u.estaActivo);
+    const usuariosBloqueados = usuarios.filter((u) => usuarioEstaBloqueado(u));
 
-    const usuariosActivos =
-        usuarios.filter(
-            (usuario) =>
-                usuario.estaActivo
-        );
+    function pasaFiltros(usuario) {
 
+        const texto = normalizarTexto(busqueda);
 
-    const usuariosInactivos =
-        usuarios.filter(
-            (usuario) =>
-                !usuario.estaActivo
-        );
-    
-    const paginacionActivos = usePaginacion(usuariosActivos);
-    const paginacionInactivos = usePaginacion(usuariosInactivos);
+        const coincideBusqueda =
+            !texto ||
+            normalizarTexto(`${usuario.nombres} ${usuario.apellidos}`).includes(texto) ||
+            normalizarTexto(usuario.correo).includes(texto) ||
+            normalizarTexto(usuario.rol?.nombre).includes(texto);
 
-    const usuariosBloqueados =
-        usuarios.filter(
-            (usuario) =>
-                usuarioEstaBloqueado(usuario)
-        );
+        const coincideRol =
+            filtroRol === "TODOS" ||
+            String(usuario.rol?.id) === String(filtroRol);
+
+        const bloqueado = usuarioEstaBloqueado(usuario);
+
+        const coincideEstado =
+            filtroEstado === "TODOS" ||
+            (filtroEstado === "ACTIVOS" && usuario.estaActivo) ||
+            (filtroEstado === "INACTIVOS" && !usuario.estaActivo) ||
+            (filtroEstado === "BLOQUEADOS" && bloqueado);
+
+        return coincideBusqueda && coincideRol && coincideEstado;
+
+    }
+
+    const activosFiltrados = usuariosActivos.filter(pasaFiltros);
+    const inactivosFiltrados = usuariosInactivos.filter(pasaFiltros);
+    const bloqueadosFiltrados = usuariosBloqueados.filter(pasaFiltros);
+    const mostrarActivos =
+        filtroEstado === "TODOS" || filtroEstado === "ACTIVOS";
+
+    const mostrarInactivos =
+        filtroEstado === "TODOS" || filtroEstado === "INACTIVOS";
+
+    const mostrarBloqueados =
+        filtroEstado === "TODOS" || filtroEstado === "BLOQUEADOS";
+    const paginacionActivos = usePaginacion(activosFiltrados);
+    const paginacionInactivos = usePaginacion(inactivosFiltrados);
 
 
     const modalAbierto =
@@ -920,17 +975,14 @@ function Usuarios() {
                 </div>
 
 
-                <button
-                    className="btn-nuevo"
-                    type="button"
-                    onClick={abrirNuevoUsuario}
-                >
+                <div className="acciones-encabezado">
+                    <BotonActualizar onClick={actualizarUsuarios} actualizando={actualizando} />
 
-                    <i className="fa-solid fa-user-plus"></i>
-
-                    Nuevo usuario
-
-                </button>
+                    <button className="btn-nuevo" type="button" onClick={abrirNuevoUsuario}>
+                        <i className="fa-solid fa-user-plus"></i>
+                        Nuevo usuario
+                    </button>
+                </div>
 
             </div>
 
@@ -1043,9 +1095,57 @@ function Usuarios() {
 
                     </div>
 
+                    <div className="clientes-busqueda filtros-fila">
+
+                        <div className="clientes-buscador">
+                            <i className="fa-solid fa-magnifying-glass"></i>
+
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre, correo o rol..."
+                                value={busqueda}
+                                onChange={(e) => setBusqueda(e.target.value)}
+                            />
+
+                            {busqueda && (
+                                <button
+                                    type="button"
+                                    onClick={() => setBusqueda("")}
+                                    title="Limpiar búsqueda"
+                                >
+                                    <i className="fa-solid fa-xmark"></i>
+                                </button>
+                            )}
+                        </div>
+
+                        <select
+                            className="filtro-select"
+                            value={filtroEstado}
+                            onChange={(e) => setFiltroEstado(e.target.value)}
+                        >
+                            <option value="TODOS">Todos los estados</option>
+                            <option value="ACTIVOS">Activos</option>
+                            <option value="INACTIVOS">Inactivos</option>
+                            <option value="BLOQUEADOS">Bloqueados</option>
+                        </select>
+
+                        <select
+                            className="filtro-select"
+                            value={filtroRol}
+                            onChange={(e) => setFiltroRol(e.target.value)}
+                        >
+                            <option value="TODOS">Todos los roles</option>
+                            {roles.map((rol) => (
+                                <option key={rol.id} value={rol.id}>
+                                    {rol.nombre}
+                                </option>
+                            ))}
+                        </select>
+
+                    </div>
 
                     {/* USUARIOS ACTIVOS */}
-
+                    {mostrarActivos && (
                     <div className="usuarios-seccion">
 
                         <div className="usuarios-seccion-header">
@@ -1073,7 +1173,7 @@ function Usuarios() {
 
                             <span className="usuarios-contador activo">
 
-                                {usuariosActivos.length}
+                                {activosFiltrados.length}
 
                             </span>
 
@@ -1120,7 +1220,7 @@ function Usuarios() {
 
                                 <tbody>
 
-                                    {usuariosActivos.length === 0 ? (
+                                    {activosFiltrados.length === 0 ? (
 
                                         <tr>
 
@@ -1471,9 +1571,10 @@ function Usuarios() {
                         <NavegacionPaginas paginacion={paginacionActivos} />
 
                     </div>
+                    )}
 
                     {/* USUARIOS INACTIVOS */}
-
+                    {mostrarInactivos && (
                     <div className="usuarios-seccion usuarios-seccion-inactivos">
 
                         <div className="usuarios-seccion-header">
@@ -1501,7 +1602,7 @@ function Usuarios() {
 
                             <span className="usuarios-contador inactivo">
 
-                                {usuariosInactivos.length}
+                                {inactivosFiltrados.length}
 
                             </span>
 
@@ -1548,7 +1649,7 @@ function Usuarios() {
 
                                 <tbody>
 
-                                    {usuariosInactivos.length === 0 ? (
+                                    {inactivosFiltrados.length === 0 ? (
 
                                         <tr>
 
@@ -1702,7 +1803,107 @@ function Usuarios() {
                         <NavegacionPaginas paginacion={paginacionInactivos} />
 
                     </div>
+                    )}
 
+                    {mostrarBloqueados && (
+                    <div className="usuarios-seccion usuarios-seccion-bloqueados">
+
+                        <div className="usuarios-seccion-header">
+                            <div>
+                                <h2>
+                                    <span className="usuarios-titulo-bloqueados">
+                                        <i className="fa-solid fa-lock"></i>
+                                        Cuentas bloqueadas
+                                    </span>
+                                </h2>
+                                <p>
+                                    Cuentas bloqueadas temporalmente por intentos fallidos de acceso.
+                                </p>
+                            </div>
+
+                            <span className="usuarios-contador bloqueado">
+                                {bloqueadosFiltrados.length}
+                            </span>
+                        </div>
+
+                        <div className="tabla-usuarios-container">
+                            <table className="tabla-usuarios">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Correo</th>
+                                        <th>Rol</th>
+                                        <th>Intentos</th>
+                                        <th>Bloqueada hasta</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {bloqueadosFiltrados.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="usuarios-vacio">
+                                                No hay cuentas bloqueadas.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        bloqueadosFiltrados.map((usuario) => (
+                                            <tr key={usuario.id}>
+                                                <td>
+                                                    <strong>
+                                                        {usuario.nombres} {usuario.apellidos}
+                                                    </strong>
+                                                </td>
+                                                <td>{usuario.correo}</td>
+                                                <td>
+                                                    <span className="badge-rol">
+                                                        {usuario.rol?.nombre}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className="badge-intentos">
+                                                        {usuario.intentosAccesoFallidos ?? 0}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {new Date(usuario.bloqueadoHasta).toLocaleString(
+                                                        "es-CO",
+                                                        { timeZone: "America/Bogota" }
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <div className="acciones-usuario">
+                                                        <button
+                                                            type="button"
+                                                            className="btn-desbloquear"
+                                                            title={
+                                                                esUsuarioEnSesion(usuario)
+                                                                    ? "No puedes desbloquear tu propia cuenta desde aquí"
+                                                                    : "Desbloquear usuario"
+                                                            }
+                                                            disabled={
+                                                                esUsuarioEnSesion(usuario) ||
+                                                                desbloqueandoUsuario === usuario.id
+                                                            }
+                                                            onClick={() => desbloquearUsuario(usuario)}
+                                                        >
+                                                            {desbloqueandoUsuario === usuario.id ? (
+                                                                <i className="fa-solid fa-spinner fa-spin"></i>
+                                                            ) : (
+                                                                <i className="fa-solid fa-lock-open"></i>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                    )}
                 </>
 
             )}

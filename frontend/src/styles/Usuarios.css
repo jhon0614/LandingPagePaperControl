@@ -287,6 +287,10 @@
     color: #dc2626;
 }
 
+.usuarios-contador.bloqueado {
+    background: #fef3c7;
+    color: #d97706;
+}
 
 /* =========================================================
    TABLA
@@ -1312,6 +1316,10 @@
     border-top-color: #dc2626;
 }
 
+.usuarios-seccion-bloqueados {
+    border-top-color: #d97706;
+}
+
 .usuarios-seccion .tabla-usuarios-container {
     box-shadow: none;
 }
@@ -1348,4 +1356,9 @@
     .tabla-usuarios td:nth-child(2) {
         overflow-wrap: anywhere;
     }
+}
+
+[data-theme="dark"] .usuarios-contador.bloqueado {
+    background: rgba(217, 119, 6, .18);
+    color: #fbbf24;
 }

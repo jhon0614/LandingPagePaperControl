@@ -66,6 +66,38 @@ function obtenerFechaHoyTexto() {
 
 }
 
+const RANGOS_RAPIDOS = [
+    { etiqueta: "1 mes", meses: 1 },
+    { etiqueta: "3 meses", meses: 3 },
+    { etiqueta: "6 meses", meses: 6 },
+    { etiqueta: "1 año", meses: 12 },
+];
+
+
+function obtenerFechaAtrasTexto(meses) {
+
+    const hoy = new Date();
+
+    const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - meses, 1);
+
+    // Si el día no existe en ese mes (por ejemplo 31), usa el último día
+    const ultimoDia = new Date(
+        fecha.getFullYear(),
+        fecha.getMonth() + 1,
+        0
+    ).getDate();
+
+    fecha.setDate(Math.min(hoy.getDate(), ultimoDia));
+
+    const anio = fecha.getFullYear();
+
+    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+
+    const dia = String(fecha.getDate()).padStart(2, "0");
+
+    return `${anio}-${mes}-${dia}`;
+
+}
 
 function Reportes() {
 
@@ -128,12 +160,18 @@ function Reportes() {
 
         }
 
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         cargarUsuarios();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    function aplicarRangoRapido(meses) {
+
+        setDesde(obtenerFechaAtrasTexto(meses));
+
+        setHasta(obtenerFechaHoyTexto());
+
+    }
 
     async function consultarReporte(e) {
 
@@ -353,6 +391,43 @@ function Reportes() {
                         onChange={(e) => setHasta(e.target.value)}
                         disabled={cargando}
                     />
+
+                </div>
+
+                <div className="reportes-filtro">
+
+                    <label>Rango rápido</label>
+
+                    <div className="reportes-rangos-rapidos">
+
+                        {RANGOS_RAPIDOS.map((rango) => {
+
+                            const activo =
+                                hasta === obtenerFechaHoyTexto() &&
+                                desde === obtenerFechaAtrasTexto(rango.meses);
+
+                            return (
+
+                                <button
+                                    type="button"
+                                    key={rango.meses}
+                                    className={
+                                        activo
+                                            ? "btn-rango-rapido activo"
+                                            : "btn-rango-rapido"
+                                    }
+                                    aria-pressed={activo}
+                                    onClick={() => aplicarRangoRapido(rango.meses)}
+                                    disabled={cargando}
+                                >
+                                    {rango.etiqueta}
+                                </button>
+
+                            );
+
+                        })}
+
+                    </div>
 
                 </div>
 

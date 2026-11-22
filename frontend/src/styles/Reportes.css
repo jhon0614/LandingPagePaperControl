@@ -209,3 +209,127 @@
     opacity: .6;
     cursor: not-allowed;
 }
+
+.reportes-productos-cabecera {
+    flex-wrap: wrap;
+}
+
+.reportes-filtro select,
+.reportes-filtro input {
+    box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+
+    .reportes-filtros {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .reportes-filtro {
+        width: 100%;
+    }
+
+    .reportes-filtro input,
+    .reportes-filtro select {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .reportes-filtros .btn-consultar-reporte,
+    .reportes-productos-filtros .btn-consultar-reporte {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .reportes-productos-panel {
+        padding: 16px;
+    }
+
+    .reportes-productos-cabecera {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+    }
+
+    .reportes-productos-filtros {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .reportes-productos-filtros .reportes-filtro,
+    .reportes-productos-rango .reportes-filtro {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .reportes-productos-rango {
+        flex-direction: column;
+    }
+
+    .reportes-tabla-panel {
+        padding: 16px;
+    }
+
+    .reportes-resumen-cards {
+        grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+    }
+}
+
+.reportes-rangos-rapidos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.btn-rango-rapido {
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid #05788a;
+    border-radius: 9px;
+    background: #fff;
+    color: #05788a;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-rango-rapido:hover:not(:disabled) {
+    background: #e6f7fa;
+}
+
+.btn-rango-rapido.activo {
+    background: #05788a;
+    color: #fff;
+}
+
+.btn-rango-rapido:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+[data-theme="dark"] .btn-rango-rapido {
+    background: #10252e;
+    color: #7fd6e6;
+    border-color: rgba(79, 195, 214, 0.35);
+}
+
+[data-theme="dark"] .btn-rango-rapido.activo {
+    background: #05788a;
+    color: #fff;
+}
+
+@media (max-width: 700px) {
+
+    .reportes-rangos-rapidos {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .btn-rango-rapido {
+        width: 100%;
+    }
+}

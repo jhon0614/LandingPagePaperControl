@@ -14,7 +14,8 @@
     background: white;
     border-radius: 16px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 .inventario-vacio-standalone {
@@ -27,7 +28,9 @@
     font-size: 30px;
     color: #94a3b8;
     margin-bottom: 10px;
-    display: block;
+    display: flex;
+    justify-content: center;
+    width: 100%;
 }
 
 .inventario-vacio-standalone strong {

@@ -14,6 +14,16 @@ import {
 
 import usePaginacion from "../hooks/usePaginacion";
 import { SelectorRegistros, NavegacionPaginas } from "../components/Paginacion";
+import BotonActualizar from "../components/BotonActualizar";
+import "../styles/Clientes.css";
+
+function normalizarTexto(texto) {
+    return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
 
 function Proveedores() {
 
@@ -29,7 +39,53 @@ function Proveedores() {
 
     const [guardando, setGuardando] = useState(false);
 
-    const paginacion = usePaginacion(proveedores);
+    const [actualizando, setActualizando] = useState(false);
+
+    const [busqueda, setBusqueda] = useState("");
+
+    const proveedoresFiltrados = proveedores.filter((proveedor) => {
+
+        const texto = normalizarTexto(busqueda);
+
+        if (!texto) return true;
+
+        return [
+            proveedor.nombre,
+            proveedor.contacto,
+            proveedor.telefono,
+            proveedor.correo,
+            proveedor.direccion,
+        ].some((campo) => normalizarTexto(campo).includes(texto));
+
+    });
+
+    const paginacion = usePaginacion(proveedoresFiltrados);
+
+    async function actualizarProveedores() {
+
+        try {
+
+            setActualizando(true);
+            setError("");
+
+            const lista = await obtenerProveedores({ refrescar: true });
+
+            setProveedores(lista);
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible actualizar los proveedores."
+            );
+
+        } finally {
+
+            setActualizando(false);
+
+        }
+
+    }
 
     async function cargarProveedores() {
 
@@ -190,14 +246,14 @@ function Proveedores() {
                     </p>
                 </div>
 
-                <button
-                    type="button"
-                    className="btn-nuevo-producto"
-                    onClick={abrirNuevo}
-                >
-                    <i className="fa-solid fa-plus"></i>
-                    Nuevo proveedor
-                </button>
+                <div className="acciones-encabezado">
+                    <BotonActualizar onClick={actualizarProveedores} actualizando={actualizando} />
+
+                    <button type="button" className="btn-nuevo-producto" onClick={abrirNuevo}>
+                        <i className="fa-solid fa-plus"></i>
+                        Nuevo proveedor
+                    </button>
+                </div>
 
             </div>
 
@@ -205,19 +261,52 @@ function Proveedores() {
                 <div className="caja-error">{error}</div>
             )}
 
+            <div className="clientes-busqueda">
+                <div className="clientes-buscador">
+                    <i className="fa-solid fa-magnifying-glass"></i>
+
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre, contacto, teléfono, correo o dirección..."
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                    />
+
+                    {busqueda && (
+                        <button
+                            type="button"
+                            onClick={() => setBusqueda("")}
+                            title="Limpiar búsqueda"
+                        >
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                    )}
+                </div>
+            </div>
+            
             <SelectorRegistros paginacion={paginacion} />
 
             <div className="proveedores-tabla-wrapper">
 
-                {proveedores.length === 0 ? (
+                {proveedoresFiltrados.length === 0 ? (
 
                     <div className="inventario-vacio-standalone">
                         <i className="fa-solid fa-truck"></i>
-                        <strong>No hay proveedores registrados</strong>
-                        <span>
-                            Crea tu primer proveedor para asociarlo a
-                            tus productos.
-                        </span>
+
+                        {proveedores.length === 0 ? (
+                            <>
+                                <strong>No hay proveedores registrados</strong>
+                                <span>
+                                    Crea tu primer proveedor para asociarlo a
+                                    tus productos.
+                                </span>
+                            </>
+                        ) : (
+                            <>
+                                <strong>No se encontraron proveedores</strong>
+                                <span>Prueba con otra búsqueda.</span>
+                            </>
+                        )}
                     </div>
 
                 ) : (

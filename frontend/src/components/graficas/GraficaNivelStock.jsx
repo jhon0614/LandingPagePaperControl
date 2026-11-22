@@ -14,6 +14,37 @@ import GraficaDona from "./GraficaDona";
 import TooltipGrafica from "./TooltipGrafica";
 import { COLORES } from "../../utils/graficasUtils";
 
+function EtiquetaEje({ x, y, payload }) {
+
+    const palabras = String(payload.value).split(" ");
+
+    return (
+
+        <text
+            x={x}
+            y={y + 12}
+            textAnchor="middle"
+            fill={COLORES.texto}
+            fontSize={11}
+        >
+
+            {palabras.map((palabra, indice) => (
+
+                <tspan
+                    key={indice}
+                    x={x}
+                    dy={indice === 0 ? 0 : 13}
+                >
+                    {palabra}
+                </tspan>
+
+            ))}
+
+        </text>
+
+    );
+
+}
 
 /*
  * Nivel de stock de los productos activos:
@@ -85,7 +116,8 @@ function GraficaNivelStock({ productos }) {
                             interval={0}
                             tickLine={false}
                             axisLine={false}
-                            tick={{ fontSize: 12, fill: COLORES.texto }}
+                            height={36}
+                            tick={<EtiquetaEje />}
                         />
 
                         <YAxis hide allowDecimals={false} />

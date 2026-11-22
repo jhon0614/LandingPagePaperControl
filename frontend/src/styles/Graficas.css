@@ -265,7 +265,9 @@
 }
 
 .grafica-stock .grafica-dona-leyenda small {
-    display: none;
+    display: inline;
+    color: #94a3b8;
+    font-size: 12px;
 }
 
 @media (max-width: 600px) {
@@ -377,4 +379,17 @@
 
 [data-theme="dark"] .grafica-tooltip-fila .grafica-punto[style*="rgb(6, 47, 61)"] {
     background: #1d20d2 !important;
+}
+
+@media (max-width: 600px) {
+
+    :root .grafica-tarjeta-acciones {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    :root .grafica-select {
+        width: 100%;
+        height: 40px;
+    }
 }

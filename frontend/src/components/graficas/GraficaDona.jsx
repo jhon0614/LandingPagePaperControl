@@ -17,6 +17,17 @@ import TooltipGrafica from "./TooltipGrafica";
  *  - centroTitulo / centroTexto: texto dentro de la dona
  *  - horizontal: dona a la izquierda y leyenda a la derecha (más compacta)
  */
+function formatoPorcentaje(valor, total) {
+
+    if (total <= 0 || valor <= 0) return "0 %";
+
+    const porcentaje = (valor / total) * 100;
+
+    if (porcentaje < 1) return "< 1 %";
+
+    return `${Math.round(porcentaje)} %`;
+
+}
 
 function GraficaDona({
     datos,
@@ -104,9 +115,7 @@ function GraficaDona({
                         <b>{formato(d.valor)}</b>
 
                         <small>
-                            {total > 0
-                                ? `${Math.round((d.valor / total) * 100)} %`
-                                : "0 %"}
+                            {formatoPorcentaje(d.valor, total)}
                         </small>
 
                     </li>

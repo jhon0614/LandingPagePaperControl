@@ -687,3 +687,60 @@ que ya tenga su fondo en su propia clase lo conserva. */
 [data-theme="dark"] .cards .card:nth-child(2) i { background: rgba(34, 160, 90, .18);  color: #86efac; }
 [data-theme="dark"] .cards .card:nth-child(3) i { background: rgba(245, 158, 11, .18); color: #fbbf24; }
 [data-theme="dark"] .cards .card:nth-child(4) i { background: rgba(229, 72, 77, .18);  color: #f87171; }
+
+/* ===== Menú contraído (solo escritorio) ===== */
+@media (min-width: 901px) {
+
+    /* Logo: solo el dibujo, sin las letras */
+    .sidebar-contraido .sidebar-logo {
+        width: 44px;
+        margin: 0 auto 24px;
+        overflow: hidden;
+    }
+
+    .sidebar-contraido .sidebar-logo svg {
+        width: 154px;
+        max-width: none;
+    }
+
+    /* Íconos centrados */
+    .sidebar-contraido .sidebar-menu {
+        padding-right: 0;
+        align-items: center;
+    }
+
+    .sidebar-contraido .sidebar-menu a {
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        gap: 0;
+        justify-content: center;
+    }
+
+    .sidebar-contraido .sidebar-menu a:hover {
+        transform: none;
+    }
+
+    .sidebar-contraido .sidebar-menu a i {
+        width: auto;
+        margin: 0;
+        font-size: 18px;
+    }
+}
+
+/* ===== Celular: sin botón de contraer, menú siempre completo ===== */
+@media (max-width: 900px) {
+
+    .sidebar-alternar {
+        display: none;
+    }
+
+    .sidebar-contraido .sidebar-logo {
+        width: 100%;
+        overflow: visible;
+    }
+
+    .sidebar-contraido .sidebar-logo svg {
+        width: 100%;
+    }
+}

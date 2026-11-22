@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import Logo from "./Logo";
 import { NavLink } from "react-router-dom";
 import "../styles/Dashboard.css";
@@ -7,7 +8,36 @@ function Sidebar({ contraido, onAlternar }) {
     const usuario = JSON.parse(
         localStorage.getItem("usuario")
     );
+    
+    const menuRef = useRef(null);
 
+    useLayoutEffect(() => {
+        const menu = menuRef.current;
+
+        if (!menu) return;
+
+            function leerScrollGuardado() {
+            try {
+                return Number(sessionStorage.getItem("sidebar-scroll")) || 0;
+            } catch {
+                return 0;
+            }
+        }
+
+        menu.scrollLeft = leerScrollGuardado();
+        
+        function guardarScroll() {
+            try {
+                sessionStorage.setItem("sidebar-scroll", String(menu.scrollLeft));
+            } catch {
+                // sin almacenamiento disponible: no se guarda
+            }
+        }
+
+        menu.addEventListener("scroll", guardarScroll, { passive: true });
+
+        return () => menu.removeEventListener("scroll", guardarScroll);
+    }, []);
 
     return (
 
@@ -43,7 +73,7 @@ function Sidebar({ contraido, onAlternar }) {
             </div>
 
 
-            <nav className="sidebar-menu">
+            <nav className="sidebar-menu" ref={menuRef}>
 
 
                 {/* =========================================

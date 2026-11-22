@@ -1,22 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CacheListado } from "../src/services/list-cache.service.js";
+import { crearCachePrueba } from "../test-support/cache.js";
 import { CacheProveedores } from "../src/services/supplier-cache.service.js";
 import { ServicioCategoria } from "../src/services/category.service.js";
 import { ServicioProducto } from "../src/services/product.service.js";
 import { ControladorCategoria } from "../src/controllers/category.controller.js";
 
-function cachePrueba() {
-  const datos = new Map([["categorias:version", "1"], ["proveedores:version", "1"]]);
-  const cliente = { isReady: true, isOpen: true, get: async (k) => datos.get(k) ?? null,
-    set: async (k, v) => datos.set(k, v), destroy() { this.isReady = false; } };
-  const cache = new CacheListado(cliente, { prefijo: "categorias" });
-  cache.disponible = true;
-  return { cache, cliente };
-}
 
 test("categorias: MISS, HIT, REFRESH y JSON existente con cabecera X-Cache", async () => {
-  const { cache } = cachePrueba();
+  const { cache } = crearCachePrueba("categorias");
   let consultas = 0;
   const servicio = new ServicioCategoria({ listar: async () => [{ id: ++consultas, nombre: "Papel" }] }, cache);
   const controlador = new ControladorCategoria(servicio);
@@ -36,9 +28,10 @@ test("categorias: MISS, HIT, REFRESH y JSON existente con cabecera X-Cache", asy
 });
 
 test("categorias: modificaciones invalidan sin afectar cache de proveedores", async () => {
-  const { cache, cliente } = cachePrueba();
+  const { cache, cliente } = crearCachePrueba("categorias");
   const proveedores = new CacheProveedores(cliente, { prefijo: "proveedores" });
   proveedores.disponible = true;
+  await cliente.set("proveedores:version", "1");
   await proveedores.obtenerOCargar({}, async () => [{ id: 99 }]);
   let filas = [];
   const servicio = new ServicioCategoria({ listar: async () => filas,
@@ -71,6 +64,7 @@ test("crear o editar productos invalida categorias creadas implicitamente", asyn
     buscarPorId: async () => ({ id: 1, nombre: "Cuaderno", proveedores: [] }) },
     { invalidar: async () => { invalidaciones++; } });
   await servicio.crear({}, 1);
+  assert.equal(invalidaciones, 1, "await servicio.crear debe invalidar una sola vez");
   await servicio.actualizar(1, {}, 1);
   assert.equal(invalidaciones, 2);
 });

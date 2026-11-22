@@ -1,25 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CacheListado } from "../src/services/list-cache.service.js";
+import { crearCachePrueba } from "../test-support/cache.js";
 import { ServicioCliente } from "../src/services/client.service.js";
 import { ControladorCliente } from "../src/controllers/client.controller.js";
 import { ServicioVenta } from "../src/services/sale.service.js";
 
 const fila = { id: 1, tipo_documento: "CC", numero_documento: "123456", nombres: "Laura", esta_activo: 1 };
-function cachePrueba() {
-  const datos = new Map([["clientes:version", "1"]]);
-  const cache = new CacheListado({ isReady: true, isOpen: true,
-    get: async (k) => datos.get(k) ?? null, set: async (k, v) => datos.set(k, v), destroy() {} }, { prefijo: "clientes" });
-  cache.disponible = true;
-  return cache;
-}
 
 test("clientes: HIT/REFRESH y alcance efectivo impiden mezclar inactivos con vendedor", async () => {
   let consultas = 0;
   const servicio = new ServicioCliente({ buscar: async (_texto, _limite, incluir) => {
     consultas++;
     return incluir ? [fila, { ...fila, id: 2, esta_activo: 0 }] : [fila];
-  } }, {}, cachePrueba());
+  } }, {}, crearCachePrueba("clientes").cache);
   const controlador = new ControladorCliente(servicio);
   const res = { set(k, v) { this[k] = v; }, status() { return this; }, json(body) { this.body = body; } };
   const next = (error) => { throw error; };
@@ -40,7 +33,7 @@ test("clientes: HIT/REFRESH y alcance efectivo impiden mezclar inactivos con ven
 
 test("clientes: separa paginas y busquedas y valida antes de leer cache", async () => {
   let consultas = 0;
-  const servicio = new ServicioCliente({ buscar: async () => { consultas++; return [fila]; } }, {}, cachePrueba());
+  const servicio = new ServicioCliente({ buscar: async () => { consultas++; return [fila]; } }, {}, crearCachePrueba("clientes").cache);
   await servicio.buscar("Laura", undefined, { pagina: 1, limite: 50 });
   await servicio.buscar("Laura", undefined, { pagina: 2, limite: 50 });
   await servicio.buscar("Ana", undefined, { pagina: 1, limite: 50 });
@@ -60,8 +53,11 @@ test("clientes: crear, editar, activar y eliminar invalidan antes de auditar", a
     eliminarLogicamente: async () => {},
   }, { registrar: async () => {} }, cache);
   await servicio.crear({ tipoDocumento: "CC", documento: "123456", nombres: "Laura" });
+  assert.equal(invalidaciones, 1, "await servicio.crear debe invalidar una sola vez");
   await servicio.actualizar(1, { nombres: "Ana" }, 1);
+  assert.equal(invalidaciones, 2, "await servicio.actualizar debe invalidar una sola vez");
   await servicio.cambiarEstado(1, false, 1);
+  assert.equal(invalidaciones, 3, "await servicio.cambiarEstado debe invalidar una sola vez");
   await servicio.eliminar(1, 1);
   assert.equal(invalidaciones, 4);
   servicio.modeloAuditoria.registrar = async () => { throw new Error("Auditoria no disponible"); };
@@ -75,6 +71,7 @@ test("clientes: confirmar y anular ventas invalida las estadisticas de compra", 
   const servicio = new ServicioVenta({ crear: async () => ({ id: 1 }), anular: async () => ({}),
     comprobante: async () => ({ venta: { id: 1, vendido_por: 1 }, productos: [], pagos: [] }) }, undefined, cache);
   await servicio.crear({ productos: [{ productoId: 1, cantidad: 1 }], metodoPago: "EFECTIVO" }, 1);
+  assert.equal(invalidaciones, 1, "await servicio.crear debe invalidar una sola vez");
   await servicio.anular(1, {}, { id: 1, rol: "ADMINISTRADOR" });
   assert.equal(invalidaciones, 2);
   servicio.modelo.crear = async () => ({ error: "STOCK_INSUFICIENTE" });

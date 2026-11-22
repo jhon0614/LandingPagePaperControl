@@ -1,23 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CacheListado } from "../src/services/list-cache.service.js";
+import { crearCachePrueba } from "../test-support/cache.js";
 import { ServicioDashboard } from "../src/services/dashboard.service.js";
 import { ControladorDashboard } from "../src/controllers/dashboard.controller.js";
 import { ServicioProducto } from "../src/services/product.service.js";
 import { ServicioVenta } from "../src/services/sale.service.js";
 import { ServicioUsuario } from "../src/services/user.service.js";
 
-function cachePrueba() {
-  const datos = new Map([["dashboard:version", "1"]]);
-  const cache = new CacheListado({ isReady: true, isOpen: true,
-    get: async (k) => datos.get(k) ?? null, set: async (k, v) => datos.set(k, v), destroy() {} }, { prefijo: "dashboard" });
-  cache.disponible = true;
-  return cache;
-}
 
 test("dashboard: MISS/HIT/REFRESH devuelve el mismo objeto y numeros actuales", async () => {
   let consultas = 0;
-  const servicio = new ServicioDashboard({ resumen: async () => ({ productos: String(++consultas), ventas: "2", usuarios: "3", stock_bajo: "4" }) }, cachePrueba());
+  const servicio = new ServicioDashboard({ resumen: async () => ({ productos: String(++consultas), ventas: "2", usuarios: "3", stock_bajo: "4" }) }, crearCachePrueba("dashboard").cache);
   const controlador = new ControladorDashboard(servicio);
   const res = { set(k, v) { this[k] = v; }, status() { return this; }, json(body) { this.body = body; } };
   const next = (e) => { throw e; };
@@ -41,9 +34,13 @@ test("dashboard: productos y movimientos invalidan pero asociaciones no alteran 
     listarMovimientos: async () => [{ id: 1 }], asociarProveedor: async () => true, listarProveedores: async () => [],
   }, undefined, undefined, { invalidar: async () => { invalidaciones++; } });
   await servicio.crear({}, 1);
+  assert.equal(invalidaciones, 1, "await servicio.crear debe invalidar una sola vez");
   await servicio.actualizar(1, {}, 1);
+  assert.equal(invalidaciones, 2, "await servicio.actualizar debe invalidar una sola vez");
   await servicio.cambiarEstado(1, false);
+  assert.equal(invalidaciones, 3, "await servicio.cambiarEstado debe invalidar una sola vez");
   await servicio.eliminar(1, 1);
+  assert.equal(invalidaciones, 4, "await servicio.eliminar debe invalidar una sola vez");
   await servicio.registrarMovimiento(1, {}, 1);
   assert.equal(invalidaciones, 5);
   await servicio.asociarProveedor(1, 2);
@@ -56,6 +53,7 @@ test("dashboard: ventas confirmadas/anuladas invalidan, rechazos no", async () =
     comprobante: async () => ({ venta: { id: 1 }, productos: [], pagos: [] }),
   }, undefined, undefined, { invalidar: async () => { invalidaciones++; } });
   await servicio.crear({ productos: [] }, 1);
+  assert.equal(invalidaciones, 1, "await servicio.crear debe invalidar una sola vez");
   await servicio.anular(1, {}, { id: 1, rol: "ADMINISTRADOR" });
   assert.equal(invalidaciones, 2);
   servicio.modelo.crear = async () => ({ error: "STOCK_INSUFICIENTE" });

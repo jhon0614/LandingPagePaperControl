@@ -2,21 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { CacheProveedores } from "../src/services/supplier-cache.service.js";
 import { ServicioProveedor } from "../src/services/supplier.service.js";
+import { crearCachePrueba } from "../test-support/cache.js";
 
 function entorno() {
-  let ahora = 0;
-  const entradas = new Map([["test:version", { valor: "inicial", vence: Infinity }]]);
-  const cliente = {
-    isReady: true, isOpen: true,
-    async get(clave) { const e = entradas.get(clave); return e && e.vence > ahora ? e.valor : null; },
-    async set(clave, valor, opciones) { entradas.set(clave, { valor, vence: opciones?.EX ? ahora + opciones.EX * 1000 : Infinity }); },
-    destroy() { this.isReady = this.isOpen = false; },
-  };
-  const cache = new CacheProveedores(cliente, { ttl: 30, timeout: 10, prefijo: "test" });
-  cache.disponible = true;
+  const entorno = crearCachePrueba("test", { ttl: 30, timeout: 10 }, CacheProveedores);
   let consultas = 0;
   const cargar = async () => [{ id: ++consultas }];
-  return { cache, cliente, entradas, cargar, avanzar: (ms) => { ahora += ms; }, consultas: () => consultas };
+  return { ...entorno, cargar, consultas: () => consultas };
 }
 
 test("cache devuelve MISS/HIT, distingue paginas y busquedas y vence", async () => {
@@ -36,6 +28,9 @@ test("cache devuelve MISS/HIT, distingue paginas y busquedas y vence", async () 
 
 test("invalidar todas las variantes no borra otros datos ni reutiliza lecturas concurrentes", async () => {
   const e = entorno();
+  await e.cliente.set("ajeno", "conservar");
+  await e.cache.obtenerOCargar({ pagina: 1 }, async () => [{ id: "pagina1" }]);
+  await e.cache.obtenerOCargar({ pagina: 2 }, async () => [{ id: "pagina2" }]);
   let continuar;
   const pendiente = e.cache.obtenerOCargar({}, () => new Promise((resolve) => { continuar = resolve; }));
   while (!continuar) await new Promise((resolve) => setImmediate(resolve));
@@ -43,6 +38,9 @@ test("invalidar todas las variantes no borra otros datos ni reutiliza lecturas c
   continuar([{ id: "anterior" }]);
   await pendiente;
   assert.deepEqual(await e.cache.obtenerOCargar({}, e.cargar), [{ id: 1 }]);
+  assert.deepEqual(await e.cache.obtenerOCargar({ pagina: 1 }, e.cargar), [{ id: 2 }]);
+  assert.deepEqual(await e.cache.obtenerOCargar({ pagina: 2 }, e.cargar), [{ id: 3 }]);
+  assert.equal(await e.cliente.get("ajeno"), "conservar");
 });
 
 test("Redis caido o lento no impide consultar MySQL; errores SQL se propagan", async () => {
@@ -64,7 +62,9 @@ test("crear, actualizar y eliminar invalidan cache; filtros se validan incluso c
     buscarPorId: async () => ({ id: 7, nombre: "Papel", esta_activo: 1 }) };
   const servicio = new ServicioProveedor(modelo, { invalidar: async () => { invalidaciones++; } });
   await servicio.crear({ nombre: "Papel" });
+  assert.equal(invalidaciones, 1, "await servicio.crear debe invalidar una sola vez");
   await servicio.actualizar(7, { nombre: "Papel" });
+  assert.equal(invalidaciones, 2, "await servicio.actualizar debe invalidar una sola vez");
   await servicio.eliminar(7);
   assert.equal(invalidaciones, 3);
   await assert.rejects(servicio.listar({ pagina: 0 }), { codigo: "PAGINACION_INVALIDA" });

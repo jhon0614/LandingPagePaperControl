@@ -1,25 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CacheListado } from "../src/services/list-cache.service.js";
+import { crearCachePrueba } from "../test-support/cache.js";
 import { ServicioProducto } from "../src/services/product.service.js";
 import { ControladorProducto } from "../src/controllers/product.controller.js";
 import { ServicioCategoria } from "../src/services/category.service.js";
 import { ServicioProveedor } from "../src/services/supplier.service.js";
 import { ServicioVenta } from "../src/services/sale.service.js";
 
-function cachePrueba() {
-  const datos = new Map([["productos:version", "1"]]);
-  const cliente = { isReady: true, isOpen: true, get: async (k) => datos.get(k) ?? null,
-    set: async (k, v) => datos.set(k, v), destroy() { this.isReady = false; } };
-  const cache = new CacheListado(cliente, { prefijo: "productos", ttl: 10 });
-  cache.disponible = true;
-  return cache;
-}
 const fila = { id: 1, nombre: "Cuaderno", sku: "C1", stock_actual: 10, esta_activo: 1, proveedores: [] };
 
 test("productos: cache distingue paginas, categoria, busqueda e inactivos; REFRESH actualiza JSON", async () => {
   let consultas = 0;
-  const servicio = new ServicioProducto({ listar: async () => [{ ...fila, stock_actual: ++consultas }] }, undefined, cachePrueba());
+  const servicio = new ServicioProducto({ listar: async () => [{ ...fila, stock_actual: ++consultas }] }, undefined, crearCachePrueba("productos", { ttl: 10 }).cache);
   const controlador = new ControladorProducto(servicio);
   const res = { set(k, v) { this[k] = v; }, json(body) { this.body = body; } };
   const req = { query: { pagina: "1", limite: "50" } };
@@ -46,7 +38,7 @@ test("productos: cache distingue paginas, categoria, busqueda e inactivos; REFRE
   await assert.rejects(servicio.listar(undefined, undefined, { buscar: "x".repeat(101) }), { codigo: "TERMINO_BUSQUEDA_INVALIDO" });
 });
 
-test("productos: todas las escrituras invalidan despues del modelo; detalle no usa cache", async () => {
+test("productos: cada escritura invalida una vez; detalle no usa cache", async () => {
   let invalidaciones = 0;
   let detalles = 0;
   const servicio = new ServicioProducto({
@@ -57,11 +49,17 @@ test("productos: todas las escrituras invalidan despues del modelo; detalle no u
     asociarProveedor: async () => true, quitarProveedor: async () => true, listarProveedores: async () => [],
   }, undefined, { invalidar: async () => { invalidaciones++; } });
   await servicio.crear({}, 1);
+  assert.equal(invalidaciones, 1, "await servicio.crear debe invalidar una sola vez");
   await servicio.actualizar(1, {}, 1);
+  assert.equal(invalidaciones, 2, "await servicio.actualizar debe invalidar una sola vez");
   await servicio.cambiarEstado(1, false);
+  assert.equal(invalidaciones, 3, "await servicio.cambiarEstado debe invalidar una sola vez");
   await servicio.eliminar(1, 1);
+  assert.equal(invalidaciones, 4, "await servicio.eliminar debe invalidar una sola vez");
   await servicio.registrarMovimiento(1, { cantidad: 1 }, 1);
+  assert.equal(invalidaciones, 5, "await servicio.registrarMovimiento debe invalidar una sola vez");
   await servicio.asociarProveedor(1, 2);
+  assert.equal(invalidaciones, 6, "await servicio.asociarProveedor debe invalidar una sola vez");
   await servicio.quitarProveedor(1, 2);
   assert.equal(invalidaciones, 7);
   const anteriores = detalles;
@@ -76,19 +74,23 @@ test("productos: cambiar categoria o proveedor invalida el nombre/contacto del l
   const proveedores = new ServicioProveedor({ actualizar: async () => true, eliminar: async () => true,
     buscarPorId: async () => ({ id: 2 }) }, undefined, cache);
   await categorias.actualizar(2, { nombre: "Arte" });
+  assert.equal(invalidaciones, 1, "await categorias.actualizar debe invalidar una sola vez");
   await categorias.eliminar(2);
+  assert.equal(invalidaciones, 2, "await categorias.eliminar debe invalidar una sola vez");
   await proveedores.actualizar(2, { nombre: "Papel" });
+  assert.equal(invalidaciones, 3, "await proveedores.actualizar debe invalidar una sola vez");
   await proveedores.eliminar(2);
   assert.equal(invalidaciones, 4);
 });
 
-test("ventas: confirmar y anular invalidan solo despues de confirmar MySQL", async () => {
+test("ventas: crear y anular invalidan una vez al tener exito; rechazos no invalidan", async () => {
   let invalidaciones = 0;
   const cache = { invalidar: async () => { invalidaciones++; } };
   const comprobante = { venta: { id: 1, vendido_por: 1 }, productos: [], pagos: [] };
   const modelo = { crear: async () => ({ id: 1 }), anular: async () => ({}), comprobante: async () => comprobante };
   const servicio = new ServicioVenta(modelo, cache);
   await servicio.crear({ productos: [{ productoId: 1, cantidad: 1 }], metodoPago: "EFECTIVO" }, 1);
+  assert.equal(invalidaciones, 1, "await servicio.crear debe invalidar una sola vez");
   await servicio.anular(1, {}, { id: 1, rol: "ADMINISTRADOR" });
   assert.equal(invalidaciones, 2);
   modelo.crear = async () => ({ error: "STOCK_INSUFICIENTE" });

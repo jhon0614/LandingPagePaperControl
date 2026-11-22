@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import bcrypt from "bcryptjs";
-import { CacheListado } from "../src/services/list-cache.service.js";
+import { crearCachePrueba } from "../test-support/cache.js";
 import { ServicioUsuario } from "../src/services/user.service.js";
 import { ServicioAutenticacion } from "../src/services/auth.service.js";
 import { ServicioContrasena } from "../src/services/password.service.js";
@@ -9,16 +9,9 @@ import { ControladorUsuario } from "../src/controllers/user.controller.js";
 
 const fila = { id: 2, nombres: "Laura", apellidos: "Gomez", correo: "laura@example.invalid",
   rol_id: 2, rol: "VENDEDOR", esta_activo: 1, hash_contrasena: "HASH_NO_DEBE_CACHEARSE", tokenAcceso: "TOKEN_NO_DEBE_CACHEARSE" };
-function cachePrueba() {
-  const datos = new Map([["usuarios:version", "1"]]);
-  const cache = new CacheListado({ isReady: true, isOpen: true,
-    get: async (k) => datos.get(k) ?? null, set: async (k, v) => datos.set(k, v), destroy() {} }, { prefijo: "usuarios" });
-  cache.disponible = true;
-  return { cache, datos };
-}
 
 test("usuarios: MISS/HIT/REFRESH conserva JSON y solo cachea el presentador sin credenciales", async () => {
-  const { cache, datos } = cachePrueba();
+  const { cache, datos } = crearCachePrueba("usuarios");
   let consultas = 0;
   const servicio = new ServicioUsuario({ listar: async () => { consultas++; return [fila]; } }, {}, {}, {}, cache);
   const controlador = new ControladorUsuario(servicio);
@@ -52,8 +45,11 @@ test("usuarios: cambiar datos, estado, Google y eliminar invalidan; detalle sigu
   }, {}, { revocarPorUsuario: async () => {} }, { registrar: async () => {} },
   { invalidar: async () => { invalidaciones++; } });
   await servicio.actualizar(2, { nombres: "Ana" }, 1);
+  assert.equal(invalidaciones, 1, "await servicio.actualizar debe invalidar una sola vez");
   await servicio.cambiarEstado(2, false, 1);
+  assert.equal(invalidaciones, 2, "await servicio.cambiarEstado debe invalidar una sola vez");
   await servicio.cambiarGoogle(2, "aprobar", 1);
+  assert.equal(invalidaciones, 3, "await servicio.cambiarGoogle debe invalidar una sola vez");
   await servicio.eliminar(2, 1);
   assert.equal(invalidaciones, 4);
   const antes = detalles;
@@ -114,6 +110,7 @@ test("usuarios: desbloqueo y recuperacion invalidan; sin Redis hay BYPASS", asyn
     cacheUsuarios: { invalidar: async () => { invalidaciones++; } },
   });
   await servicio.desbloquearUsuario({ usuarioId: 2, responsableId: 1 });
+  assert.equal(invalidaciones, 1, "await servicio.desbloquearUsuario debe invalidar una sola vez");
   await servicio.restablecerContrasena({ token: "ficticio", contrasenaNueva: "Nueva123456!" });
   assert.equal(invalidaciones, 2);
   let estado;

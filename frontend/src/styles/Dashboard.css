@@ -467,7 +467,7 @@ select:focus {
         width: 12px;
         height: 12px;
         flex-shrink: 0;
-        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23062f3d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%2305788a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
         transition: rotate 0.15s;
     }
 
@@ -742,5 +742,287 @@ que ya tenga su fondo en su propia clase lo conserva. */
 
     .sidebar-contraido .sidebar-logo svg {
         width: 100%;
+    }
+}
+
+@media (max-width: 900px) {
+
+    .header {
+        height: auto;
+        min-height: 80px;
+        padding: 12px 20px;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .header {
+        padding: 10px 14px;
+    }
+
+    .header h2 {
+        font-size: 18px;
+    }
+
+    .header p {
+        font-size: 13px;
+    }
+
+    .header-acciones {
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .logout-button {
+        padding: 10px 14px;
+        white-space: nowrap;
+    }
+}
+
+.inventario-tabla thead,
+.tabla-clientes thead,
+.tabla-usuarios thead,
+.historial-ventas-tabla thead,
+.caja-gastos-tabla thead,
+.grafica-tabla thead {
+    background: #05788a !important;
+}
+
+.inventario-tabla th,
+.tabla-clientes th,
+.tabla-usuarios th,
+.historial-ventas-tabla th,
+.caja-gastos-tabla th,
+.grafica-tabla th {
+    background: #05788a !important;
+    color: #ffffff !important;
+    border-bottom-color: #05788a !important;
+}
+
+:root .caja-gastos-tabla,
+:root .grafica-tabla,
+:root .tabla-clientes-container,
+:root .tabla-usuarios-container,
+:root .inventario-tabla-wrapper,
+:root .proveedores-tabla-wrapper,
+:root .historial-ventas-tabla {
+    border: 1px solid #edf2f7;
+    border-radius: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    box-shadow: none;
+}
+
+[data-theme="dark"] .caja-gastos-tabla,
+[data-theme="dark"] .grafica-tabla,
+[data-theme="dark"] .tabla-clientes-container,
+[data-theme="dark"] .tabla-usuarios-container,
+[data-theme="dark"] .inventario-tabla-wrapper,
+[data-theme="dark"] .proveedores-tabla-wrapper,
+[data-theme="dark"] .historial-ventas-tabla {
+    border-color: rgba(79, 195, 214, 0.35);
+}
+
+:root .inventario-seccion .inventario-tabla-wrapper,
+:root .clientes-seccion .tabla-clientes-container {
+    width: auto;
+    margin: 0 22px 22px;
+}
+
+:root .caja-gastos-tabla th,
+:root .grafica-tabla th {
+    padding: 13px 15px;
+}
+
+:root .caja-gastos-tabla td,
+:root .grafica-tabla td {
+    padding: 12px 15px;
+}
+
+@media (max-width: 600px) {
+
+    :root .inventario-seccion .inventario-tabla-wrapper,
+    :root .clientes-seccion .tabla-clientes-container {
+        margin: 0 14px 16px;
+    }
+}
+
+@media (max-width: 600px) {
+
+    :root .paginacion-barra {
+        gap: 10px;
+    }
+
+    :root .paginacion-botones {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    :root .paginacion-botones span {
+        flex: 1;
+        text-align: center;
+        font-size: 13px;
+        line-height: 1.2;
+        white-space: normal;
+    }
+
+    :root .paginacion-botones button {
+        flex: 0 0 auto;
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+
+    :root .inventario-seccion .paginacion-barra,
+    :root .inventario-seccion .paginacion-navegacion,
+    :root .clientes-seccion .paginacion-barra,
+    :root .clientes-seccion .paginacion-navegacion {
+        padding: 0 14px;
+    }
+}
+
+:root:not([data-theme="dark"]) .filtro-select,
+:root:not([data-theme="dark"]) .grafica-select,
+:root:not([data-theme="dark"]) .paginacion-mostrar select,
+:root:not([data-theme="dark"]) .inventario-dropdown-btn,
+:root:not([data-theme="dark"]) .reportes-filtro select,
+:root:not([data-theme="dark"]) .historial-ventas-filtros .historial-filtro select {
+    border-color: #05788a;
+    color: #05788a;
+    font-weight: 700;
+}
+
+:root:not([data-theme="dark"]) .inventario-dropdown-btn i {
+    color: #05788a;
+}
+
+:root:not([data-theme="dark"]) .clientes-buscador,
+:root:not([data-theme="dark"]) div.pos-buscador {
+    border: 1px solid #05788a;
+}
+
+:root:not([data-theme="dark"]) .clientes-buscador input,
+:root:not([data-theme="dark"]) div.pos-buscador input,
+:root:not([data-theme="dark"]) .inventario-buscador input {
+    color: #05788a;
+}
+
+:root:not([data-theme="dark"]) .clientes-buscador input::placeholder,
+:root:not([data-theme="dark"]) div.pos-buscador input::placeholder,
+:root:not([data-theme="dark"]) .inventario-buscador input::placeholder {
+    color: #05788a;
+    opacity: 0.6;
+}
+
+:root:not([data-theme="dark"]) .clientes-buscador > i,
+:root:not([data-theme="dark"]) .clientes-buscador button,
+:root:not([data-theme="dark"]) div.pos-buscador i,
+:root:not([data-theme="dark"]) .inventario-buscador > i {
+    color: #05788a;
+}
+
+:root:not([data-theme="dark"]) .inventario-buscador input {
+    border-color: #05788a;
+}
+
+@supports (appearance: base-select) {
+
+    :root:not([data-theme="dark"]) :is(
+        .filtro-select,
+        .grafica-select,
+        .paginacion-mostrar select,
+        .reportes-filtro select,
+        .historial-ventas-filtros .historial-filtro select
+    ) {
+        appearance: base-select;
+    }
+
+    :root:not([data-theme="dark"]) :is(
+        .filtro-select,
+        .grafica-select,
+        .paginacion-mostrar select,
+        .reportes-filtro select,
+        .historial-ventas-filtros .historial-filtro select
+    )::picker-icon {
+        color: #05788a;
+    }
+
+    :root:not([data-theme="dark"]) :is(
+        .filtro-select,
+        .grafica-select,
+        .paginacion-mostrar select,
+        .reportes-filtro select,
+        .historial-ventas-filtros .historial-filtro select
+    )::picker(select) {
+        appearance: base-select;
+        margin-top: 5px;
+        padding: 5px;
+        background: #ffffff;
+        border: 1px solid #d6e1e7;
+        border-radius: 9px;
+        box-shadow: 0 12px 28px rgba(6, 47, 61, 0.14);
+    }
+
+    :root:not([data-theme="dark"]) :is(
+        .filtro-select,
+        .grafica-select,
+        .paginacion-mostrar select,
+        .reportes-filtro select,
+        .historial-ventas-filtros .historial-filtro select
+    ) option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 32px;
+        padding: 7px 9px;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #062f3d;
+        font-size: 12px;
+        font-weight: 400;
+    }
+
+    :root:not([data-theme="dark"]) :is(
+        .filtro-select,
+        .grafica-select,
+        .paginacion-mostrar select,
+        .reportes-filtro select,
+        .historial-ventas-filtros .historial-filtro select
+    ) option:hover {
+        background: #eef8fa;
+        color: #05788a;
+    }
+
+    :root:not([data-theme="dark"]) :is(
+        .filtro-select,
+        .grafica-select,
+        .paginacion-mostrar select,
+        .reportes-filtro select,
+        .historial-ventas-filtros .historial-filtro select
+    ) option:checked {
+        background: #e4f5f8;
+        color: #05788a;
+        font-weight: 600;
+    }
+
+    :root:not([data-theme="dark"]) :is(
+        .filtro-select,
+        .grafica-select,
+        .paginacion-mostrar select,
+        .reportes-filtro select,
+        .historial-ventas-filtros .historial-filtro select
+    ) option::checkmark {
+        color: #07869a;
+    }
+
+    :root:not([data-theme="dark"]) :is(
+        .filtro-select,
+        .grafica-select,
+        .paginacion-mostrar select,
+        .reportes-filtro select,
+        .historial-ventas-filtros .historial-filtro select
+    ) option:focus-visible {
+        outline: none;
     }
 }

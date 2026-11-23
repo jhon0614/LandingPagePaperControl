@@ -8,6 +8,7 @@ import "../styles/Ventas.css";
 import "../styles/Caja.css";
 
 import { obtenerTurnoActual } from "../services/caja.service";
+import AvisoTurnoLargo from "../components/AvisoTurnoLargo";
 import {
     obtenerVentas, 
     obtenerHistorialVentas, 
@@ -1774,6 +1775,8 @@ function Ventas() {
 
             </div>
 
+            <AvisoTurnoLargo turno={turnoActivo} />
+            
             {!turnoActivo ? (
 
                 <div className="caja-apertura-card">

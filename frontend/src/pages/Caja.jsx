@@ -18,7 +18,7 @@ import {
     obtenerGastosDeTurno,
 } from "../services/caja.service";
 import CampoFecha from "../components/CampoFecha";
-
+import AvisoTurnoLargo from "../components/AvisoTurnoLargo";
 
 function formatoMoneda(valor) {
 
@@ -650,6 +650,8 @@ function Caja() {
                 </div>
 
             )}
+            
+            <AvisoTurnoLargo turno={turno} />
 
             {/* =================================================
                 RESUMEN
@@ -690,8 +692,16 @@ function Caja() {
 
                 <div className="caja-resumen-card">
                     <span>Total gastos</span>
-                    <strong className="caja-resumen-negativo">
-                        -{formatoMoneda(resumen?.totalGastos)}
+                    <strong
+                        className={
+                            Number(resumen?.totalGastos) > 0
+                                ? "caja-resumen-negativo"
+                                : "caja-gasto-cero"
+                        }
+                    >
+                        {Number(resumen?.totalGastos) > 0
+                            ? `-${formatoMoneda(resumen?.totalGastos)}`
+                            : formatoMoneda(0)}
                     </strong>
                 </div>
 
@@ -1195,7 +1205,9 @@ function Caja() {
                                     <div>
                                         <span>Total gastos</span>
                                         <strong>
-                                            -{formatoMoneda(cuadreFinal.totalGastos)}
+                                            {Number(cuadreFinal.totalGastos) > 0
+                                                ? `-${formatoMoneda(cuadreFinal.totalGastos)}`
+                                                : formatoMoneda(0)}
                                         </strong>
                                     </div>
 

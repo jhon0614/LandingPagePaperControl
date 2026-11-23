@@ -838,6 +838,28 @@ function Reportes() {
                                         ))}
 
                                     </tbody>
+                                    
+                                    <tfoot>
+                                        <tr className="reportes-gastos-total">
+                                            <td>Total</td>
+                                            <td>{formatoMoneda(reporte.resumen.totalVentas)}</td>
+                                            <td>{formatoMoneda(reporte.resumen.ventasPorMetodo?.efectivo)}</td>
+                                            <td>{formatoMoneda(reporte.resumen.ventasPorMetodo?.tarjeta)}</td>
+                                            <td>{formatoMoneda(reporte.resumen.ventasPorMetodo?.transferencia)}</td>
+                                            <td
+                                                className={
+                                                    Number(reporte.resumen.totalGastos) > 0
+                                                        ? "caja-resumen-negativo"
+                                                        : "reportes-gasto-cero"
+                                                }
+                                            >
+                                                {Number(reporte.resumen.totalGastos) > 0
+                                                    ? `-${formatoMoneda(reporte.resumen.totalGastos)}`
+                                                    : formatoMoneda(0)}
+                                            </td>
+                                            <td>{formatoMoneda(reporte.resumen.flujoNeto)}</td>
+                                        </tr>
+                                    </tfoot>
 
                                 </table>
 

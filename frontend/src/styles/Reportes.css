@@ -375,3 +375,7 @@
     background: rgba(251, 191, 36, 0.1);
     color: #fcd34d;
 }
+
+:root .reportes-tabla-panel + .reportes-tabla-panel {
+    margin-top: 20px;
+}

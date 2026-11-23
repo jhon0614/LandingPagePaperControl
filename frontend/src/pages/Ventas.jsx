@@ -2673,8 +2673,8 @@ function Ventas() {
 
                                             <td>
 
-                                                <strong>
-                                                    {venta.numero_venta}
+                                                <strong title={venta.numero_venta}>
+                                                    {String(venta.numero_venta).replace(/^V-0+(?=\d)/, "V-")}
                                                 </strong>
 
                                             </td>

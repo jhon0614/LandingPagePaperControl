@@ -2161,3 +2161,11 @@ body:has(.cliente-modal-overlay) {
 .historial-ventas-tabla th:last-child {
     text-align: center;
 }
+
+.pos-dropdown-menu {
+    max-height: min(280px, 45vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #b7ccd3 transparent;
+}

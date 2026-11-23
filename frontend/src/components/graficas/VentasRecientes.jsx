@@ -65,7 +65,7 @@ function VentasRecientes({ ventas, limite = 6 }) {
                         <th>Venta</th>
                         <th>Fecha</th>
                         <th>Vendedor</th>
-                        <th>Pago</th>
+                        <th>Método de Pago</th>
                         <th>Total</th>
                         <th>Estado</th>
                     </tr>
@@ -79,7 +79,9 @@ function VentasRecientes({ ventas, limite = 6 }) {
                         <tr key={venta.id}>
 
                             <td>
-                                <strong>{venta.numero_venta}</strong>
+                                <strong title={venta.numero_venta}>
+                                    {String(venta.numero_venta).replace(/^V-0+(?=\d)/, "V-")}
+                                </strong>
                             </td>
 
                             <td>{formatoFechaCorta(venta.confirmado_en)}</td>

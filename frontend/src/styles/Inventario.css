@@ -1411,3 +1411,212 @@ RESPONSIVE
         padding: 0;
     }
 }
+
+.inventario-filtros {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.inventario-filtros .btn-desactivados {
+    grid-column: auto;
+    justify-self: stretch;
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+
+    .inventario-filtros {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 600px) {
+
+    .inventario-filtros {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+.inventario-filtros {
+    padding: 0;
+    background: transparent;
+    border: 0;
+}
+
+[data-theme="dark"] .inventario-filtros {
+    background: transparent;
+    border: 0;
+}
+
+.inventario-dropdown-menu {
+    max-height: min(280px, 45vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #b7ccd3 transparent;
+}
+
+@media (max-width: 600px) {
+
+    :root .inventario-seccion .inventario-tabla th {
+        font-size: 12px;
+        padding: 13px 12px;
+    }
+
+    :root .inventario-seccion .inventario-tabla td {
+        font-size: 15px;
+        padding: 14px 12px;
+    }
+
+    :root .inventario-seccion .producto-info strong,
+    :root .inventario-seccion .stock-wrapper strong {
+        font-size: 15px;
+    }
+
+    :root .inventario-seccion .producto-info span,
+    :root .inventario-seccion .codigo-producto,
+    :root .inventario-seccion .stock-wrapper small,
+    :root .inventario-seccion .estado-badge {
+        font-size: 12px;
+    }
+
+    :root .inventario-seccion .acciones-producto {
+        gap: 8px;
+    }
+
+    :root .inventario-seccion .accion {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        font-size: 14px;
+    }
+
+    :root .inventario-seccion .inventario-tabla:has(th:nth-child(10)) {
+        min-width: 1500px;
+    }
+
+}
+
+.movimientos-tabla-wrapper {
+    margin: 0 20px 20px;
+    padding: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #b7ccd3 transparent;
+}
+
+:root[data-theme="dark"] .inventario-filtros {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+}
+
+:root[data-theme="dark"] .movimientos-tabla-wrapper .inventario-tabla {
+    border: 1px solid #265c69 !important;
+}
+
+:root[data-theme="dark"] .inventario-seccion:has(.titulo-verde) {
+    border-top: 4px solid #15803d;
+}
+
+:root[data-theme="dark"] .inventario-seccion:has(.titulo-rojo) {
+    border-top: 4px solid #dc2626;
+}
+
+:root[data-theme="dark"] .inventario-seccion:has(.titulo-gris) {
+    border-top: 4px solid #64748b;
+}
+
+:root[data-theme="dark"] .inventario-seccion .titulo-verde {
+    color: #86efac;
+}
+
+:root[data-theme="dark"] .inventario-seccion .contador.verde {
+    background: rgba(34, 160, 90, 0.18);
+    color: #86efac;
+}
+
+:root[data-theme="dark"] .inventario-seccion .titulo-gris {
+    color: #b3c6cd;
+}
+
+:root[data-theme="dark"] .inventario-seccion {
+    border: 0;
+    border-radius: 16px;
+    box-shadow: none;
+}
+/* ===== Modo oscuro: colores de las tarjetas de inventario ===== */
+:root[data-theme="dark"] .estadistica-icono.azul {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+}
+
+:root[data-theme="dark"] .estadistica-icono.verde {
+    background: rgba(34, 160, 90, 0.18);
+    color: #86efac;
+}
+
+:root[data-theme="dark"] .estadistica-icono.morado {
+    background: rgba(147, 51, 234, 0.18);
+    color: #d8b4fe;
+}
+
+:root[data-theme="dark"] .estadistica-icono.naranja {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+}
+
+:root[data-theme="dark"] .estadistica-icono.rojo {
+    background: rgba(229, 72, 77, 0.18);
+    color: #f87171;
+}
+
+:root .inventario-seccion .seccion-header {
+    padding: 18px 22px 14px;
+    gap: 20px;
+}
+
+:root .inventario-seccion .seccion-header h2 {
+    margin: 0 0 5px;
+    font-size: 21px;
+    font-weight: 700;
+}
+
+:root .inventario-seccion .titulo-verde,
+:root .inventario-seccion .titulo-rojo,
+:root .inventario-seccion .titulo-gris {
+    gap: 9px;
+    font-size: 21px;
+}
+
+:root .inventario-seccion .titulo-verde i,
+:root .inventario-seccion .titulo-rojo i,
+:root .inventario-seccion .titulo-gris i {
+    font-size: 10px;
+}
+
+:root .inventario-seccion .seccion-header p {
+    font-size: 14px;
+}
+
+:root[data-theme="dark"] .inventario-seccion .seccion-header p {
+    color: #4fc3d6;
+}
+
+:root .inventario-seccion .contador {
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+
+    :root .inventario-seccion .seccion-header h2,
+    :root .inventario-seccion .titulo-verde,
+    :root .inventario-seccion .titulo-rojo,
+    :root .inventario-seccion .titulo-gris {
+        font-size: 19px;
+    }
+
+}

@@ -288,8 +288,8 @@
 }
 
 .usuarios-contador.bloqueado {
-    background: #fef3c7;
-    color: #d97706;
+    background: #e2e8f0;
+    color: #64748b;
 }
 
 /* =========================================================
@@ -1317,7 +1317,7 @@
 }
 
 .usuarios-seccion-bloqueados {
-    border-top-color: #d97706;
+    border-top-color: #64748b;
 }
 
 .usuarios-seccion .tabla-usuarios-container {
@@ -1359,8 +1359,8 @@
 }
 
 [data-theme="dark"] .usuarios-contador.bloqueado {
-    background: rgba(217, 119, 6, .18);
-    color: #fbbf24;
+    background: rgba(148, 163, 184, .18);
+    color: #b3c6cd;
 }
 
 @media (max-width: 768px) {
@@ -1374,4 +1374,14 @@
         position: static;
         box-shadow: none;
     }
+}
+
+:root .usuarios-info .card-estadistica:nth-child(5) i {
+    background: #e2e8f0;
+    color: #64748b;
+}
+
+:root[data-theme="dark"] .usuarios-info .card-estadistica:nth-child(5) i {
+    background: rgba(148, 163, 184, 0.18);
+    color: #b3c6cd;
 }

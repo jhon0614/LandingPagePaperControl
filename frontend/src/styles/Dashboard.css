@@ -1026,3 +1026,143 @@ que ya tenga su fondo en su propia clase lo conserva. */
         outline: none;
     }
 }
+
+@supports (appearance: base-select) {
+
+    select::picker(select) {
+        max-height: min(280px, 45vh);
+    }
+
+    :root:not([data-theme="dark"]) select::picker(select) {
+        outline: none;
+    }
+
+}
+
+@media (max-width: 700px) {
+
+    @supports (appearance: base-select) {
+
+        select::picker(select) {
+            width: anchor-size(width);
+            max-width: calc(100vw - 16px);
+        }
+
+        select option {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+    }
+
+}
+@media (min-width: 601px) {
+
+    :root .inventario-tabla th {
+        padding: 15px 16px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    :root .inventario-tabla td {
+        padding: 14px 16px;
+        font-size: 14px;
+    }
+
+    :root .inventario-tabla .producto-info strong,
+    :root .inventario-tabla .stock-wrapper strong {
+        font-size: 14px;
+    }
+
+    :root .inventario-tabla .producto-info span,
+    :root .inventario-tabla .codigo-producto,
+    :root .inventario-tabla .estado-badge,
+    :root .inventario-tabla .proveedor-chip {
+        font-size: 12px;
+    }
+
+    :root .inventario-tabla .stock-wrapper small {
+        font-size: 11px;
+    }
+
+    :root .inventario-tabla .producto-icono {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+
+    :root .inventario-tabla .acciones-producto {
+        gap: 8px;
+    }
+
+    :root .inventario-tabla .accion {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        font-size: 14px;
+    }
+
+    :root .historial-ventas-tabla th {
+        padding: 15px 16px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    :root .historial-ventas-tabla td {
+        padding: 14px 16px;
+        font-size: 14px;
+    }
+
+    :root .historial-acciones {
+        gap: 8px;
+    }
+
+    :root .historial-acciones button {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        font-size: 14px;
+    }
+
+}
+
+:root .movimientos-tabla-wrapper .inventario-tabla {
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #edf2f7;
+    border-radius: 12px;
+}
+
+:root .movimientos-tabla-wrapper .inventario-tabla thead th:first-child {
+    border-top-left-radius: 11px;
+}
+
+:root .movimientos-tabla-wrapper .inventario-tabla thead th:last-child {
+    border-top-right-radius: 11px;
+}
+
+:root .movimientos-tabla-wrapper .inventario-tabla tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 11px;
+}
+
+:root .movimientos-tabla-wrapper .inventario-tabla tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 11px;
+}
+
+/* ===== Barra de scroll delgada en toda la aplicación ===== */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #b7ccd3 transparent;
+}
+
+:root[data-theme="dark"] .usuarios-icon-azul,
+:root[data-theme="dark"] .cliente-estadistica-icono:not(.activo):not(.inactivo):not(.frecuente),
+:root[data-theme="dark"] .cards .card:nth-child(1) i {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+}
+
+:root[data-theme="dark"] .usuarios-info .card-estadistica:nth-child(1) i {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+}

@@ -112,8 +112,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #d97706;
+    color: #64748b;
     font-size: 15px;
+}
+
+[data-theme="dark"] .usuarios-titulo-bloqueados {
+    color: #b3c6cd;
 }
 
 .clientes-busqueda .clientes-buscador {

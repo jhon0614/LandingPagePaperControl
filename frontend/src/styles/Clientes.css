@@ -1188,3 +1188,92 @@
     border-radius: 10px;
     font-size: 14px;
 }
+
+:root .historial-compras-tabla thead,
+:root .historial-compras-tabla th {
+    background: #05788a !important;
+    color: #ffffff !important;
+    border-bottom-color: #05788a !important;
+}
+
+:root .historial-compras-tabla {
+    border: 1px solid #edf2f7;
+    border-radius: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    box-shadow: none;
+}
+
+:root .historial-compras-tabla th {
+    padding: 13px 15px;
+}
+
+:root .historial-compras-tabla td {
+    padding: 12px 15px;
+}
+
+[data-theme="dark"] .historial-compras-tabla {
+    border-color: rgba(79, 195, 214, 0.35);
+}
+
+:root .historial-compras-tabla .btn-ver-cliente {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #bfe3ec;
+    border-radius: 10px;
+    background: #e6f7fa;
+    color: #05788a;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.15s ease;
+}
+
+:root .historial-compras-tabla .btn-ver-cliente:hover {
+    background: #05788a;
+    border-color: #05788a;
+    color: #ffffff;
+}
+
+:root[data-theme="dark"] .historial-compras-tabla .btn-ver-cliente {
+    background: rgba(5, 120, 138, 0.18);
+    border-color: rgba(79, 195, 214, 0.35);
+    color: #7fd6e6;
+}
+
+:root[data-theme="dark"] .historial-compras-tabla .btn-ver-cliente:hover {
+    background: #05788a;
+    border-color: #05788a;
+    color: #ffffff;
+}
+/* ===== Historial de compras: la tabla se desplaza dentro del modal ===== */
+:root .historial-compras-modal {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 40px);
+}
+
+:root .historial-compras-modal .cliente-modal-header,
+:root .historial-compras-modal .historial-compras-filtros,
+:root .historial-compras-modal .cliente-modal-footer {
+    flex-shrink: 0;
+}
+
+:root .historial-compras-tabla {
+    flex: 1 1 auto;
+    min-height: 120px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+
+    :root .historial-compras-tabla td ul {
+        max-height: none;
+        overflow: visible;
+    }
+
+}

@@ -23,6 +23,15 @@ function fechaCalendario(texto) {
     return `${dia}/${mes}/${anio}`;
 }
 
+function horaBogota(momento) {
+    if (!momento) return "";
+    return new Date(momento).toLocaleTimeString("es-CO", {
+        timeZone: "America/Bogota",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
+
 function pesos(valor) {
     const numero = Number(valor || 0);
     const texto = `$${Math.abs(numero).toLocaleString("es-CO")}`;
@@ -98,12 +107,133 @@ async function crearLogoPNG() {
     }
 }
 
-
 /* =========================================================
     EXCEL
 ========================================================= */
+function agregarHojaGastos(libro, lista, filtros, logo) {
 
-export async function exportarReporteCajaExcel(reporte, filtros) {
+    const FILA_ENCABEZADO = 4;
+    const PRIMERA_FILA = FILA_ENCABEZADO + 1;
+
+    const hoja = libro.addWorksheet("Detalle de gastos", {
+        views: [{ state: "frozen", ySplit: FILA_ENCABEZADO, showGridLines: false }],
+        pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    });
+
+    hoja.columns = [
+        { width: 14 },
+        { width: 13 },
+        { width: 46 },
+        { width: 28 },
+        { width: 18 },
+    ];
+
+    const formatoPesos = '"$"#,##0';
+    const relleno = (hex) => ({ type: "pattern", pattern: "solid", fgColor: { argb: `FF${hex}` } });
+    const borde = (hex) => ({ style: "thin", color: { argb: `FF${hex}` } });
+
+    hoja.getRow(1).height = 54;
+
+    for (let c = 1; c <= 5; c++) {
+        hoja.getCell(1, c).fill = relleno(MARCA);
+    }
+
+    if (logo) {
+        const idLogo = libro.addImage({ base64: logo, extension: "png" });
+        hoja.addImage(idLogo, {
+            tl: { col: 0.12, row: 0.12 },
+            ext: { width: 52, height: 52 },
+        });
+    }
+
+    hoja.mergeCells("B1:C1");
+    hoja.getCell("B1").value = {
+        richText: [
+            { text: "PaperControl\n", font: { bold: true, size: 18, color: { argb: "FFFFFFFF" } } },
+            { text: "inventario y ventas", font: { size: 10, color: { argb: "FF9FD6DF" } } },
+        ],
+    };
+    hoja.getCell("B1").alignment = { vertical: "middle", horizontal: "left", wrapText: true, indent: 1 };
+
+    hoja.mergeCells("D1:E1");
+    hoja.getCell("D1").value = {
+        richText: [
+            { text: "DETALLE DE GASTOS\n", font: { bold: true, size: 13, color: { argb: "FFFFFFFF" } } },
+            {
+                text: `${fechaCalendario(filtros.desde)} al ${fechaCalendario(filtros.hasta)}`,
+                font: { size: 9, color: { argb: "FF9FD6DF" } },
+            },
+        ],
+    };
+    hoja.getCell("D1").alignment = { vertical: "middle", horizontal: "right", wrapText: true, indent: 1 };
+
+    hoja.getRow(2).height = 5;
+    [AZUL, VERDE_AGUA, VERDE_AGUA, VERDE, VERDE].forEach((color, i) => {
+        hoja.getCell(2, i + 1).fill = relleno(color);
+    });
+
+    hoja.getRow(3).height = 10;
+    hoja.getRow(FILA_ENCABEZADO).height = 24;
+
+    ["Fecha", "Hora", "Descripción", "Registrado por", "Monto"].forEach((texto, i) => {
+        const celda = hoja.getCell(FILA_ENCABEZADO, i + 1);
+        celda.value = texto;
+        celda.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        celda.fill = relleno(TEAL);
+        celda.alignment = { horizontal: i === 4 ? "right" : "left", vertical: "middle", indent: 1 };
+    });
+
+    lista.forEach((gasto, indice) => {
+        const fila = hoja.getRow(PRIMERA_FILA + indice);
+
+        fila.getCell(1).value = fechaCalendario(gasto.fecha);
+        fila.getCell(2).value = horaBogota(gasto.momento);
+        fila.getCell(3).value = gasto.descripcion;
+        fila.getCell(4).value = gasto.registradoPor;
+        fila.getCell(5).value = -Number(gasto.monto || 0);
+
+        for (let c = 1; c <= 5; c++) {
+            const celda = fila.getCell(c);
+
+            celda.alignment = {
+                vertical: "middle",
+                horizontal: c === 5 ? "right" : "left",
+                wrapText: c === 3 || c === 4,
+                indent: 1,
+            };
+            celda.border = { bottom: borde("E2E8F0") };
+
+            if (indice % 2 === 1) celda.fill = relleno("F8FAFC");
+        }
+
+        fila.getCell(5).numFmt = formatoPesos;
+        fila.getCell(5).font = { color: { argb: `FF${ROJO}` } };
+    });
+
+    const filaTotal = hoja.getRow(PRIMERA_FILA + lista.length);
+    filaTotal.height = 24;
+    filaTotal.getCell(1).value = "TOTAL";
+    filaTotal.getCell(5).value = {
+        formula: `SUM(E${PRIMERA_FILA}:E${PRIMERA_FILA + lista.length - 1})`,
+    };
+    filaTotal.getCell(5).numFmt = formatoPesos;
+
+    for (let c = 1; c <= 5; c++) {
+        const celda = filaTotal.getCell(c);
+        celda.font = { bold: true, color: { argb: c === 5 ? `FF${ROJO}` : `FF${MARCA}` } };
+        celda.fill = relleno(TEAL_CLARO);
+        celda.alignment = { vertical: "middle", horizontal: c === 5 ? "right" : "left", indent: 1 };
+        celda.border = { top: { style: "medium", color: { argb: `FF${TEAL}` } } };
+    }
+
+    const filaPie = PRIMERA_FILA + lista.length + 2;
+    hoja.mergeCells(`A${filaPie}:E${filaPie}`);
+    hoja.getCell(`A${filaPie}`).value = "PaperControl · inventario y ventas";
+    hoja.getCell(`A${filaPie}`).font = { size: 9, italic: true, color: { argb: "FF94A3B8" } };
+
+}
+
+export async function exportarReporteCajaExcel(reporte, filtros, detalleGastos) {
 
     const [{ default: ExcelJS }, logo] = await Promise.all([
         import("exceljs"),
@@ -226,7 +356,7 @@ export async function exportarReporteCajaExcel(reporte, filtros) {
         celdaValor.font = {
             bold: true,
             size: 13,
-            color: { argb: destacada ? "FFFFFFFF" : etiqueta === "Gastos" ? `FF${ROJO}` : `FF${TEAL}` },
+            color: { argb: destacada ? "FFFFFFFF" : etiqueta === "Gastos" ? `FF${Number(resumen.totalGastos || 0) > 0 ? ROJO : GRIS}` : `FF${TEAL}` },
         };
         celdaValor.fill = relleno(destacada ? TEAL : TEAL_CLARO);
         celdaValor.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
@@ -279,7 +409,7 @@ export async function exportarReporteCajaExcel(reporte, filtros) {
             if (indice % 2 === 1) celda.fill = relleno("F8FAFC");
         }
 
-        fila.getCell(6).font = { color: { argb: `FF${ROJO}` } };
+        fila.getCell(6).font = { color: { argb: `FF${Number(dia.totalGastos || 0) > 0 ? ROJO : GRIS}` }, };
         fila.getCell(7).font = { bold: true, color: { argb: `FF${MARCA}` } };
     });
 
@@ -312,6 +442,10 @@ export async function exportarReporteCajaExcel(reporte, filtros) {
     hoja.getCell(`A${filaPie}`).value = "PaperControl · inventario y ventas";
     hoja.getCell(`A${filaPie}`).font = { size: 9, italic: true, color: { argb: "FF94A3B8" } };
 
+    if (detalleGastos?.cuadra && detalleGastos.gastos?.length) {
+        agregarHojaGastos(libro, detalleGastos.gastos, filtros, logo);
+    }
+
     const buffer = await libro.xlsx.writeBuffer();
 
     descargar(
@@ -327,7 +461,7 @@ export async function exportarReporteCajaExcel(reporte, filtros) {
     PDF
 ========================================================= */
 
-export async function exportarReporteCajaPDF(reporte, filtros) {
+export async function exportarReporteCajaPDF(reporte, filtros, detalleGastos) {
 
     const [{ jsPDF }, { default: autoTable }, logo] = await Promise.all([
         import("jspdf"),
@@ -407,13 +541,15 @@ export async function exportarReporteCajaPDF(reporte, filtros) {
     etiquetaValor("Vendedor", filtros.vendedor || "Todos", margen + 240);
     etiquetaValor("Días con actividad", String((reporte.dias || []).length), margen + 480);
 
+    const hayGastos = Number(resumen.totalGastos || 0) > 0;
+
     // ---- Tarjetas de resumen ----
     const tarjetas = [
         { etiqueta: "Total ventas", valor: pesos(resumen.totalVentas), acento: AZUL },
         { etiqueta: "Efectivo", valor: pesos(metodo(resumen.ventasPorMetodo, "efectivo")), acento: VERDE_AGUA },
         { etiqueta: "Tarjeta", valor: pesos(metodo(resumen.ventasPorMetodo, "tarjeta")), acento: VERDE_AGUA },
         { etiqueta: "Transferencia", valor: pesos(metodo(resumen.ventasPorMetodo, "transferencia")), acento: VERDE_AGUA },
-        { etiqueta: "Gastos", valor: gastos(resumen.totalGastos), acento: ROJO, rojo: true },
+        { etiqueta: "Gastos", valor: gastos(resumen.totalGastos), acento: hayGastos ? ROJO : GRIS, colorValor: hayGastos ? ROJO : GRIS },
         { etiqueta: "Flujo neto", valor: pesos(resumen.flujoNeto), acento: TEAL, destacada: true },
     ];
 
@@ -445,7 +581,7 @@ export async function exportarReporteCajaPDF(reporte, filtros) {
         doc.setFontSize(8);
         doc.text(t.etiqueta, x + 14, yTarjeta + 19);
 
-        color(t.destacada ? "FFFFFF" : t.rojo ? ROJO : TEAL);
+        color(t.destacada ? "FFFFFF" : t.colorValor || TEAL);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text(t.valor, x + 14, yTarjeta + 39);
@@ -520,9 +656,19 @@ export async function exportarReporteCajaPDF(reporte, filtros) {
             if (datos.column.index === 0) {
                 datos.cell.styles.halign = "left";
             }
+            // Un día sin gastos se muestra en gris, no en rojo
+            if (
+                datos.section === "body" &&
+                datos.column.index === 5 &&
+                Number(dias[datos.row.index]?.totalGastos || 0) === 0
+            ) {
+                datos.cell.styles.textColor = rgb(GRIS);
+            }
             // El pie conserva sus propios colores en gastos y flujo neto
             if (datos.section === "foot") {
-                datos.cell.styles.textColor = rgb(datos.column.index === 5 ? ROJO : MARCA);
+                datos.cell.styles.textColor = rgb(
+                    datos.column.index === 5 ? (hayGastos ? ROJO : GRIS) : MARCA
+                );
             }
         },
         // Banda reducida en las páginas siguientes
@@ -540,6 +686,95 @@ export async function exportarReporteCajaPDF(reporte, filtros) {
             }
         },
     });
+
+    // ---- Detalle de gastos ----
+    if (detalleGastos?.cuadra && detalleGastos.gastos?.length) {
+
+        const lista = detalleGastos.gastos;
+        const totalGastos = lista.reduce((suma, gasto) => suma + Number(gasto.monto || 0), 0);
+
+        let inicio = (doc.lastAutoTable?.finalY || 0) + 30;
+
+        if (inicio > alto - 120) {
+            doc.addPage();
+            inicio = 74;
+        }
+
+        color(TEAL);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text("Detalle de gastos", margen, inicio);
+
+        autoTable(doc, {
+            startY: inicio + 10,
+            margin: { left: margen, right: margen, top: 96, bottom: 44 },
+            head: [["Fecha", "Hora", "Descripción", "Registrado por", "Monto"]],
+            body: lista.map((gasto) => [
+                fechaCalendario(gasto.fecha),
+                horaBogota(gasto.momento),
+                gasto.descripcion,
+                gasto.registradoPor,
+                gastos(gasto.monto),
+            ]),
+            foot: [[
+                { content: "TOTAL", colSpan: 4 },
+                gastos(totalGastos),
+            ]],
+            showFoot: "lastPage",
+            theme: "plain",
+            styles: {
+                font: "helvetica",
+                fontSize: 9,
+                cellPadding: { top: 6, bottom: 6, left: 8, right: 8 },
+                textColor: rgb(TEXTO),
+                halign: "left",
+                lineColor: rgb("E2E8F0"),
+                lineWidth: { bottom: 0.5 },
+            },
+            headStyles: {
+                fillColor: rgb(TEAL),
+                textColor: 255,
+                fontStyle: "bold",
+                lineWidth: 0,
+            },
+            footStyles: {
+                fillColor: rgb(TEAL_CLARO),
+                textColor: rgb(MARCA),
+                fontStyle: "bold",
+                lineWidth: { top: 1.2 },
+                lineColor: rgb(TEAL),
+            },
+            alternateRowStyles: { fillColor: rgb("F8FAFC") },
+            columnStyles: {
+                0: { cellWidth: 70 },
+                1: { cellWidth: 70 },
+                2: { cellWidth: "auto" },
+                3: { cellWidth: 150 },
+                4: { halign: "right", cellWidth: 90, textColor: rgb(ROJO) },
+            },
+            didParseCell: (datos) => {
+                if (datos.column.index === 4) {
+                    datos.cell.styles.halign = "right";
+                }
+                if (datos.section === "foot") {
+                    datos.cell.styles.textColor = rgb(datos.column.index === 4 ? ROJO : MARCA);
+                }
+            },
+            didDrawPage: (datos) => {
+                if (datos.pageNumber > 1) {
+                    relleno(MARCA);
+                    doc.rect(0, 0, ancho, 44, "F");
+                    relleno(VERDE_AGUA);
+                    doc.rect(0, 44, ancho, 3, "F");
+
+                    color("FFFFFF");
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(12);
+                    doc.text("PaperControl - Reporte de caja", margen, 28);
+                }
+            },
+        });
+    }
 
     // ---- Pie de página ----
     const paginas = doc.getNumberOfPages();

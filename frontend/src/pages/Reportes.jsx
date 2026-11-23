@@ -5,6 +5,7 @@ import "../styles/Reportes.css";
 import {
     obtenerReporteCaja,
     obtenerProductosMasVendidos,
+    obtenerDetalleGastos,
 } from "../services/reportes.service";
 import { obtenerUsuarios } from "../services/usuarios.service";
 import CampoFecha from "../components/CampoFecha";
@@ -51,6 +52,15 @@ function formatoFechaCalendario(fechaTexto) {
 
 }
 
+function formatoHora(momento) {
+    if (!momento) return "—";
+
+    return new Date(momento).toLocaleTimeString("es-CO", {
+        timeZone: "America/Bogota",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
 
 function obtenerFechaHoyTexto() {
 
@@ -121,6 +131,8 @@ function Reportes() {
     const [usuarios, setUsuarios] = useState([]);
 
     const [reporte, setReporte] = useState(null);
+
+    const [detalleGastos, setDetalleGastos] = useState(null);
 
     const [cargando, setCargando] = useState(false);
 
@@ -218,6 +230,23 @@ function Reportes() {
             });
 
             setReporte(datos);
+        
+            try {
+
+                setDetalleGastos(
+                    await obtenerDetalleGastos({
+                        desde: datos.desde || desde,
+                        hasta: datos.hasta || hasta,
+                        vendedorId: vendedorId || undefined,
+                        dias: datos.dias,
+                    })
+                );
+
+            } catch {
+
+                setDetalleGastos(null);
+
+            }
 
             setConsultado(true);
 
@@ -229,6 +258,7 @@ function Reportes() {
             );
 
             setReporte(null);
+            setDetalleGastos(null);
 
         } finally {
 
@@ -318,7 +348,7 @@ function Reportes() {
 
     async function exportarReporte(tipo) {
 
-        if (!reporte) return;
+        if (!reporte || !reporte.dias || reporte.dias.length === 0) return;
 
         const usuario = usuarios.find((u) => String(u.id) === String(vendedorId));
 
@@ -335,9 +365,9 @@ function Reportes() {
             setExportando(tipo);
 
             if (tipo === "excel") {
-                await exportarReporteCajaExcel(reporte, filtros);
+                await exportarReporteCajaExcel(reporte, filtros, detalleGastos);
             } else {
-                await exportarReporteCajaPDF(reporte, filtros);
+                await exportarReporteCajaPDF(reporte, filtros, detalleGastos);
             }
 
         } catch {
@@ -638,8 +668,16 @@ function Reportes() {
 
                         <div className="reportes-resumen-card">
                             <span>Total gastos</span>
-                            <strong className="caja-resumen-negativo">
-                                -{formatoMoneda(reporte.resumen.totalGastos)}
+                            <strong
+                                className={
+                                    Number(reporte.resumen.totalGastos) > 0
+                                        ? "caja-resumen-negativo"
+                                        : "reportes-gasto-cero"
+                                }
+                            >
+                                {Number(reporte.resumen.totalGastos) > 0
+                                    ? `-${formatoMoneda(reporte.resumen.totalGastos)}`
+                                    : formatoMoneda(0)}
                             </strong>
                         </div>
 
@@ -692,7 +730,7 @@ function Reportes() {
                                     type="button"
                                     className="btn-exportar"
                                     onClick={() => exportarReporte("excel")}
-                                    disabled={exportando !== ""}
+                                    disabled={exportando !== "" || !reporte.dias || reporte.dias.length === 0}
                                 >
                                     <i className="fa-solid fa-file-excel"></i>
                                     {exportando === "excel" ? "Generando..." : "Exportar Excel"}
@@ -702,7 +740,7 @@ function Reportes() {
                                     type="button"
                                     className="btn-exportar"
                                     onClick={() => exportarReporte("pdf")}
-                                    disabled={exportando !== ""}
+                                    disabled={exportando !== "" || !reporte.dias || reporte.dias.length === 0}
                                 >
                                     <i className="fa-solid fa-file-pdf"></i>
                                     {exportando === "pdf" ? "Generando..." : "Exportar PDF"}
@@ -775,10 +813,16 @@ function Reportes() {
                                                     )}
                                                 </td>
 
-                                                <td className="caja-resumen-negativo">
-                                                    -{formatoMoneda(
-                                                        dia.totalGastos
-                                                    )}
+                                                <td
+                                                    className={
+                                                        Number(dia.totalGastos) > 0
+                                                            ? "caja-resumen-negativo"
+                                                            : "reportes-gasto-cero"
+                                                    }
+                                                >
+                                                    {Number(dia.totalGastos) > 0
+                                                        ? `-${formatoMoneda(dia.totalGastos)}`
+                                                        : formatoMoneda(0)}
                                                 </td>
 
                                                 <td>
@@ -802,6 +846,91 @@ function Reportes() {
                         )}
 
                     </section>
+                    
+                    {/* =============================================
+                        DETALLE DE GASTOS
+                    ============================================= */}
+
+                    {reporte.dias?.length > 0 && detalleGastos && (
+
+                        detalleGastos.cuadra ? (
+
+                            detalleGastos.gastos.length > 0 && (
+
+                                <section className="reportes-tabla-panel">
+
+                                    <div className="reportes-tabla-encabezado">
+                                        <h2>Detalle de gastos</h2>
+                                    </div>
+
+                                    <div className="caja-gastos-tabla">
+
+                                        <table>
+
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Hora</th>
+                                                    <th>Descripción</th>
+                                                    <th>Registrado por</th>
+                                                    <th className="reportes-gastos-monto">Monto</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+
+                                                {detalleGastos.gastos.map((gasto) => (
+
+                                                    <tr key={gasto.id}>
+                                                        <td>{formatoFechaCalendario(gasto.fecha)}</td>
+                                                        <td>{formatoHora(gasto.momento)}</td>
+                                                        <td>{gasto.descripcion}</td>
+                                                        <td>{gasto.registradoPor}</td>
+                                                        <td className="reportes-gastos-monto caja-resumen-negativo">
+                                                            -{formatoMoneda(gasto.monto)}
+                                                        </td>
+                                                    </tr>
+
+                                                ))}
+
+                                            </tbody>
+
+                                            <tfoot>
+                                                <tr className="reportes-gastos-total">
+                                                    <td colSpan={4}>Total</td>
+                                                    <td className="reportes-gastos-monto caja-resumen-negativo">
+                                                        -{formatoMoneda(
+                                                            detalleGastos.gastos.reduce(
+                                                                (suma, gasto) => suma + Number(gasto.monto || 0),
+                                                                0
+                                                            )
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+
+                                        </table>
+
+                                    </div>
+
+                                </section>
+
+                            )
+
+                        ) : (
+
+                            Number(reporte.resumen.totalGastos) > 0 && (
+
+                                <div className="reportes-aviso">
+                                    No se pudo mostrar el detalle de cada gasto porque no coincide
+                                    con los totales diarios. El resumen y la tabla diaria sí son correctos.
+                                </div>
+
+                            )
+
+                        )
+
+                    )}
 
                 </>
 

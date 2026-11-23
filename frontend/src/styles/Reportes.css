@@ -333,3 +333,45 @@
         width: 100%;
     }
 }
+/* Gastos en cero: gris, porque no es un gasto */
+:root .reportes-resumen-card strong.reportes-gasto-cero,
+:root .caja-gastos-tabla td.reportes-gasto-cero {
+    color: #64748b;
+}
+
+:root[data-theme="dark"] .reportes-resumen-card strong.reportes-gasto-cero,
+:root[data-theme="dark"] .caja-gastos-tabla td.reportes-gasto-cero {
+    color: #b3c6cd;
+}
+
+:root .reportes-gastos-monto {
+    text-align: right;
+    white-space: nowrap;
+}
+
+:root .reportes-gastos-total td {
+    font-weight: 800;
+    border-top: 2px solid #05788a;
+    background: #f1fafb;
+}
+
+:root[data-theme="dark"] .reportes-gastos-total td {
+    background: rgba(5, 120, 138, 0.18);
+    border-top-color: rgba(79, 195, 214, 0.5);
+}
+
+:root .reportes-aviso {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border: 1px solid #fcd9a8;
+    border-radius: 10px;
+    background: #fff7ed;
+    color: #9a5b13;
+    font-size: 14px;
+}
+
+:root[data-theme="dark"] .reportes-aviso {
+    border-color: rgba(251, 191, 36, 0.35);
+    background: rgba(251, 191, 36, 0.1);
+    color: #fcd34d;
+}

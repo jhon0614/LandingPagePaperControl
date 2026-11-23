@@ -173,3 +173,13 @@ export async function obtenerHistorialTurnos({ desde, hasta } = {}) {
     return respuesta.datos.turnos;
 
 }
+
+export async function obtenerGastosDeTurno(idTurno) {
+
+    const respuesta = await apiFetch(
+        `/api/turnos-caja/${idTurno}/gastos`
+    );
+
+    return respuesta.datos.gastos;
+
+}

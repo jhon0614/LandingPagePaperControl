@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 
 import Layout from "../components/Layout";
 
@@ -14,7 +14,8 @@ import {
     registrarGasto,
     eliminarGasto,
     cerrarCaja,
-   obtenerHistorialTurnos,
+    obtenerHistorialTurnos,
+    obtenerGastosDeTurno,
 } from "../services/caja.service";
 import CampoFecha from "../components/CampoFecha";
 
@@ -24,6 +25,21 @@ function formatoMoneda(valor) {
     return `$${Number(valor || 0).toLocaleString("es-CO")}`;
 
 }
+
+function formatoFechaCorta(fecha) {
+
+    if (!fecha) return "—";
+
+    return new Date(fecha).toLocaleString("es-CO", {
+        timeZone: "America/Bogota",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+
+}
+
 const MONTO_MINIMO_APERTURA = 300000;
 function Caja() {
 
@@ -61,6 +77,12 @@ function Caja() {
     const [fechaDesdeHistorial, setFechaDesdeHistorial] = useState("");
 
     const [fechaHastaHistorial, setFechaHastaHistorial] = useState("");
+
+    const [turnoExpandido, setTurnoExpandido] = useState(null);
+
+    const [gastosPorTurno, setGastosPorTurno] = useState({});
+
+    const [cargandoGastosTurno, setCargandoGastosTurno] = useState(null);
 
     /*
      * =====================================================
@@ -395,6 +417,10 @@ function Caja() {
 
             setHistorialTurnos(lista);
 
+            setTurnoExpandido(null);
+
+            setGastosPorTurno({});
+
         } catch {
 
             setHistorialTurnos([]);
@@ -402,6 +428,50 @@ function Caja() {
         } finally {
 
             setCargandoHistorial(false);
+
+        }
+
+    }
+    
+    async function alternarGastosTurno(turnoHistorial) {
+
+        const idTurno = turnoHistorial.id;
+
+        if (turnoExpandido === idTurno) {
+
+            setTurnoExpandido(null);
+
+            return;
+
+        }
+
+        setTurnoExpandido(idTurno);
+
+        if (
+            gastosPorTurno[idTurno] ||
+            Number(turnoHistorial.totalGastos) === 0
+        ) return;
+
+        try {
+
+            setCargandoGastosTurno(idTurno);
+
+            const lista = await obtenerGastosDeTurno(idTurno);
+
+            setGastosPorTurno((actual) => ({ ...actual, [idTurno]: lista }));
+
+        } catch (error) {
+
+            setError(
+                error.message ||
+                "No fue posible cargar los gastos del turno."
+            );
+
+            setTurnoExpandido(null);
+
+        } finally {
+
+            setCargandoGastosTurno(null);
 
         }
 
@@ -853,35 +923,129 @@ function Caja() {
 
                                         <thead>
                                             <tr>
+                                                <th></th>
                                                 <th>Usuario</th>
                                                 <th>Apertura</th>
                                                 <th>Cierre</th>
                                                 <th>Esperado</th>
                                                 <th>Contado</th>
                                                 <th>Diferencia</th>
+                                                <th>Gastos</th>
                                             </tr>
                                         </thead>
 
                                         <tbody>
                                             {historialTurnos.map((turno) => (
-                                                <tr key={turno.id}>
-                                                    <td>{turno.usuarioNombre}</td>
-                                                    <td>{formatoFechaHora(turno.abiertoEn)}</td>
-                                                    <td>{formatoFechaHora(turno.cerradoEn)}</td>
-                                                    <td>{formatoMoneda(turno.montoEsperado)}</td>
-                                                    <td>{formatoMoneda(turno.montoContado)}</td>
-                                                    <td>
-                                                        <span
-                                                            className={
-                                                                Number(turno.diferencia) < 0
-                                                                    ? "caja-resumen-negativo"
-                                                                    : ""
-                                                            }
-                                                        >
-                                                            {formatoMoneda(turno.diferencia)}
-                                                        </span>
-                                                    </td>
-                                                </tr>
+                                                <Fragment key={turno.id}>
+                                                    <tr
+                                                        className={
+                                                            turnoExpandido === turno.id
+                                                                ? "caja-turno-abierto"
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        <td className="caja-historial-toggle-celda">
+                                                            <button
+                                                                type="button"
+                                                                className="caja-historial-toggle"
+                                                                onClick={() => alternarGastosTurno(turno)}
+                                                                aria-expanded={turnoExpandido === turno.id}
+                                                                title="Ver detalle de los gastos"
+                                                            >
+                                                                <i
+                                                                    className={`fa-solid ${
+                                                                        turnoExpandido === turno.id
+                                                                            ? "fa-chevron-down"
+                                                                            : "fa-chevron-right"
+                                                                    }`}
+                                                                ></i>
+                                                            </button>
+                                                        </td>
+                                                        <td className="caja-historial-usuario">{turno.usuarioNombre}</td>
+                                                        <td>{formatoFechaHora(turno.abiertoEn)}</td>
+                                                        <td>{formatoFechaHora(turno.cerradoEn)}</td>
+                                                        <td>{formatoMoneda(turno.montoEsperado)}</td>
+                                                        <td>{formatoMoneda(turno.montoContado)}</td>
+                                                        <td>
+                                                            <span
+                                                                className={
+                                                                    Number(turno.diferencia) < 0
+                                                                        ? "caja-resumen-negativo"
+                                                                        : ""
+                                                                }
+                                                            >
+                                                                {formatoMoneda(turno.diferencia)}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            {Number(turno.totalGastos) > 0 ? (
+                                                                <span className="caja-gastos-pill">
+                                                                    {formatoMoneda(turno.totalGastos)}
+                                                                </span>
+                                                            ) : (
+                                                                formatoMoneda(0)
+                                                            )}
+                                                        </td>
+                                                    </tr>
+
+                                                    {turnoExpandido === turno.id && (
+                                                        <tr className="caja-turno-abierto">
+                                                            <td
+                                                                colSpan={8}
+                                                                className="caja-historial-detalle-celda"
+                                                            >
+                                                                <div className="caja-gastos-detalle">
+
+                                                                    <h3>Gastos de este turno</h3>
+
+                                                                    {cargandoGastosTurno === turno.id ? (
+
+                                                                        <p className="caja-gastos-vacio">
+                                                                            Cargando gastos...
+                                                                        </p>
+
+                                                                    ) : (gastosPorTurno[turno.id] || []).length === 0 ? (
+
+                                                                        <p className="caja-gastos-vacio">
+                                                                            Este turno no tiene gastos registrados.
+                                                                        </p>
+
+                                                                    ) : (
+
+                                                                        <div className="caja-gastos-detalle-tabla">
+
+                                                                            <div className="caja-gastos-detalle-fila caja-gastos-detalle-cabecera">
+                                                                                <span>Hora</span>
+                                                                                <span>Descripción</span>
+                                                                                <span>Registrado por</span>
+                                                                                <span>Monto</span>
+                                                                            </div>
+
+                                                                            {gastosPorTurno[turno.id].map((gasto) => (
+                                                                                <div className="caja-gastos-detalle-fila" key={gasto.id}>
+                                                                                    <span>{formatoFechaCorta(gasto.ocurridoEn || gasto.creadoEn)}</span>
+                                                                                    <span>{gasto.descripcion}</span>
+                                                                                    <span>{gasto.usuarioNombre || "—"}</span>
+                                                                                    <span>{formatoMoneda(gasto.monto)}</span>
+                                                                                </div>
+                                                                            ))}
+
+                                                                            <div className="caja-gastos-detalle-fila caja-gastos-detalle-total">
+                                                                                <span></span>
+                                                                                <span></span>
+                                                                                <span>Total gastos</span>
+                                                                                <span>{formatoMoneda(turno.totalGastos)}</span>
+                                                                            </div>
+
+                                                                        </div>
+
+                                                                    )}
+
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </Fragment>
                                             ))}
                                         </tbody>
 

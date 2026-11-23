@@ -1,12 +1,12 @@
 import { apiFetch } from "./api";
 import { obtenerTodasLasPaginas } from "./paginacion";
 
-export async function obtenerProveedores({ refrescar = false } = {}) {
+export async function obtenerProveedores({ refrescar = false, incluirInactivos = false } = {}) {
 
     return obtenerTodasLasPaginas(
         "/api/proveedores",
         "proveedores",
-        {},
+        incluirInactivos ? { incluirInactivos: "true" } : {},
         { refrescar }
     );
 
@@ -41,6 +41,21 @@ export async function actualizarProveedor(id, proveedor) {
             method: "PATCH",
 
             body: JSON.stringify(proveedor),
+        }
+    );
+
+    return respuesta.datos.proveedor;
+
+}
+
+export async function cambiarEstadoProveedor(id, estaActivo) {
+
+    const respuesta = await apiFetch(
+        `/api/proveedores/${id}/estado`,
+        {
+            method: "PATCH",
+
+            body: JSON.stringify({ estaActivo }),
         }
     );
 
